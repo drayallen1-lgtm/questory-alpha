@@ -44,19 +44,24 @@ import {
   getPublishedAdventures,
   isAdventurePlayable,
   generateClaimCode,
-  CLAIM_METHOD,
-  CLAIM_METHOD_OPTIONS,
-  usesFinderMode,
 } from './seed';
 import {
+  CLAIM_METHOD,
+  CLAIM_METHOD_OPTIONS,
   autoClaimsOnTap,
   validateClaimAttempt,
   claimMethodLabel,
-} from './finderMode';
+  validateAdventureClaimFields,
+  buildAdventureClaimFields,
+  getClaimFieldConfig,
+  getAdminClaimSecrets,
+} from './claimSystem';
 import {
   MedallionSignalScreen,
   FinderModeScreen,
   TreasureClaimPanel,
+  ClaimMethodSelector,
+  claimMethodUsesFinder as adventureUsesFinder,
 } from './MedallionFinder';
 import {
   CHECKIN_MESSAGES,
@@ -299,7 +304,7 @@ function QuestoryApp() {
         claimHistory: syncClaimHistory(nextRewards, s.claimHistory),
         screen: bonus
           ? 'bonus'
-          : completedAllClues && usesFinderMode(adventure)
+          : completedAllClues && adventureUsesFinder(adventure)
             ? 'medallion-signal'
             : s.screen,
         pendingBonus: bonus || null,
@@ -434,7 +439,7 @@ function QuestoryApp() {
       return {
         ...s,
         screen:
-          allDone && adventure && usesFinderMode(adventure) ? 'medallion-signal' : 'play',
+          allDone && adventure && adventureUsesFinder(adventure) ? 'medallion-signal' : 'play',
         pendingBonus: null,
       };
     });
@@ -767,12 +772,19 @@ function AdventureFeed({ adventures, nav }) {
   );
 }
 
-function AdminClaimCode({ code }) {
-  if (!code) return null;
+function AdminClaimCode({ adventure }) {
+  const secrets = getAdminClaimSecrets(adventure);
+  if (!secrets.length) return null;
+
   return (
-    <p className="admin-claim-code">
-      <Lock size={14} /> Admin claim code: <code>{code}</code>
-    </p>
+    <div className="admin-claim-secrets">
+      {secrets.map((item) => (
+        <p key={item.label} className={item.hint ? 'admin-claim-hint' : 'admin-claim-code'}>
+          <Lock size={14} /> Admin {item.label.toLowerCase()}:{' '}
+          {item.hint ? <span>{item.value}</span> : <code>{item.value}</code>}
+        </p>
+      ))}
+    </div>
   );
 }
 
@@ -797,7 +809,7 @@ function AdventureDetail({ adventure, progress, nav, adminPreview }) {
           <Eye size={16} /> Admin preview · {adventureStatusLabel(adventure.status)}
         </div>
       )}
-      {adminPreview && <AdminClaimCode code={adventure.claimCode} />}
+      {adminPreview && <AdminClaimCode adventure={adventure} />}
       <div className="card detail-hero">
         <div className="row">
           <span className={`badge ${adventure.status}`}>
@@ -956,10 +968,14 @@ function AdventurePlay({ adventure, progress, onSolve, onClaim, nav, adminPrevie
   const clueIndex = Math.min(progress.step, total - 1);
   const clue = adventure.clues[clueIndex];
   const pct = progress.claimed ? 100 : Math.round((progress.step / total) * 100);
-  const finderFlow = usesFinderMode(adventure);
+  const method = adventure.claimMethod || CLAIM_METHOD.SECRET_CODE;
+  const finderFlow = adventureUsesFinder(adventure);
   const awaitingFinder = atClaim && finderFlow && !progress.medallionTapped && !progress.claimed;
   const readyToClaim =
-    atClaim && !progress.claimed && (!finderFlow || progress.medallionTapped);
+    atClaim &&
+    !progress.claimed &&
+    method !== CLAIM_METHOD.TAP_MEDALLION &&
+    (!finderFlow || progress.medallionTapped);
 
   return (
     <>
@@ -974,7 +990,7 @@ function AdventurePlay({ adventure, progress, onSolve, onClaim, nav, adminPrevie
           <Eye size={16} /> Admin preview mode
         </div>
       )}
-      {adminPreview && <AdminClaimCode code={adventure.claimCode} />}
+      {adminPreview && <AdminClaimCode adventure={adventure} />}
       <div className="card">
         <h2>{adventure.title}</h2>
         <p>
@@ -1716,6 +1732,8 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
     claimCode: generateClaimCode(),
     claimMethod: CLAIM_METHOD.SECRET_CODE,
     qrClaimValue: '',
+    physicalMedallionCode: '',
+    hintAfterTap: '',
   });
   const [clues, setClues] = useState([emptyClue(), emptyClue(), emptyClue()]);
   const [rewards, setRewards] = useState([
@@ -1767,7 +1785,17 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
     const sponsorName = meta.sponsorName.trim() || 'Local Sponsor';
     const story = meta.story.trim() || 'A new trail awaits.';
     const claimCode = (meta.claimCode.trim() || generateClaimCode()).toUpperCase();
-    const qrClaimValue = (meta.qrClaimValue.trim() || claimCode).toUpperCase();
+
+    const claimFieldError = validateAdventureClaimFields({
+      ...meta,
+      claimCode,
+    });
+    if (claimFieldError) {
+      setFormError(claimFieldError);
+      return;
+    }
+
+    const claimFields = buildAdventureClaimFields({ ...meta, claimCode });
 
     const clueError = validateClueForm(clues);
     if (clueError) {
@@ -1819,9 +1847,11 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
       prize: prizeLabels.length ? prizeLabels.join(' + ') : 'Custom Rewards',
       status: ADVENTURE_STATUS.DRAFT,
       difficulty: Math.min(5, Math.max(1, savedClues.length)),
-      claimCode,
-      claimMethod: meta.claimMethod,
-      qrClaimValue,
+      claimCode: claimFields.claimCode || claimCode,
+      claimMethod: claimFields.claimMethod,
+      qrClaimValue: claimFields.qrClaimValue,
+      physicalMedallionCode: claimFields.physicalMedallionCode,
+      hintAfterTap: claimFields.hintAfterTap,
       finderSearchRadiusM: 200,
       finderCaptureBaseM: 25,
       rewardCoins: 25,
@@ -1928,43 +1958,79 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
           placeholder="Adventure story hook"
           rows={3}
         />
-        <label>Final Claim Code</label>
-        <input
-          value={meta.claimCode}
-          onChange={(e) => setMeta((m) => ({ ...m, claimCode: e.target.value.toUpperCase() }))}
-          placeholder="QUEST-4821"
-          autoComplete="off"
-          spellCheck={false}
-        />
-        <p className="admin-meta">
-          Required for treasure claims. Leave blank to auto-generate a code like QUEST-4821.
-        </p>
+        <div className="clues-section-head">
+          <h3>Final Treasure Claim</h3>
+        </div>
+        <p className="admin-meta">Choose how players unlock rewards after completing all clues.</p>
 
-        <label>Claim method</label>
-        <select
+        <ClaimMethodSelector
           value={meta.claimMethod}
-          onChange={(e) => setMeta((m) => ({ ...m, claimMethod: e.target.value }))}
-        >
-          {CLAIM_METHOD_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <p className="admin-meta">
-          {CLAIM_METHOD_OPTIONS.find((o) => o.value === meta.claimMethod)?.desc}
-        </p>
+          onChange={(claimMethod) => setMeta((m) => ({ ...m, claimMethod }))}
+        />
 
-        {(meta.claimMethod === CLAIM_METHOD.QR_CODE ||
-          meta.claimMethod === CLAIM_METHOD.HYBRID) && (
+        {getClaimFieldConfig(meta.claimMethod).showFinalClaimCode && (
           <>
-            <label>QR claim value</label>
+            <label>Final Claim Code</label>
+            <input
+              value={meta.claimCode}
+              onChange={(e) => setMeta((m) => ({ ...m, claimCode: e.target.value.toUpperCase() }))}
+              placeholder="QUEST-4821"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="admin-meta">
+              Players enter this code to claim. Leave blank to auto-generate.
+            </p>
+          </>
+        )}
+
+        {getClaimFieldConfig(meta.claimMethod).showQrClaimValue && (
+          <>
+            <label>QR Claim Value</label>
             <input
               value={meta.qrClaimValue}
-              onChange={(e) => setMeta((m) => ({ ...m, qrClaimValue: e.target.value.toUpperCase() }))}
-              placeholder={meta.claimCode || 'QUEST-4821'}
+              onChange={(e) =>
+                setMeta((m) => ({ ...m, qrClaimValue: e.target.value.toUpperCase() }))
+              }
+              placeholder="SPONSOR-EVENT-2026"
+              autoComplete="off"
+              spellCheck={false}
             />
-            <p className="admin-meta">Payload encoded in the trail QR (defaults to claim code).</p>
+            <p className="admin-meta">Exact payload encoded in the sponsor QR code.</p>
+          </>
+        )}
+
+        {getClaimFieldConfig(meta.claimMethod).showPhysicalCode && (
+          <>
+            <label>Physical Medallion Code</label>
+            <input
+              value={meta.physicalMedallionCode}
+              onChange={(e) =>
+                setMeta((m) => ({
+                  ...m,
+                  physicalMedallionCode: e.target.value.toUpperCase(),
+                }))
+              }
+              placeholder="PHYS-4821"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="admin-meta">Engraved on the hidden physical medallion.</p>
+          </>
+        )}
+
+        {getClaimFieldConfig(meta.claimMethod).showHintAfterTap && (
+          <>
+            <label>Optional hint after tap</label>
+            <textarea
+              value={meta.hintAfterTap}
+              onChange={(e) => setMeta((m) => ({ ...m, hintAfterTap: e.target.value }))}
+              placeholder="Check beneath the old stone bench."
+              rows={2}
+            />
+            <p className="admin-meta">
+              Shown after the player taps the virtual signal in Finder Mode.
+            </p>
           </>
         )}
 
@@ -2067,7 +2133,7 @@ function AdminReview({
             <small>{adventure.location}</small>
           </div>
           <h3>{adventure.title}</h3>
-          <AdminClaimCode code={adventure.claimCode} />
+          <AdminClaimCode adventure={adventure} />
           <p className="story-preview">{adventure.story}</p>
           <SponsorBlock sponsor={getSponsorInfo(adventure)} compact />
           <div className="chips">

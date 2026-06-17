@@ -1,5 +1,5 @@
 import { normalizeAdventure, normalizeReward } from '../seed';
-import { normalizeClaimMethod } from '../finderMode';
+import { normalizeClaimMethod } from '../claimSystem';
 
 export function rowToAdventure(row, clues = []) {
   const sortedClues = [...clues].sort((a, b) => a.sort_order - b.sort_order);
@@ -20,7 +20,9 @@ export function rowToAdventure(row, clues = []) {
     difficulty: row.difficulty ?? 3,
     claimCode: row.claim_code,
     claimMethod: row.claim_method,
-    qrClaimValue: row.qr_claim_value || row.claim_code,
+    qrClaimValue: row.qr_claim_value || '',
+    physicalMedallionCode: row.physical_medallion_code || '',
+    hintAfterTap: row.hint_after_tap || '',
     finderSearchRadiusM: row.finder_search_radius_m ?? 200,
     finderCaptureBaseM: row.finder_capture_base_m ?? 25,
     rewardCoins: row.reward_coins ?? 0,
@@ -60,7 +62,9 @@ export function adventureToRow(adventure, creatorId) {
     difficulty: adventure.difficulty,
     claim_code: adventure.claimCode,
     claim_method: normalizeClaimMethod(adventure.claimMethod),
-    qr_claim_value: adventure.qrClaimValue || adventure.claimCode || '',
+    qr_claim_value: adventure.qrClaimValue || '',
+    physical_medallion_code: adventure.physicalMedallionCode || '',
+    hint_after_tap: adventure.hintAfterTap || '',
     finder_search_radius_m: adventure.finderSearchRadiusM ?? 200,
     finder_capture_base_m: adventure.finderCaptureBaseM ?? 25,
     reward_coins: adventure.rewardCoins ?? 0,

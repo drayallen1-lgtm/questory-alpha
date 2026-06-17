@@ -18,14 +18,7 @@ export function generateClaimCode() {
   return `QUEST-${num}`;
 }
 
-import {
-  CLAIM_METHOD,
-  CLAIM_METHOD_OPTIONS,
-  normalizeClaimMethod,
-  usesFinderMode,
-} from './finderMode';
-
-export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
+export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode } from './claimSystem';
 
 export const defaultState = {
   coins: 0,
@@ -345,7 +338,9 @@ export function normalizeAdventure(adventure) {
     sponsorInfo,
     status: migrateAdventureStatus(adventure.status),
     claimMethod: normalizeClaimMethod(adventure.claimMethod),
-    qrClaimValue: adventure.qrClaimValue || adventure.claimCode || '',
+    qrClaimValue: adventure.qrClaimValue || '',
+    physicalMedallionCode: adventure.physicalMedallionCode || '',
+    hintAfterTap: adventure.hintAfterTap || '',
     finderSearchRadiusM: adventure.finderSearchRadiusM ?? 200,
     finderCaptureBaseM: adventure.finderCaptureBaseM ?? 25,
   };

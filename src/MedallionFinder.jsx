@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Compass, LocateFixed, MapPin, Radio, ShieldCheck, Sparkles } from 'lucide-react';
+import { Compass, LocateFixed, MapPin, QrCode, Radio, ShieldCheck, Sparkles } from 'lucide-react';
+import {
+  CLAIM_METHOD,
+  CLAIM_METHOD_OPTIONS,
+  normalizeClaimMethod,
+  claimMethodUsesFinder,
+  isPhysicalMedallionClaim,
+} from './claimSystem';
 import {
   canCaptureMedallion,
   canUnlockFinderMode,
@@ -8,11 +15,13 @@ import {
   getFinderSearchRadius,
   getMedallionLocation,
   measureMedallionDistance,
-  usesFinderMode,
+  usesFinderGps,
 } from './finderMode';
 import { formatDistanceAway, getCurrentPosition } from './geolocation';
 
 export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
+  const physical = isPhysicalMedallionClaim(adventure);
+
   return (
     <>
       <button
@@ -26,8 +35,9 @@ export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
         <Radio size={36} className="signal-icon" />
         <h2>Medallion Signal Activated.</h2>
         <p>
-          The trail is complete. A virtual medallion is broadcasting nearby — enter Finder Mode
-          and follow the signal to claim your rewards.
+          {physical
+            ? 'The trail is complete. A hidden physical medallion is nearby — enter Finder Mode, follow the signal, and search the area.'
+            : 'The trail is complete. A virtual medallion is broadcasting nearby — enter Finder Mode and follow the signal.'}
         </p>
         <SponsorLine adventure={adventure} />
         <button onClick={() => nav('finder', adventure.id, { adminPreview })}>
@@ -44,13 +54,7 @@ function SponsorLine({ adventure }) {
   return <p className="finder-sponsor">Sponsored by {name}</p>;
 }
 
-export function FinderModeScreen({
-  adventure,
-  progress,
-  nav,
-  adminPreview,
-  onMedallionTap,
-}) {
+export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMedallionTap }) {
   const [distance, setDistance] = useState(null);
   const [accuracy, setAccuracy] = useState(null);
   const [gpsError, setGpsError] = useState('');
@@ -63,6 +67,7 @@ export function FinderModeScreen({
   const unlocked = canUnlockFinderMode(distance, accuracy, devOverride, searchRadius);
   const inCaptureRange = canCaptureMedallion(distance, accuracy, devOverride, adventure);
   const medallion = getMedallionLocation(adventure);
+  const physical = isPhysicalMedallionClaim(adventure);
 
   useEffect(() => {
     if (!watching || !medallion) return undefined;
@@ -110,7 +115,7 @@ export function FinderModeScreen({
   if (!medallion) {
     return (
       <div className="card">
-        <p>No medallion GPS set for this adventure.</p>
+        <p>Add GPS coordinates to the final clue to enable Finder Mode.</p>
         <button className="ghost" onClick={() => nav('play', adventure.id, { adminPreview })}>
           Back
         </button>
@@ -163,20 +168,22 @@ export function FinderModeScreen({
 
       <div className={`card finder-medallion-card ${inCaptureRange ? 'ready' : ''}`}>
         <div className="finder-medallion-visual" aria-hidden>
-          <span className="finder-chest">🧭</span>
+          <span className="finder-chest">{physical ? '📍' : '🧭'}</span>
           <span className="finder-medallion">🥇</span>
         </div>
-        <h3>Virtual Medallion</h3>
+        <h3>{physical ? 'Physical Medallion Signal' : 'Virtual Medallion'}</h3>
         <p>
           {inCaptureRange
-            ? 'You are within capture range. Tap the medallion to secure it.'
+            ? physical
+              ? 'Signal peak reached. Tap to mark this search zone.'
+              : 'You are within capture range. Tap the medallion to secure it.'
             : unlocked
               ? `Move closer — within ~${Math.round(captureRadius)} m including GPS buffer.`
               : `Enter the search area (within ${searchRadius} m) to strengthen the signal.`}
         </p>
         <button onClick={handleTap} disabled={!inCaptureRange || progress.medallionTapped}>
           <Sparkles size={18} />
-          {progress.medallionTapped ? 'Medallion secured' : 'Tap Medallion'}
+          {progress.medallionTapped ? 'Signal captured' : 'Tap Medallion'}
         </button>
       </div>
 
@@ -196,8 +203,9 @@ export function FinderModeScreen({
 }
 
 export function TreasureClaimPanel({ adventure, progress, onClaim }) {
-  const method = adventure.claimMethod || 'secret_code';
+  const method = normalizeClaimMethod(adventure.claimMethod);
   const [qrInput, setQrInput] = useState('');
+  const [physicalInput, setPhysicalInput] = useState('');
 
   function handleCodeClaim() {
     const code = document.getElementById('claim-code')?.value?.trim().toUpperCase();
@@ -210,38 +218,80 @@ export function TreasureClaimPanel({ adventure, progress, onClaim }) {
     if (result && !result.ok) alert(result.message);
   }
 
+  function handlePhysicalClaim() {
+    const result = onClaim(physicalInput.trim().toUpperCase());
+    if (result && !result.ok) alert(result.message);
+  }
+
   if (progress.claimed) {
     return <p>Treasure claimed. Open your Reward Vault to see everything you earned.</p>;
   }
 
-  if (!progress.medallionTapped && usesFinderMode(adventure)) {
-    return <p>Complete Finder Mode and tap the virtual medallion to unlock claiming.</p>;
+  if (claimMethodUsesFinder(adventure) && !progress.medallionTapped) {
+    return (
+      <p>
+        Enter Finder Mode and tap the medallion signal to unlock the final treasure claim.
+      </p>
+    );
   }
 
-  if (method === 'qr_code') {
+  if (method === CLAIM_METHOD.QR_CODE) {
     return (
       <>
-        <p>Scan the trail QR code or enter the QR payload below.</p>
+        <p>Find the sponsor QR code and scan it to claim your rewards.</p>
         <input
           value={qrInput}
           onChange={(e) => setQrInput(e.target.value.toUpperCase())}
           placeholder="QR payload"
         />
         <button onClick={handleQrClaim}>
-          <Sparkles size={18} /> Verify QR & Claim
+          <QrCode size={18} /> Verify QR & Claim
         </button>
       </>
     );
   }
 
-  if (method === 'secret_code' || method === 'hybrid') {
+  if (method === CLAIM_METHOD.PHYSICAL_MEDALLION && progress.medallionTapped) {
+    return (
+      <div className="physical-search-card">
+        <h4>The signal is strongest here. Search carefully.</h4>
+        {adventure.hintAfterTap && (
+          <p className="physical-hint">
+            <MapPin size={14} /> {adventure.hintAfterTap}
+          </p>
+        )}
+        <p>
+          Discover the hidden physical medallion nearby. Enter the engraved code from the
+          medallion to unlock your rewards.
+        </p>
+        <input
+          value={physicalInput}
+          onChange={(e) => setPhysicalInput(e.target.value.toUpperCase())}
+          placeholder="Engraved physical code"
+        />
+        <button onClick={handlePhysicalClaim}>
+          <Sparkles size={18} /> Claim Treasure
+        </button>
+      </div>
+    );
+  }
+
+  if (method === CLAIM_METHOD.SECRET_CODE) {
     return (
       <>
-        <p>
-          {method === 'hybrid'
-            ? 'Medallion secured. Enter the secret code to complete your claim.'
-            : 'Signal unlocked. Enter the secret code from the trail to claim your rewards.'}
-        </p>
+        <p>Enter the final claim code to unlock your rewards.</p>
+        <input id="claim-code" placeholder="Enter secret code" />
+        <button onClick={handleCodeClaim}>
+          <Sparkles size={18} /> Claim Treasure
+        </button>
+      </>
+    );
+  }
+
+  if (method === CLAIM_METHOD.HYBRID) {
+    return (
+      <>
+        <p>Virtual medallion secured. Enter the final claim code to complete your claim.</p>
         <input id="claim-code" placeholder="Enter secret code" />
         <button onClick={handleCodeClaim}>
           <Sparkles size={18} /> Claim Treasure
@@ -252,3 +302,24 @@ export function TreasureClaimPanel({ adventure, progress, onClaim }) {
 
   return null;
 }
+
+export function ClaimMethodSelector({ value, onChange }) {
+  return (
+    <div className="claim-method-grid">
+      {CLAIM_METHOD_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          className={`claim-method-card ${value === opt.value ? 'active' : ''}`}
+          onClick={() => onChange(opt.value)}
+        >
+          <span className="claim-method-icon">{opt.icon}</span>
+          <strong>{opt.label}</strong>
+          <small>{opt.desc}</small>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export { usesFinderGps, claimMethodUsesFinder };
