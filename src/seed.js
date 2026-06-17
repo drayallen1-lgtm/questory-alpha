@@ -18,7 +18,14 @@ export function generateClaimCode() {
   return `QUEST-${num}`;
 }
 
-export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode } from './claimSystem';
+import {
+  CLAIM_METHOD,
+  CLAIM_METHOD_OPTIONS,
+  normalizeClaimMethod,
+  usesFinderMode,
+} from './claimSystem';
+
+export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
 export const defaultState = {
   coins: 0,

@@ -42,8 +42,22 @@ export const CLAIM_METHOD_OPTIONS = [
 ];
 
 export function normalizeClaimMethod(method) {
-  if (Object.values(CLAIM_METHOD).includes(method)) return method;
-  return CLAIM_METHOD.SECRET_CODE;
+  const value = String(method || CLAIM_METHOD.SECRET_CODE).toLowerCase();
+
+  if (
+    value === 'tap_medallion' ||
+    value === 'tap_virtual_medallion' ||
+    value === 'virtual_medallion'
+  ) {
+    return CLAIM_METHOD.TAP_MEDALLION;
+  }
+
+  if (value === 'physical') {
+    return CLAIM_METHOD.PHYSICAL_MEDALLION;
+  }
+
+  const allowed = Object.values(CLAIM_METHOD);
+  return allowed.includes(value) ? value : CLAIM_METHOD.SECRET_CODE;
 }
 
 export function claimMethodLabel(method) {
