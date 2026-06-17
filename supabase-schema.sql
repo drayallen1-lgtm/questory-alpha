@@ -1,0 +1,5 @@
+-- FOUND v0.2 starter Supabase schema
+create table if not exists profiles (id uuid primary key default gen_random_uuid(), email text, username text, coins int default 0, created_at timestamptz default now());
+create table if not exists hunts (id uuid primary key default gen_random_uuid(), title text not null, sponsor text, area text, prize text, claim_code text not null, status text default 'draft', reward_coins int default 0, pot_entries int default 0, created_at timestamptz default now());
+create table if not exists hunt_clues (id uuid primary key default gen_random_uuid(), hunt_id uuid references hunts(id) on delete cascade, step int not null, clue_text text not null, lat double precision, lng double precision, radius_m int default 100);
+create table if not exists vault_rewards (id uuid primary key default gen_random_uuid(), profile_id uuid references profiles(id), hunt_id uuid references hunts(id), title text, description text, reward_type text, created_at timestamptz default now());

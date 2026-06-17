@@ -1,0 +1,17 @@
+{
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
+    "@vitejs/plugin-react": "latest",
+    "html2canvas": "^1.4.1",
+    "lucide-react": "latest",
+    "mapbox-gl": "^3.24.1",
+    "react": "latest",
+    "react-dom": "latest",
+    "vite": "latest"
+  }
+}
