@@ -12,6 +12,12 @@ export const ADVENTURE_STATUS = {
   ARCHIVED: 'archived',
 };
 
+/** Readable auto-generated final claim code (e.g. QUEST-4821). */
+export function generateClaimCode() {
+  const num = Math.floor(1000 + Math.random() * 9000);
+  return `QUEST-${num}`;
+}
+
 export const defaultState = {
   coins: 0,
   entries: 0,

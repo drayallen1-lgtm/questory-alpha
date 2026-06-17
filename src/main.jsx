@@ -43,6 +43,7 @@ import {
   adventureStatusLabel,
   getPublishedAdventures,
   isAdventurePlayable,
+  generateClaimCode,
 } from './seed';
 import {
   CHECKIN_MESSAGES,
@@ -302,7 +303,7 @@ function QuestoryApp() {
       return { ok: false, message: 'You already claimed this adventure.' };
     }
     if (code !== adventure.claimCode) {
-      return { ok: false, message: 'Wrong code. Demo code: PARSONS128' };
+      return { ok: false, message: 'Wrong code. Try again.' };
     }
     if (p.step < adventure.clues.length) {
       return { ok: false, message: 'Complete all clues first.' };
@@ -693,6 +694,15 @@ function AdventureFeed({ adventures, nav }) {
   );
 }
 
+function AdminClaimCode({ code }) {
+  if (!code) return null;
+  return (
+    <p className="admin-claim-code">
+      <Lock size={14} /> Admin claim code: <code>{code}</code>
+    </p>
+  );
+}
+
 function AdventureDetail({ adventure, progress, nav, adminPreview }) {
   const playable = isAdventurePlayable(adventure, adminPreview);
   const pct = progress.claimed
@@ -714,6 +724,7 @@ function AdventureDetail({ adventure, progress, nav, adminPreview }) {
           <Eye size={16} /> Admin preview · {adventureStatusLabel(adventure.status)}
         </div>
       )}
+      {adminPreview && <AdminClaimCode code={adventure.claimCode} />}
       <div className="card detail-hero">
         <div className="row">
           <span className={`badge ${adventure.status}`}>
@@ -892,6 +903,7 @@ function AdventurePlay({ adventure, progress, onSolve, onClaim, nav, adminPrevie
           <Eye size={16} /> Admin preview mode
         </div>
       )}
+      {adminPreview && <AdminClaimCode code={adventure.claimCode} />}
       <div className="card">
         <h2>{adventure.title}</h2>
         <p>
@@ -928,7 +940,7 @@ function AdventurePlay({ adventure, progress, onSolve, onClaim, nav, adminPrevie
 
         {atClaim && !progress.claimed && (
           <>
-            <input id="claim-code" placeholder="Enter code: PARSONS128" />
+            <input id="claim-code" placeholder="Enter secret code" />
             <button onClick={handleClaim}>
               <QrCode size={18} /> Claim Treasure
             </button>
@@ -1617,7 +1629,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
     sponsorLogoUrl: '',
     sponsorWebsite: '',
     story: '',
-    claimCode: '',
+    claimCode: generateClaimCode(),
   });
   const [clues, setClues] = useState([emptyClue(), emptyClue(), emptyClue()]);
   const [rewards, setRewards] = useState([
@@ -1668,7 +1680,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
     const location = meta.location.trim() || 'Your City';
     const sponsorName = meta.sponsorName.trim() || 'Local Sponsor';
     const story = meta.story.trim() || 'A new trail awaits.';
-    const claimCode = (meta.claimCode.trim() || 'QUESTORY').toUpperCase();
+    const claimCode = (meta.claimCode.trim() || generateClaimCode()).toUpperCase();
 
     const clueError = validateClueForm(clues);
     if (clueError) {
@@ -1825,12 +1837,17 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
           placeholder="Adventure story hook"
           rows={3}
         />
-        <label>Claim Code</label>
+        <label>Final Claim Code</label>
         <input
           value={meta.claimCode}
-          onChange={(e) => setMeta((m) => ({ ...m, claimCode: e.target.value }))}
-          placeholder="Secret claim code"
+          onChange={(e) => setMeta((m) => ({ ...m, claimCode: e.target.value.toUpperCase() }))}
+          placeholder="QUEST-4821"
+          autoComplete="off"
+          spellCheck={false}
         />
+        <p className="admin-meta">
+          Required for treasure claims. Leave blank to auto-generate a code like QUEST-4821.
+        </p>
 
         <div className="clues-section-head">
           <h3>Rewards</h3>
@@ -1931,6 +1948,7 @@ function AdminReview({
             <small>{adventure.location}</small>
           </div>
           <h3>{adventure.title}</h3>
+          <AdminClaimCode code={adventure.claimCode} />
           <p className="story-preview">{adventure.story}</p>
           <SponsorBlock sponsor={getSponsorInfo(adventure)} compact />
           <div className="chips">

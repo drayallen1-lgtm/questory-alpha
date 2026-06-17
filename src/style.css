@@ -1345,6 +1345,31 @@ a.sponsor-name:hover {
   font-weight: 700;
 }
 
+.admin-claim-code {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(94, 234, 212, 0.08);
+  border: 1px solid rgba(94, 234, 212, 0.25);
+  color: var(--questory-accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-claim-code code {
+  font-family: ui-monospace, monospace;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
 .admin-adventure h3 {
   margin: 8px 0 4px;
 }
