@@ -44,7 +44,20 @@ import {
   getPublishedAdventures,
   isAdventurePlayable,
   generateClaimCode,
+  CLAIM_METHOD,
+  CLAIM_METHOD_OPTIONS,
+  usesFinderMode,
 } from './seed';
+import {
+  autoClaimsOnTap,
+  validateClaimAttempt,
+  claimMethodLabel,
+} from './finderMode';
+import {
+  MedallionSignalScreen,
+  FinderModeScreen,
+  TreasureClaimPanel,
+} from './MedallionFinder';
 import {
   CHECKIN_MESSAGES,
   DEFAULT_RADIUS_METERS,
@@ -274,6 +287,7 @@ function QuestoryApp() {
         : [];
 
       const nextRewards = [...s.rewards, ...bonusRewards];
+      const completedAllClues = nextStep >= adventure.clues.length;
       const nextState = {
         ...s,
         coins: s.coins + (bonus?.coins || 0),
@@ -283,7 +297,11 @@ function QuestoryApp() {
         },
         rewards: nextRewards,
         claimHistory: syncClaimHistory(nextRewards, s.claimHistory),
-        screen: bonus ? 'bonus' : s.screen,
+        screen: bonus
+          ? 'bonus'
+          : completedAllClues && usesFinderMode(adventure)
+            ? 'medallion-signal'
+            : s.screen,
         pendingBonus: bonus || null,
       };
       if (isSupabaseMode && user) {
@@ -294,7 +312,7 @@ function QuestoryApp() {
     });
   }
 
-  function claimTreasure(adventure, code) {
+  function claimTreasure(adventure, code, options = {}) {
     const p = getAdventureProgress(state, adventure.id);
     if (isSupabaseMode && !user) {
       return { ok: false, message: 'Sign in to claim and save your rewards.' };
@@ -302,11 +320,13 @@ function QuestoryApp() {
     if (p.claimed) {
       return { ok: false, message: 'You already claimed this adventure.' };
     }
-    if (code !== adventure.claimCode) {
-      return { ok: false, message: 'Wrong code. Try again.' };
-    }
     if (p.step < adventure.clues.length) {
       return { ok: false, message: 'Complete all clues first.' };
+    }
+
+    const validation = validateClaimAttempt(adventure, p, { code, ...options });
+    if (!validation.ok) {
+      return validation;
     }
 
     const claimedAt = new Date().toISOString();
@@ -345,7 +365,7 @@ function QuestoryApp() {
         victoryCertificate: certificate,
         progress: {
           ...s.progress,
-          [adventure.id]: { ...p, claimed: true, claimedAt },
+          [adventure.id]: { ...p, claimed: true, claimedAt, medallionTapped: true },
         },
         rewards: nextRewards,
         claimHistory: upsertCertificate(baseHistory, certificate),
@@ -380,6 +400,43 @@ function QuestoryApp() {
         syncRewardsAndHistory(nextState.rewards, nextState.claimHistory);
       }
       return nextState;
+    });
+  }
+
+  function markMedallionTapped(adventure) {
+    if (autoClaimsOnTap(adventure)) {
+      claimTreasure(adventure, adventure.claimCode, { medallionTapped: true });
+      return;
+    }
+
+    setState((s) => {
+      const nextProgress = {
+        ...s.progress,
+        [adventure.id]: {
+          ...getAdventureProgress(s, adventure.id),
+          medallionTapped: true,
+          finderUnlocked: true,
+        },
+      };
+      const nextState = { ...s, screen: 'play', progress: nextProgress };
+      if (isSupabaseMode && user) {
+        syncProfile(nextState);
+      }
+      return nextState;
+    });
+  }
+
+  function continueAfterBonus() {
+    setState((s) => {
+      const adventure = s.adventures.find((a) => a.id === s.selectedAdventureId);
+      const p = adventure ? getAdventureProgress(s, adventure.id) : null;
+      const allDone = p && adventure && p.step >= adventure.clues.length;
+      return {
+        ...s,
+        screen:
+          allDone && adventure && usesFinderMode(adventure) ? 'medallion-signal' : 'play',
+        pendingBonus: null,
+      };
     });
   }
 
@@ -436,15 +493,31 @@ function QuestoryApp() {
             adventure={selected}
             progress={progress}
             onSolve={() => solveClue(selected)}
-            onClaim={(code) => claimTreasure(selected, code)}
+            onClaim={(code, options) => claimTreasure(selected, code, options)}
             nav={nav}
             adminPreview={state.adminPreview}
+          />
+        )}
+        {state.screen === 'medallion-signal' && selected && (
+          <MedallionSignalScreen
+            adventure={selected}
+            nav={nav}
+            adminPreview={state.adminPreview}
+          />
+        )}
+        {state.screen === 'finder' && selected && (
+          <FinderModeScreen
+            adventure={selected}
+            progress={progress}
+            nav={nav}
+            adminPreview={state.adminPreview}
+            onMedallionTap={() => markMedallionTapped(selected)}
           />
         )}
         {state.screen === 'bonus' && state.pendingBonus && selected && (
           <BonusFindModal
             bonus={state.pendingBonus}
-            onContinue={() => setState((s) => ({ ...s, screen: 'play', pendingBonus: null }))}
+            onContinue={continueAfterBonus}
           />
         )}
         {state.screen === 'vault' && (
@@ -775,8 +848,8 @@ function AdventureDetail({ adventure, progress, nav, adminPreview }) {
               {progress.claimed ? '✓' : <Lock size={14} />}
             </span>
             <div>
-              <b>Secret Code Claim</b>
-              <p>Enter the hidden code to unlock the Reward Vault</p>
+              <b>Medallion Finder</b>
+              <p>Track the signal and tap the virtual medallion to unlock claiming</p>
             </div>
           </li>
         </ul>
@@ -883,12 +956,10 @@ function AdventurePlay({ adventure, progress, onSolve, onClaim, nav, adminPrevie
   const clueIndex = Math.min(progress.step, total - 1);
   const clue = adventure.clues[clueIndex];
   const pct = progress.claimed ? 100 : Math.round((progress.step / total) * 100);
-
-  function handleClaim() {
-    const code = document.getElementById('claim-code')?.value?.trim().toUpperCase();
-    const result = onClaim(code);
-    if (result && !result.ok) alert(result.message);
-  }
+  const finderFlow = usesFinderMode(adventure);
+  const awaitingFinder = atClaim && finderFlow && !progress.medallionTapped && !progress.claimed;
+  const readyToClaim =
+    atClaim && !progress.claimed && (!finderFlow || progress.medallionTapped);
 
   return (
     <>
@@ -916,35 +987,48 @@ function AdventurePlay({ adventure, progress, onSolve, onClaim, nav, adminPrevie
         <small>
           {progress.claimed
             ? 'Completed'
-            : atClaim
-              ? 'Final claim unlocked'
-              : `Clue ${progress.step + 1} of ${total}`}
+            : awaitingFinder
+              ? 'Medallion signal active'
+              : atClaim
+                ? 'Ready to claim'
+                : `Clue ${progress.step + 1} of ${total}`}
         </small>
       </div>
 
       <MiniClueMap adventure={adventure} activeClueIndex={clueIndex} />
 
       <div className="card clue">
-        <h3>{!atClaim ? `Clue ${progress.step + 1}: ${clue?.title}` : 'Treasure Claim'}</h3>
-        <p>
+        <h3>
           {!atClaim
-            ? clue?.text
+            ? `Clue ${progress.step + 1}: ${clue?.title}`
             : progress.claimed
-              ? 'Treasure claimed. Open your Reward Vault to see everything you earned.'
-              : 'Signal locked. Enter the secret code from the trail to claim your rewards.'}
-        </p>
+              ? 'Treasure Claimed'
+              : awaitingFinder
+                ? 'Medallion Finder'
+                : 'Treasure Claim'}
+        </h3>
 
         {!atClaim && !progress.claimed && clue && (
-          <GpsCheckIn clue={clue} onUnlock={onSolve} />
+          <>
+            <p>{clue.text}</p>
+            <GpsCheckIn clue={clue} onUnlock={onSolve} />
+          </>
         )}
 
-        {atClaim && !progress.claimed && (
+        {awaitingFinder && (
           <>
-            <input id="claim-code" placeholder="Enter secret code" />
-            <button onClick={handleClaim}>
-              <QrCode size={18} /> Claim Treasure
+            <p>
+              All clues solved. The virtual medallion is broadcasting — enter Finder Mode to
+              track the signal.
+            </p>
+            <button onClick={() => nav('medallion-signal', adventure.id, { adminPreview })}>
+              <Compass size={18} /> Medallion Signal Activated
             </button>
           </>
+        )}
+
+        {readyToClaim && (
+          <TreasureClaimPanel adventure={adventure} progress={progress} onClaim={onClaim} />
         )}
 
         {progress.claimed && (
@@ -1630,6 +1714,8 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
     sponsorWebsite: '',
     story: '',
     claimCode: generateClaimCode(),
+    claimMethod: CLAIM_METHOD.SECRET_CODE,
+    qrClaimValue: '',
   });
   const [clues, setClues] = useState([emptyClue(), emptyClue(), emptyClue()]);
   const [rewards, setRewards] = useState([
@@ -1681,6 +1767,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
     const sponsorName = meta.sponsorName.trim() || 'Local Sponsor';
     const story = meta.story.trim() || 'A new trail awaits.';
     const claimCode = (meta.claimCode.trim() || generateClaimCode()).toUpperCase();
+    const qrClaimValue = (meta.qrClaimValue.trim() || claimCode).toUpperCase();
 
     const clueError = validateClueForm(clues);
     if (clueError) {
@@ -1733,6 +1820,10 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
       status: ADVENTURE_STATUS.DRAFT,
       difficulty: Math.min(5, Math.max(1, savedClues.length)),
       claimCode,
+      claimMethod: meta.claimMethod,
+      qrClaimValue,
+      finderSearchRadiusM: 200,
+      finderCaptureBaseM: 25,
       rewardCoins: 25,
       potEntries: 3,
       story,
@@ -1849,6 +1940,34 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
           Required for treasure claims. Leave blank to auto-generate a code like QUEST-4821.
         </p>
 
+        <label>Claim method</label>
+        <select
+          value={meta.claimMethod}
+          onChange={(e) => setMeta((m) => ({ ...m, claimMethod: e.target.value }))}
+        >
+          {CLAIM_METHOD_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <p className="admin-meta">
+          {CLAIM_METHOD_OPTIONS.find((o) => o.value === meta.claimMethod)?.desc}
+        </p>
+
+        {(meta.claimMethod === CLAIM_METHOD.QR_CODE ||
+          meta.claimMethod === CLAIM_METHOD.HYBRID) && (
+          <>
+            <label>QR claim value</label>
+            <input
+              value={meta.qrClaimValue}
+              onChange={(e) => setMeta((m) => ({ ...m, qrClaimValue: e.target.value.toUpperCase() }))}
+              placeholder={meta.claimCode || 'QUEST-4821'}
+            />
+            <p className="admin-meta">Payload encoded in the trail QR (defaults to claim code).</p>
+          </>
+        )}
+
         <div className="clues-section-head">
           <h3>Rewards</h3>
         </div>
@@ -1954,6 +2073,7 @@ function AdminReview({
           <div className="chips">
             <span>{adventure.clues.length} clues</span>
             <span>{adventure.finalRewards?.length || 0} rewards</span>
+            <span>{claimMethodLabel(adventure.claimMethod)}</span>
           </div>
           <div className="admin-actions">
             <button

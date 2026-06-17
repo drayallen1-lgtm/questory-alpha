@@ -18,6 +18,15 @@ export function generateClaimCode() {
   return `QUEST-${num}`;
 }
 
+import {
+  CLAIM_METHOD,
+  CLAIM_METHOD_OPTIONS,
+  normalizeClaimMethod,
+  usesFinderMode,
+} from './finderMode';
+
+export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
+
 export const defaultState = {
   coins: 0,
   entries: 0,
@@ -45,6 +54,10 @@ export const defaultState = {
       status: 'published',
       difficulty: 3,
       claimCode: 'PARSONS128',
+      claimMethod: 'secret_code',
+      qrClaimValue: 'PARSONS128',
+      finderSearchRadiusM: 200,
+      finderCaptureBaseM: 25,
       rewardCoins: 50,
       potEntries: 5,
       story:
@@ -331,6 +344,10 @@ export function normalizeAdventure(adventure) {
     sponsor: sponsorInfo.name,
     sponsorInfo,
     status: migrateAdventureStatus(adventure.status),
+    claimMethod: normalizeClaimMethod(adventure.claimMethod),
+    qrClaimValue: adventure.qrClaimValue || adventure.claimCode || '',
+    finderSearchRadiusM: adventure.finderSearchRadiusM ?? 200,
+    finderCaptureBaseM: adventure.finderCaptureBaseM ?? 25,
   };
 }
 
@@ -352,7 +369,15 @@ export const REWARD_TYPE_OPTIONS = [
 ];
 
 export function getAdventureProgress(state, adventureId) {
-  return state.progress[adventureId] || { step: 0, claimed: false, bonuses: [] };
+  return (
+    state.progress[adventureId] || {
+      step: 0,
+      claimed: false,
+      bonuses: [],
+      medallionTapped: false,
+      finderUnlocked: false,
+    }
+  );
 }
 
 export function rewardTypeLabel(type) {

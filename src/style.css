@@ -1370,6 +1370,159 @@ a.sponsor-name:hover {
   border-radius: 6px;
 }
 
+.medallion-signal-card {
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.signal-pulse-ring {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  margin-left: -40px;
+  border-radius: 50%;
+  border: 2px solid rgba(94, 234, 212, 0.4);
+  animation: signal-pulse 2s ease-out infinite;
+}
+
+.signal-icon {
+  color: var(--questory-accent);
+  margin: 12px auto 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.finder-sponsor {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.finder-mode-banner {
+  background: rgba(94, 234, 212, 0.1);
+  border-color: rgba(94, 234, 212, 0.3);
+  color: var(--questory-accent);
+}
+
+.finder-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.finder-stat small,
+.finder-stat-row small {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.signal-meter {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin: 6px 0;
+}
+
+.signal-meter i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #5eead4, #f5c842);
+  transition: width 0.4s ease;
+}
+
+.finder-stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.finder-medallion-card {
+  text-align: center;
+}
+
+.finder-medallion-card.ready {
+  border-color: rgba(245, 200, 66, 0.45);
+  box-shadow: 0 0 24px rgba(245, 200, 66, 0.12);
+}
+
+.finder-medallion-visual {
+  position: relative;
+  height: 120px;
+  margin: 8px auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finder-chest {
+  font-size: 56px;
+  animation: finder-float 3s ease-in-out infinite;
+}
+
+.finder-medallion {
+  position: absolute;
+  font-size: 40px;
+  animation: finder-pulse 1.6s ease-in-out infinite;
+}
+
+.finder-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-form select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font-size: 15px;
+}
+
+@keyframes signal-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes finder-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes finder-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.85;
+  }
+}
+
 .admin-adventure h3 {
   margin: 8px 0 4px;
 }
