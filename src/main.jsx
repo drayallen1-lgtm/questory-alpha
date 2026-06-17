@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 import {
   STORAGE_KEY,
-  loadState,
   getAdventureProgress,
   rewardTypeLabel,
   rewardStatusLabel,
@@ -59,6 +58,7 @@ import {
   formatProofDate,
 } from './share';
 import './style.css';
+import { getInitialState, persistState } from './persistence';
 import { MapScreen, MiniClueMap } from './QuestoryMap';
 import { hasSupabase } from './supabase/client';
 import { AuthProvider, useAuth } from './supabase/AuthContext';
@@ -67,6 +67,7 @@ import { AuthDebugPanel } from './supabase/AuthDebugPanel';
 import { parseOAuthCallbackError } from './supabase/authErrors';
 import {
   loadRemoteData,
+  fetchAllAdventuresForAdmin,
   upsertAdventure,
   updateAdventureStatus,
   deleteAdventureRemote,
@@ -86,10 +87,11 @@ function App() {
 function QuestoryApp() {
   const auth = useAuth();
   const { user, isAdmin, isSupabaseMode, loading: authLoading } = auth;
-  const [state, setState] = useState(loadState);
+  const [state, setState] = useState(getInitialState);
   const [showLogin, setShowLogin] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [remoteLoading, setRemoteLoading] = useState(isSupabaseMode);
+  const [adventureSyncError, setAdventureSyncError] = useState('');
 
   useEffect(() => {
     const oauthError = parseOAuthCallbackError();
@@ -100,8 +102,14 @@ function QuestoryApp() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    persistState(state);
   }, [state]);
+
+  async function refreshAdventuresFromRemote() {
+    if (!isSupabaseMode) return;
+    const adventures = await fetchAllAdventuresForAdmin();
+    setState((s) => ({ ...s, adventures }));
+  }
 
   useEffect(() => {
     if (!isSupabaseMode || authLoading) return;
@@ -124,6 +132,7 @@ function QuestoryApp() {
         }));
       } catch (err) {
         console.error('Questory Supabase load failed:', err);
+        setAdventureSyncError('Could not load adventures from Supabase. Try refreshing the page.');
       } finally {
         if (!cancelled) setRemoteLoading(false);
       }
@@ -179,27 +188,36 @@ function QuestoryApp() {
   function publishAdventure(adventureId) {
     updateAdventure(adventureId, { status: ADVENTURE_STATUS.PUBLISHED });
     if (isSupabaseMode) {
-      updateAdventureStatus(adventureId, ADVENTURE_STATUS.PUBLISHED).catch((err) =>
-        console.error('Publish sync failed:', err)
-      );
+      updateAdventureStatus(adventureId, ADVENTURE_STATUS.PUBLISHED)
+        .then(() => refreshAdventuresFromRemote())
+        .catch((err) => {
+          console.error('Publish sync failed:', err);
+          setAdventureSyncError(err.message || 'Could not publish adventure.');
+        });
     }
   }
 
   function archiveAdventure(adventureId) {
     updateAdventure(adventureId, { status: ADVENTURE_STATUS.ARCHIVED });
     if (isSupabaseMode) {
-      updateAdventureStatus(adventureId, ADVENTURE_STATUS.ARCHIVED).catch((err) =>
-        console.error('Archive sync failed:', err)
-      );
+      updateAdventureStatus(adventureId, ADVENTURE_STATUS.ARCHIVED)
+        .then(() => refreshAdventuresFromRemote())
+        .catch((err) => {
+          console.error('Archive sync failed:', err);
+          setAdventureSyncError(err.message || 'Could not archive adventure.');
+        });
     }
   }
 
   function restoreAdventure(adventureId) {
     updateAdventure(adventureId, { status: ADVENTURE_STATUS.DRAFT });
     if (isSupabaseMode) {
-      updateAdventureStatus(adventureId, ADVENTURE_STATUS.DRAFT).catch((err) =>
-        console.error('Restore sync failed:', err)
-      );
+      updateAdventureStatus(adventureId, ADVENTURE_STATUS.DRAFT)
+        .then(() => refreshAdventuresFromRemote())
+        .catch((err) => {
+          console.error('Restore sync failed:', err);
+          setAdventureSyncError(err.message || 'Could not restore adventure.');
+        });
     }
   }
 
@@ -213,9 +231,12 @@ function QuestoryApp() {
         s.selectedAdventureId === adventureId ? false : s.adminPreview,
     }));
     if (isSupabaseMode) {
-      deleteAdventureRemote(adventureId).catch((err) =>
-        console.error('Delete sync failed:', err)
-      );
+      deleteAdventureRemote(adventureId)
+        .then(() => refreshAdventuresFromRemote())
+        .catch((err) => {
+          console.error('Delete sync failed:', err);
+          setAdventureSyncError(err.message || 'Could not delete adventure.');
+        });
     }
   }
 
@@ -379,6 +400,9 @@ function QuestoryApp() {
         {isSupabaseMode && remoteLoading && (
           <div className="dev-mode-banner syncing">Syncing with Supabase…</div>
         )}
+        {adventureSyncError && (
+          <div className="dev-mode-banner form-error-inline">{adventureSyncError}</div>
+        )}
         {showLogin && (
           <LoginScreen
             initialError={loginError}
@@ -442,6 +466,7 @@ function QuestoryApp() {
               reset={resetPrototype}
               userId={user?.id}
               isSupabaseMode={isSupabaseMode}
+              onAdventuresSaved={refreshAdventuresFromRemote}
             />
           )
         )}
@@ -1584,7 +1609,7 @@ function RewardEditor({ reward, onChange }) {
   );
 }
 
-function CreateAdventure({ state, setState, reset, userId, isSupabaseMode }) {
+function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdventuresSaved }) {
   const [meta, setMeta] = useState({
     title: '',
     location: '',
@@ -1601,6 +1626,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode }) {
     emptyReward('physical'),
   ]);
   const [formError, setFormError] = useState('');
+  const [saving, setSaving] = useState(false);
   const [locStatus, setLocStatus] = useState(null);
 
   function updateClue(id, patch) {
@@ -1637,7 +1663,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode }) {
     }
   }
 
-  function saveAdventure() {
+  async function saveAdventure() {
     const title = meta.title.trim() || 'New QUESTORY Adventure';
     const location = meta.location.trim() || 'Your City';
     const sponsorName = meta.sponsorName.trim() || 'Local Sponsor';
@@ -1701,7 +1727,35 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode }) {
       clues: savedClues,
       bonusFinds: buildBonusFinds(clues),
       finalRewards,
+      creatorId: userId || null,
     };
+
+    if (isSupabaseMode) {
+      if (!userId) {
+        setFormError('Sign in as an admin to save drafts to Supabase.');
+        return;
+      }
+
+      setSaving(true);
+      setFormError('');
+      try {
+        await upsertAdventure(adventure, userId);
+        const adventures = await fetchAllAdventuresForAdmin();
+        setState((s) => ({
+          ...s,
+          adventures,
+          screen: 'admin',
+          adminTab: 'drafts',
+          adminPreview: false,
+        }));
+        onAdventuresSaved?.();
+      } catch (err) {
+        setFormError(err.message || 'Could not save draft to Supabase.');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
 
     setState((s) => ({
       ...s,
@@ -1710,12 +1764,6 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode }) {
       adminTab: 'drafts',
       adminPreview: false,
     }));
-
-    if (isSupabaseMode && userId) {
-      upsertAdventure(adventure, userId).catch((err) =>
-        console.error('Adventure save sync failed:', err)
-      );
-    }
   }
 
   return (
@@ -1813,14 +1861,16 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode }) {
 
         {formError && <p className="form-error">{formError}</p>}
 
-        <button onClick={saveAdventure}>
-          <Plus size={18} /> Save Draft
+        <button onClick={saveAdventure} disabled={saving}>
+          <Plus size={18} /> {saving ? 'Saving…' : 'Save Draft'}
         </button>
-        <button className="ghost" onClick={reset}>
+        <button className="ghost" onClick={reset} disabled={saving}>
           Reset Alpha Prototype
         </button>
         <p className="admin-meta">
-          Drafts save locally · publish from Admin when ready
+          {isSupabaseMode
+            ? 'Drafts save to Supabase · publish from Admin when ready'
+            : 'Drafts save locally · publish from Admin when ready'}
         </p>
       </div>
     </>

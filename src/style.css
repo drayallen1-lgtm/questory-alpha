@@ -605,6 +605,12 @@ small.progress-label {
   color: var(--gold);
 }
 
+.form-error-inline {
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
 .login-card {
   max-width: 400px;
   width: 100%;

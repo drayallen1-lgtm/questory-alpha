@@ -41,6 +41,14 @@ export async function fetchAdventures(isAdmin = false) {
   return rows.map((row) => rowToAdventure(row, clueMap[row.id] || []));
 }
 
+export async function fetchPublishedAdventures() {
+  return fetchAdventures(false);
+}
+
+export async function fetchAllAdventuresForAdmin() {
+  return fetchAdventures(true);
+}
+
 export async function fetchUserProfile(userId) {
   if (!hasSupabase() || !userId) return null;
   const { data, error } = await supabase
@@ -75,10 +83,13 @@ export async function fetchClaimHistory(userId) {
 }
 
 export async function loadRemoteData(userId, isAdmin) {
-  const adventures = await fetchAdventures(isAdmin);
+  const adventures = isAdmin
+    ? await fetchAllAdventuresForAdmin()
+    : await fetchPublishedAdventures();
+
   if (!userId) {
     return {
-      adventures: adventures.length ? adventures : defaultState.adventures,
+      adventures,
       rewards: [],
       claimHistory: [],
       coins: 0,
@@ -94,7 +105,7 @@ export async function loadRemoteData(userId, isAdmin) {
   ]);
 
   return {
-    adventures: adventures.length ? adventures : defaultState.adventures,
+    adventures,
     rewards,
     claimHistory,
     coins: profile?.coins ?? 0,
@@ -105,12 +116,23 @@ export async function loadRemoteData(userId, isAdmin) {
 
 export async function upsertAdventure(adventure, creatorId) {
   if (!hasSupabase()) return adventure;
+  if (!creatorId) throw new Error('Sign in to save adventures to the cloud.');
+
   const row = adventureToRow(adventure, creatorId);
   const { error: advError } = await supabase.from('adventures').upsert(row);
   if (advError) throw advError;
 
-  await supabase.from('clues').delete().eq('adventure_id', adventure.id);
-  await supabase.from('rewards').delete().eq('adventure_id', adventure.id);
+  const { error: clueDeleteError } = await supabase
+    .from('clues')
+    .delete()
+    .eq('adventure_id', adventure.id);
+  if (clueDeleteError) throw clueDeleteError;
+
+  const { error: rewardDeleteError } = await supabase
+    .from('rewards')
+    .delete()
+    .eq('adventure_id', adventure.id);
+  if (rewardDeleteError) throw rewardDeleteError;
 
   const clues = cluesToRows(adventure);
   if (clues.length) {
