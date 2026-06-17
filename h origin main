@@ -1,0 +1,5 @@
+[33mf8338ea[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Add final claim system
+[33m33ce258[m Implement new claim methods and enhance UI for physical medallion claims; update styles for admin claim secrets and improve adventure claim handling in the MedallionFinder component.
+[33m43119a2[m Integrate finder mode functionality into adventure claims; add claim method normalization and UI updates for medallion tapping. Enhance styling for medallion finder components.
+[33m14fa493[m Add claim code generation and display functionality; update UI for claim code input and admin view. Enhance styling for admin claim code display.
+[33medc1db9[m Add adventure fetching functions for admin and published adventures; enhance error handling in adventure operations; update UI for adventure sync errors.
