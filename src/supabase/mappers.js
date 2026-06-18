@@ -77,6 +77,13 @@ export function rowToAdventure(row, clues = []) {
     isSponsoredDrop: Boolean(row.is_sponsored_drop),
     sponsoredDropId: row.sponsored_drop_id || null,
     storefrontPrice: row.storefront_price != null ? Number(row.storefront_price) : null,
+    endRule: row.end_rule || 'no_end_date',
+    endsAt: row.ends_at || null,
+    endsAfterTotalCompletions: row.ends_after_total_completions ?? null,
+    totalCompletions: row.total_completions ?? row.players_completed ?? 0,
+    rewardsPaused: Boolean(row.rewards_paused),
+    manuallyEnded: Boolean(row.manually_ended),
+    reopenedAt: row.reopened_at || null,
   });
 }
 
@@ -141,6 +148,13 @@ export function adventureToRow(adventure, creatorId) {
     is_sponsored_drop: Boolean(adventure.isSponsoredDrop),
     sponsored_drop_id: adventure.sponsoredDropId || null,
     storefront_price: adventure.storefrontPrice ?? null,
+    end_rule: adventure.endRule || 'no_end_date',
+    ends_at: adventure.endsAt || null,
+    ends_after_total_completions: adventure.endsAfterTotalCompletions ?? null,
+    total_completions: adventure.totalCompletions ?? adventure.playersCompleted ?? 0,
+    rewards_paused: Boolean(adventure.rewardsPaused),
+    manually_ended: Boolean(adventure.manuallyEnded),
+    reopened_at: adventure.reopenedAt || null,
   };
 }
 
@@ -160,7 +174,7 @@ export function cluesToRows(adventure) {
 
 export function rewardsToRows(adventure) {
   return (adventure.finalRewards || []).map((reward, index) => ({
-    id: `${adventure.id}-reward-${index}`,
+    id: reward.id || `${adventure.id}-reward-${index}`,
     adventure_id: adventure.id,
     sort_order: index,
     type: reward.type,
@@ -170,6 +184,13 @@ export function rewardsToRows(adventure) {
     value_label: reward.valueLabel || '',
     redemption_instructions: reward.redemptionInstructions || '',
     expiration_days: reward.expirationDays ?? 0,
+    quantity_limit: reward.quantityLimit ?? null,
+    claimed_count: reward.claimedCount ?? 0,
+    reward_window_start: reward.rewardWindowStart || null,
+    reward_window_end: reward.rewardWindowEnd || null,
+    reward_policy: reward.rewardPolicy || 'continue_badge_coins_only',
+    rewards_paused: Boolean(reward.rewardsPaused),
+    backup_reward: reward.backupReward || null,
   }));
 }
 

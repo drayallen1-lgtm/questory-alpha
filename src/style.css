@@ -2735,3 +2735,113 @@ nav button.active {
   width: 100%;
   margin-top: 10px;
 }
+
+/* Reward Inventory + Adventure End Rules */
+.reward-inventory-fields {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.reward-status-panel.ended {
+  border-color: #ef4444;
+}
+
+.reward-ended-banner {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.reward-end-soon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #f97316;
+}
+
+.reward-inventory-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.reward-inventory-row .depleted {
+  color: #ef4444;
+}
+
+.feed-reward-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.feed-reward-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--questory-accent);
+}
+
+.feed-reward-badge.warn {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.sponsor-inventory-panel .inventory-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.sponsor-inventory-panel .inventory-row.depleted {
+  opacity: 0.85;
+}
+
+.inventory-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  margin: 4px 0;
+}
+
+.admin-reward-controls .admin-reward-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.admin-reward-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.adventure-ended-banner {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.badge-only-notice {
+  text-align: center;
+  color: #f97316;
+  font-weight: 600;
+  margin: 8px 0;
+}
+
+.finder-mode-options .card.mini.active {
+  border-color: var(--questory-accent);
+}
+
+.adventure-end-rules {
+  margin-top: 12px;
+}

@@ -28,6 +28,7 @@ import { DEFAULT_ENGAGEMENT, normalizeEngagement } from './engagement';
 import { DEFAULT_ECONOMY, normalizeEconomy } from './economy';
 import { DEFAULT_SOCIAL, normalizeSocial } from './social';
 import { DEFAULT_EXPANSION, normalizeExpansion } from './expansion';
+import { mergeAdventureInventory, normalizeFinalRewards, REWARD_POLICIES } from './rewardInventory';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -44,12 +45,14 @@ export const defaultState = {
   victoryEngagement: null,
   pendingRating: null,
   pendingPhotoMemory: null,
+  claimMessage: null,
   adminPreview: false,
   adminTab: 'drafts',
   engagement: { ...DEFAULT_ENGAGEMENT },
   economy: { ...DEFAULT_ECONOMY },
   social: { ...DEFAULT_SOCIAL },
   expansion: { ...DEFAULT_EXPANSION },
+  rewardClaims: {},
   adventures: [
     {
       id: 'parsons-gold-rush',
@@ -241,6 +244,7 @@ export const defaultState = {
       bonusFinds: [],
       finalRewards: [
         {
+          id: 'iron-horse-reward-0',
           type: 'medallion',
           icon: '🚂',
           title: 'Iron Horse Medallion',
@@ -248,6 +252,25 @@ export const defaultState = {
           valueLabel: 'Collection Piece',
           redemptionInstructions: 'Saved in your Questory Passport.',
           expirationDays: 0,
+        },
+        {
+          id: 'iron-horse-reward-1',
+          type: 'coupon',
+          icon: '🎟',
+          title: 'Heritage Coffee Coupon',
+          desc: 'First 2 finishers get a free drink — then badge + coins',
+          valueLabel: 'Free drink',
+          redemptionInstructions: 'Show in Vault at Main Street Roasters.',
+          expirationDays: 7,
+          quantityLimit: 2,
+          claimedCount: 0,
+          rewardPolicy: REWARD_POLICIES.REPLACE_WITH_BACKUP,
+          backupReward: {
+            title: 'Completion Badge',
+            desc: '25 coins + badge after rewards ran out.',
+            coins: 25,
+            badgeLabel: 'Trail Finisher',
+          },
         },
       ],
     },
@@ -498,11 +521,13 @@ export function loadState() {
       victoryEngagement: null,
       pendingRating: null,
       pendingPhotoMemory: null,
+      claimMessage: null,
       adminPreview: false,
       engagement: normalizeEngagement(saved.engagement),
       economy: normalizeEconomy(saved.economy),
       social: normalizeSocial(saved.social),
       expansion: normalizeExpansion(saved.expansion),
+      rewardClaims: saved.rewardClaims || {},
       claimHistory: buildClaimHistory(rewards, saved.claimHistory),
     };
   } catch {
@@ -665,7 +690,7 @@ export function normalizeAdventure(adventure) {
     logoUrl: '',
     website: '',
   };
-  return {
+  const normalized = {
     ...adventure,
     sponsor: sponsorInfo.name,
     sponsorInfo,
@@ -712,6 +737,7 @@ export function normalizeAdventure(adventure) {
     sponsoredDropId: adventure.sponsoredDropId || null,
     storefrontPrice: adventure.storefrontPrice ?? null,
   };
+  return mergeAdventureInventory(normalized);
 }
 
 export function getSponsorInfo(adventure) {

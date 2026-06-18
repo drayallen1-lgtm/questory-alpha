@@ -255,3 +255,29 @@ export async function upsertClaimHistory(userId, entries) {
   const { error } = await supabase.from('claim_history').upsert(rows);
   if (error) throw error;
 }
+
+export async function claimLimitedRewardRemote(adventureId, rewardId, userId) {
+  if (!hasSupabase() || !userId) {
+    return { ok: false, reason: 'not_authenticated' };
+  }
+  const { data, error } = await supabase.rpc('claim_limited_reward', {
+    p_adventure_id: adventureId,
+    p_reward_id: rewardId,
+    p_user_id: userId,
+  });
+  if (error) throw error;
+  return data || { ok: false, reason: 'unknown' };
+}
+
+export async function claimLimitedRewardsForAdventure(adventure, userId) {
+  const results = [];
+  for (const reward of adventure.finalRewards || []) {
+    if (reward.quantityLimit == null) {
+      results.push({ reward, result: { ok: true, unlimited: true } });
+      continue;
+    }
+    const result = await claimLimitedRewardRemote(adventure.id, reward.id, userId);
+    results.push({ reward, result });
+  }
+  return results;
+}

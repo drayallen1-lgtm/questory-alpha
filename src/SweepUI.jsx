@@ -55,6 +55,7 @@ import {
   PremiumSubscriptionBadge,
   NationalPassportPanel,
 } from './ExpansionUI';
+import { FeedRewardStatusBadges } from './RewardInventoryUI';
 
 export function GoodMorningHome({ state, adventures, auth, nav }) {
   const greeting = getTimeGreeting();
@@ -210,6 +211,7 @@ function AdventureFeedCard({ adventure, progress, state, nav }) {
         <LegendaryHuntBadge adventure={adventure} />
         <CashHuntBadge adventure={adventure} />
         <SponsoredDropBadge adventure={adventure} />
+        <FeedRewardStatusBadges adventure={adventure} />
         <small>{adventure.distance || `${parseMilesEstimate(adventure)} mi`}</small>
       </div>
       <h3>{adventure.title}</h3>

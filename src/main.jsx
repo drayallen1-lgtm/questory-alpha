@@ -169,7 +169,24 @@ import {
   saveUserProfileState,
   upsertUserRewards,
   upsertClaimHistory,
+  claimLimitedRewardRemote,
 } from './supabase/dataService';
+import {
+  resolveClaimRewards,
+  resolveClaimRewardsAsync,
+  isAdventureEnded,
+  normalizeFinalRewards,
+  END_RULES,
+  REWARD_POLICIES,
+} from './rewardInventory';
+import {
+  RewardInventoryFields,
+  AdventureEndRulesFields,
+  RewardStatusPanel,
+  AdventureEndedBanner,
+  AdminRewardControls,
+  PlayForBadgeOnlyNotice,
+} from './RewardInventoryUI';
 
 function App() {
   return (
@@ -424,7 +441,7 @@ function QuestoryApp() {
     });
   }
 
-  function claimTreasure(adventure, code, options = {}) {
+  async function claimTreasure(adventure, code, options = {}) {
     const p = getAdventureProgress(state, adventure.id);
     const method = normalizeClaimMethod(adventure.claimMethod);
     const medallionAutoClaim =
@@ -449,39 +466,58 @@ function QuestoryApp() {
       return validation;
     }
 
+    const freshAdventure = state.adventures.find((a) => a.id === adventure.id) || adventure;
+    if (isAdventureEnded(freshAdventure)) {
+      return { ok: false, message: 'This adventure has ended. Rewards are no longer available.' };
+    }
+
+    const userId = user?.id || 'local-user';
+    const resolved =
+      isSupabaseMode && user
+        ? await resolveClaimRewardsAsync(state, freshAdventure, userId, {
+            claimRemote: claimLimitedRewardRemote,
+          })
+        : resolveClaimRewards(state, freshAdventure, userId);
+
+    if (!resolved.ok) {
+      return { ok: false, message: resolved.message, ended: resolved.ended };
+    }
+
     const claimedAt = new Date().toISOString();
-    const sponsorInfo = getSponsorInfo(adventure);
-    const vaultRewards = adventure.finalRewards.map((r, i) =>
+    const sponsorInfo = getSponsorInfo(freshAdventure);
+    const vaultRewards = resolved.vaultTemplates.map((r, i) =>
       enrichCouponReward(
         createVaultReward({
           ...r,
           expirationDays:
-            r.type === 'coupon' ? adventure.couponExpirationDays ?? r.expirationDays : r.expirationDays,
-          id: `${adventure.id}-final-${i}`,
-          adventureId: adventure.id,
-          adventureTitle: adventure.title,
+            r.type === 'coupon'
+              ? freshAdventure.couponExpirationDays ?? r.expirationDays
+              : r.expirationDays,
+          id: r.id || `${freshAdventure.id}-final-${i}`,
+          adventureId: freshAdventure.id,
+          adventureTitle: freshAdventure.title,
           claimedAt,
           sponsorName: sponsorInfo.name,
           sponsorLogoUrl: sponsorInfo.logoUrl,
           sponsorWebsite: sponsorInfo.website,
         }),
-        adventure
+        freshAdventure
       )
     );
 
     const primaryReward =
       vaultRewards.find((r) => r.type === 'medallion') || vaultRewards[0];
     const certificate = createCompletionCertificate({
-      adventureId: adventure.id,
-      adventureName: adventure.title,
-      rewardName: primaryReward.title,
+      adventureId: freshAdventure.id,
+      adventureName: freshAdventure.title,
+      rewardName: primaryReward?.title || 'Trail Complete',
       completedAt: claimedAt,
       sponsorInfo,
-      collectionName: adventure.collectionName || '',
+      collectionName: freshAdventure.collectionName || '',
     });
 
     setState((s) => {
-      const completion = applyAdventureCompletion(s, adventure, s.adventures);
+      const completion = applyAdventureCompletion(resolved.state, freshAdventure, resolved.state.adventures);
       const collectionMedallionRewards = completion.collectionRewards.map((cr, i) =>
         createVaultReward({
           type: 'medallion',
@@ -491,9 +527,9 @@ function QuestoryApp() {
           valueLabel: 'Exclusive Collection Medallion',
           redemptionInstructions: 'Saved in your Questory Passport.',
           expirationDays: 0,
-          id: `${adventure.id}-collection-${i}`,
-          adventureId: adventure.id,
-          adventureTitle: adventure.title,
+          id: `${freshAdventure.id}-collection-${i}`,
+          adventureId: freshAdventure.id,
+          adventureTitle: freshAdventure.title,
           claimedAt,
           sponsorName: sponsorInfo.name,
           sponsorLogoUrl: sponsorInfo.logoUrl,
@@ -503,26 +539,32 @@ function QuestoryApp() {
       const nextRewards = [...s.rewards, ...vaultRewards, ...collectionMedallionRewards];
       const baseHistory = syncClaimHistory(nextRewards, s.claimHistory);
       let nextState = {
-        ...s,
-        coins: s.coins + completion.coins,
-        entries: s.entries + adventure.potEntries,
+        ...resolved.state,
+        coins: s.coins + completion.coins + (resolved.coinsBonus || 0),
+        entries: s.entries + freshAdventure.potEntries,
         engagement: completion.engagement,
         screen: 'victory',
         victoryCertificate: certificate,
         victoryEngagement: completion,
-        pendingRating: adventure.id,
+        pendingRating: freshAdventure.id,
+        claimMessage: resolved.message || null,
         progress: {
           ...s.progress,
-          [adventure.id]: { ...p, claimed: true, claimedAt, medallionTapped: true },
+          [freshAdventure.id]: { ...p, claimed: true, claimedAt, medallionTapped: true },
         },
         rewards: nextRewards,
         claimHistory: upsertCertificate(baseHistory, certificate),
       };
-      nextState = applySeasonalProgress(nextState, adventure);
+      nextState = applySeasonalProgress(nextState, freshAdventure);
       nextState = addSeasonPoints(nextState, 100);
-      nextState.pendingPhotoMemory = adventure.id;
-      const placement = (adventure.playersCompleted || 0) <= 1 ? 1 : (adventure.playersCompleted || 0) <= 5 ? 2 : 3;
-      nextState = applyExpansionOnCompletion(nextState, adventure, placement);
+      nextState.pendingPhotoMemory = freshAdventure.id;
+      const placement =
+        (freshAdventure.playersCompleted || 0) <= 1
+          ? 1
+          : (freshAdventure.playersCompleted || 0) <= 5
+            ? 2
+            : 3;
+      nextState = applyExpansionOnCompletion(nextState, freshAdventure, placement);
       if (isSupabaseMode && user) {
         syncProfile(nextState);
         syncRewardsAndHistory(nextState.rewards, nextState.claimHistory);
@@ -530,7 +572,7 @@ function QuestoryApp() {
       return nextState;
     });
 
-    return { ok: true };
+    return { ok: true, message: resolved.message };
   }
 
   function redeemReward(rewardId) {
@@ -556,7 +598,7 @@ function QuestoryApp() {
     });
   }
 
-  function handleMedallionCapture(adventure, context = {}) {
+  async function handleMedallionCapture(adventure, context = {}) {
     const method = normalizeClaimMethod(adventure.claimMethod);
     const inRange = Boolean(context.inCaptureRange || context.devOverride);
 
@@ -578,7 +620,7 @@ function QuestoryApp() {
     }
 
     if (autoClaimsOnTap(adventure)) {
-      const result = claimTreasure(adventure, adventure.claimCode, {
+      const result = await claimTreasure(adventure, adventure.claimCode, {
         medallionTapped: true,
       });
       console.log('[Questory] medallion auto-claim result', result);
@@ -809,6 +851,7 @@ function QuestoryApp() {
                 onSkip={() => setState((s) => ({ ...s, pendingPhotoMemory: null }))}
               />
             )}
+            <PlayForBadgeOnlyNotice message={state.claimMessage} />
             <EnhancedVictoryScreen
               certificate={state.victoryCertificate}
               engagementUpdate={state.victoryEngagement}
@@ -1074,7 +1117,8 @@ function AdventureDetail({
   adventures,
   isAdmin,
 }) {
-  const playable = isAdventurePlayable(adventure, adminPreview);
+  const ended = isAdventureEnded(adventure);
+  const playable = isAdventurePlayable(adventure, adminPreview) && (!ended || progress.claimed);
   const pct = progress.claimed
     ? 100
     : Math.round((progress.step / Math.max(adventure.clues.length, 1)) * 100);
@@ -1118,6 +1162,7 @@ function AdventureDetail({
         {adventure.collectionName && (
           <p className="detail-collection">⭐ {adventure.collectionName}</p>
         )}
+        <AdventureEndedBanner adventure={adventure} />
         <VerifiedSponsorBadge adventure={adventure} />
         <TeamHuntBadge adventure={adventure} team={myTeam} />
         <LegendaryHuntBadge adventure={adventure} />
@@ -1207,6 +1252,8 @@ function AdventureDetail({
         </div>
       )}
 
+      <RewardStatusPanel adventure={adventure} />
+
       <AdventureComments
         adventure={adventure}
         state={state}
@@ -1214,15 +1261,38 @@ function AdventureDetail({
         isAdmin={isAdmin}
       />
 
+      {isAdmin && state && setState && (
+        <AdminRewardControls
+          adventure={adventure}
+          setState={setState}
+          onArchive={(id) => setState((s) => ({
+            ...s,
+            adventures: s.adventures.map((a) =>
+              a.id === id ? { ...a, manuallyEnded: true, status: 'archived' } : a
+            ),
+          }))}
+          onRestore={(id) => setState((s) => ({
+            ...s,
+            adventures: s.adventures.map((a) =>
+              a.id === id
+                ? { ...a, manuallyEnded: false, reopenedAt: new Date().toISOString(), status: 'published' }
+                : a
+            ),
+          }))}
+        />
+      )}
+
       <button
         disabled={!playable}
         onClick={() => nav('play', adventure.id, { adminPreview })}
       >
-        {progress.claimed
-          ? 'Replay Trail'
-          : progress.step > 0
-            ? 'Continue Adventure'
-            : 'Start Adventure'}
+        {ended && !progress.claimed
+          ? 'Adventure Ended'
+          : progress.claimed
+            ? 'Replay Trail'
+            : progress.step > 0
+              ? 'Continue Adventure'
+              : 'Start Adventure'}
       </button>
     </>
   );
@@ -2044,6 +2114,17 @@ function emptyReward(type) {
   return {
     type,
     enabled: type === 'medallion' || type === 'coupon',
+    quantityLimit: null,
+    claimedCount: 0,
+    rewardPolicy: REWARD_POLICIES.REPLACE_WITH_BACKUP,
+    rewardWindowStart: null,
+    rewardWindowEnd: null,
+    backupReward: {
+      title: 'Completion Badge',
+      desc: '25 coins + badge after rewards ran out.',
+      coins: 25,
+      badgeLabel: 'Trail Finisher',
+    },
     ...defaults[type],
   };
 }
@@ -2067,7 +2148,7 @@ function validateRewards(rewards) {
   return null;
 }
 
-function RewardEditor({ reward, onChange }) {
+function RewardEditor({ reward, onChange, adventureId }) {
   const option = REWARD_TYPE_OPTIONS.find((o) => o.type === reward.type);
 
   return (
@@ -2119,6 +2200,10 @@ function RewardEditor({ reward, onChange }) {
             onChange={(e) => onChange(reward.type, { expirationDays: e.target.value })}
             placeholder="30"
           />
+          <RewardInventoryFields
+            reward={reward}
+            onChange={(patch) => onChange(reward.type, patch)}
+          />
         </>
       )}
     </div>
@@ -2155,6 +2240,9 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
     couponQuantity: 100,
     couponTerms: 'One per customer.',
     couponExpirationDays: 7,
+    endRule: END_RULES.NO_END_DATE,
+    endsAt: null,
+    endsAfterTotalCompletions: null,
   });
   const [clues, setClues] = useState([emptyClue(), emptyClue(), emptyClue()]);
   const [rewards, setRewards] = useState([
@@ -2258,9 +2346,10 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
     }));
 
     const enabledRewards = rewards.filter((r) => r.enabled);
-    const finalRewards = enabledRewards.map((r) => {
+    const finalRewards = enabledRewards.map((r, index) => {
       const option = REWARD_TYPE_OPTIONS.find((o) => o.type === r.type);
       return {
+        id: `custom-reward-${index}`,
         type: r.type,
         icon: option?.icon || '🎁',
         title: r.title.trim(),
@@ -2268,6 +2357,12 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
         valueLabel: r.valueLabel.trim(),
         redemptionInstructions: r.redemptionInstructions.trim(),
         expirationDays: parseInt(r.expirationDays, 10) || 0,
+        quantityLimit: r.quantityLimit ?? null,
+        claimedCount: 0,
+        rewardWindowStart: r.rewardWindowStart || null,
+        rewardWindowEnd: r.rewardWindowEnd || null,
+        rewardPolicy: r.rewardPolicy || REWARD_POLICIES.CONTINUE_BADGE_COINS_ONLY,
+        backupReward: r.backupReward || null,
       };
     });
 
@@ -2322,6 +2417,10 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
       bonusFinds: buildBonusFinds(clues),
       finalRewards,
       creatorId: userId || null,
+      endRule: meta.endRule || END_RULES.NO_END_DATE,
+      endsAt: meta.endsAt || null,
+      endsAfterTotalCompletions: meta.endsAfterTotalCompletions ?? null,
+      totalCompletions: 0,
     };
 
     if (isSupabaseMode) {
@@ -2487,6 +2586,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
           value={meta.couponExpirationDays}
           onChange={(e) => setMeta((m) => ({ ...m, couponExpirationDays: e.target.value }))}
         />
+        <AdventureEndRulesFields meta={meta} onChange={(patch) => setMeta((m) => ({ ...m, ...patch }))} />
         <label>Collection Name</label>
         <input
           value={meta.collectionName}

@@ -32,6 +32,7 @@ import {
   toggleFollowCreator,
 } from './economy';
 import { SponsorMarketplacePanel, CreatorStorefrontTab } from './ExpansionUI';
+import { SponsorRewardInventoryPanel } from './RewardInventoryUI';
 import { getPublishedAdventures } from './seed';
 
 export function SponsorDashboard({ state, adventures, auth, setState, nav }) {
@@ -164,6 +165,13 @@ export function SponsorDashboard({ state, adventures, auth, setState, nav }) {
             </div>
           ))}
       </div>
+
+      <SponsorRewardInventoryPanel
+        state={state}
+        setState={setState}
+        adventures={adventures}
+        sponsorName={sponsorName}
+      />
 
       <SponsorMarketplacePanel state={state} setState={setState} />
 
