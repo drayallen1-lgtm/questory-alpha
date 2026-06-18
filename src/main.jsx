@@ -187,6 +187,24 @@ import {
   AdminRewardControls,
   PlayForBadgeOnlyNotice,
 } from './RewardInventoryUI';
+import { normalizeExperience } from './experience';
+import { ADVENTURE_TEMPLATES, SCALE_PRESETS, buildTemplateClues, buildTemplateRewards, buildTemplateStory, getTemplateMeta } from './templates';
+import {
+  TemplatePicker,
+  ScaleSelector,
+  SmartBuilderPanel,
+  ToolkitPanel,
+  QuestoryAssistant,
+  ClueTypeFields,
+  CluePlayContent,
+  DynamicHintPanel,
+  AdventureHealthDashboard,
+  VerificationModePanel,
+  CreatorVerifiedBadge,
+  BackyardPrecisionBanner,
+  ExperienceVictoryMessage,
+  HorrorAtmosphereOverlay,
+} from './ExperienceUI';
 
 function App() {
   return (
@@ -265,6 +283,7 @@ function QuestoryApp() {
           economy: user ? remote.economy : normalizeEconomy(s.economy),
           social: user ? remote.social : normalizeSocial(s.social),
           expansion: user ? remote.expansion : normalizeExpansion(s.expansion),
+          experience: user ? remote.experience : normalizeExperience(s.experience),
         }));
       } catch (err) {
         console.error('Questory Supabase load failed:', err);
@@ -289,6 +308,7 @@ function QuestoryApp() {
       economy: s.economy,
       social: s.social,
       expansion: s.expansion,
+      experience: s.experience,
     }).catch((err) => console.error('Profile sync failed:', err));
   }
 
@@ -746,6 +766,7 @@ function QuestoryApp() {
             onClaim={(code, options) => claimTreasure(selected, code, options)}
             nav={nav}
             adminPreview={state.adminPreview}
+            clueStartRef={clueStartRef}
           />
         )}
         {state.screen === 'medallion-signal' && selected && (
@@ -852,6 +873,7 @@ function QuestoryApp() {
               />
             )}
             <PlayForBadgeOnlyNotice message={state.claimMessage} />
+            {selected && <ExperienceVictoryMessage adventure={selected} />}
             <EnhancedVictoryScreen
               certificate={state.victoryCertificate}
               engagementUpdate={state.victoryEngagement}
@@ -1163,6 +1185,8 @@ function AdventureDetail({
           <p className="detail-collection">⭐ {adventure.collectionName}</p>
         )}
         <AdventureEndedBanner adventure={adventure} />
+        <CreatorVerifiedBadge adventure={adventure} />
+        <BackyardPrecisionBanner adventure={adventure} />
         <VerifiedSponsorBadge adventure={adventure} />
         <TeamHuntBadge adventure={adventure} team={myTeam} />
         <LegendaryHuntBadge adventure={adventure} />
@@ -1253,6 +1277,18 @@ function AdventureDetail({
       )}
 
       <RewardStatusPanel adventure={adventure} />
+
+      {(isAdmin || adminPreview) && state && setState && (
+        <>
+          <AdventureHealthDashboard adventure={adventure} state={state} />
+          <VerificationModePanel
+            adventure={adventure}
+            state={state}
+            setState={setState}
+            clueIndex={progress.step}
+          />
+        </>
+      )}
 
       <AdventureComments
         adventure={adventure}
@@ -1379,6 +1415,7 @@ function AdventurePlay({
   onClaim,
   nav,
   adminPreview,
+  clueStartRef,
 }) {
   const total = adventure.clues.length;
   const atClaim = progress.step >= total;
@@ -1395,6 +1432,7 @@ function AdventurePlay({
     (!finderFlow || progress.medallionTapped);
   const hintKey = `${adventure.id}:${clueIndex}`;
   const hintText = state.economy?.hintUnlocks?.[hintKey];
+  const [dynamicHint, setDynamicHint] = useState('');
   const premiumLocked =
     isPremiumAdventure(adventure) && !canAccessPremiumHunt(state, adventure) && !adminPreview;
 
@@ -1460,6 +1498,8 @@ function AdventurePlay({
         </div>
       )}
       {adminPreview && <AdminClaimCode adventure={adventure} />}
+      <HorrorAtmosphereOverlay adventure={adventure} />
+      <BackyardPrecisionBanner adventure={adventure} />
       <div className="card">
         <h2>{adventure.title}</h2>
         <p>
@@ -1495,9 +1535,16 @@ function AdventurePlay({
 
         {!atClaim && !progress.claimed && clue && (
           <>
-            <p>{clue.text}</p>
+            <CluePlayContent clue={clue} />
             <GhostTrailHint state={state} adventureId={adventure.id} clueIndex={clueIndex} />
+            {dynamicHint && <p className="coin-hint">{dynamicHint}</p>}
             {hintText && <p className="coin-hint">{hintText}</p>}
+            <DynamicHintPanel
+              clueStartMs={clueStartRef?.current || Date.now()}
+              adventure={adventure}
+              onAcceptHint={(text) => setDynamicHint(text)}
+              onSpendCoins={() => handleCoinSpend('hint')}
+            />
             <CoinShopPanel
               adventure={adventure}
               state={state}
@@ -1954,6 +2001,11 @@ function emptyClue() {
     longitude: '',
     radiusMeters: String(DEFAULT_RADIUS_METERS),
     bonusRewardText: '',
+    clueType: 'text_riddle',
+    choices: [],
+    audioUrl: '',
+    videoUrl: '',
+    imageUrl: '',
   };
 }
 
@@ -2026,6 +2078,8 @@ function ClueEditor({ clue, index, total, onChange, onRemove, onUseLocation, loc
         placeholder="Clue riddle or directions"
         rows={2}
       />
+
+      <ClueTypeFields clue={clue} onChange={(patch) => onChange(clue.id, patch)} />
 
       <label>GPS location</label>
       <div className="coord-row">
@@ -2210,6 +2264,29 @@ function RewardEditor({ reward, onChange, adventureId }) {
   );
 }
 
+function rewardsFromTemplates(templates) {
+  const types = ['medallion', 'coupon', 'physical'];
+  const templateByType = Object.fromEntries(templates.map((r) => [r.type, r]));
+  return types.map((type) => {
+    const template = templateByType[type];
+    const base = emptyReward(type);
+    if (!template) return { type, enabled: false, ...base };
+    return {
+      type,
+      enabled: true,
+      icon: template.icon || base.icon,
+      title: template.title || '',
+      desc: template.desc || '',
+      valueLabel: template.valueLabel || '',
+      redemptionInstructions: template.redemptionInstructions || '',
+      expirationDays: String(template.expirationDays ?? base.expirationDays),
+      quantityLimit: null,
+      claimedCount: 0,
+      rewardPolicy: REWARD_POLICIES.CONTINUE_BADGE_COINS_ONLY,
+    };
+  });
+}
+
 function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth, onAdventuresSaved }) {
   const [meta, setMeta] = useState({
     title: '',
@@ -2243,7 +2320,12 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
     endRule: END_RULES.NO_END_DATE,
     endsAt: null,
     endsAfterTotalCompletions: null,
+    finderSearchRadiusM: 200,
+    finderCaptureBaseM: 25,
   });
+  const [adventureTemplate, setAdventureTemplate] = useState(ADVENTURE_TEMPLATES.SCRATCH);
+  const [adventureScale, setAdventureScale] = useState('city');
+  const [experienceSettings, setExperienceSettings] = useState({});
   const [clues, setClues] = useState([emptyClue(), emptyClue(), emptyClue()]);
   const [rewards, setRewards] = useState([
     emptyReward('medallion'),
@@ -2253,6 +2335,83 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
   const [locStatus, setLocStatus] = useState(null);
+
+  function handleTemplateSelect(templateId) {
+    setAdventureTemplate(templateId);
+    const template = getTemplateMeta(templateId);
+    if (template.scale) setAdventureScale(template.scale);
+    setExperienceSettings((settings) => ({
+      ...settings,
+      toolkit: template.toolkit || settings.toolkit,
+      atmosphere: template.atmosphere || settings.atmosphere || 'mild',
+      clueOrder: template.clueOrder || settings.clueOrder || 'sequence',
+      soundEffects: template.soundEffects || settings.soundEffects || [],
+      victoryMessage: template.victoryMessage || settings.victoryMessage || '',
+    }));
+    if (template.scale) {
+      const scale = SCALE_PRESETS[template.scale];
+      if (scale) {
+        setMeta((m) => ({
+          ...m,
+          estimatedMinutes: scale.estimatedMinutes,
+          finderSearchRadiusM: scale.finderSearchRadiusM,
+          finderCaptureBaseM: scale.finderCaptureBaseM,
+          story: m.story || buildTemplateStory(templateId, m.title || 'Adventure'),
+        }));
+        setExperienceSettings((settings) => ({ ...settings, backyardPrecision: scale.backyardPrecision }));
+      }
+    }
+    setFormError('');
+  }
+
+  function handleScaleChange(scaleId) {
+    setAdventureScale(scaleId);
+    const scale = SCALE_PRESETS[scaleId];
+    if (scale) {
+      setMeta((m) => ({
+        ...m,
+        estimatedMinutes: scale.estimatedMinutes,
+        finderSearchRadiusM: scale.finderSearchRadiusM,
+        finderCaptureBaseM: scale.finderCaptureBaseM,
+      }));
+      setExperienceSettings((settings) => ({ ...settings, backyardPrecision: scale.backyardPrecision }));
+    }
+    setFormError('');
+  }
+
+  function applyAssistantDraft(draft) {
+    if (!draft?.ok) return;
+    setMeta((m) => ({ ...m, ...draft.meta }));
+    setClues(draft.clues);
+    setRewards(draft.rewards);
+    if (draft.meta.adventureTemplate) setAdventureTemplate(draft.meta.adventureTemplate);
+    if (draft.meta.adventureScale) setAdventureScale(draft.meta.adventureScale);
+    if (draft.meta.experienceSettings) setExperienceSettings(draft.meta.experienceSettings);
+    setFormError('');
+  }
+
+  function applySmartBuilder(config) {
+    setAdventureScale(config.adventureScale);
+    setAdventureTemplate(config.adventureTemplate);
+    setExperienceSettings((settings) => ({ ...settings, ...config.experienceSettings }));
+    setMeta((m) => ({
+      ...m,
+      estimatedMinutes: config.estimatedMinutes,
+      finderSearchRadiusM: config.finderSearchRadiusM,
+      finderCaptureBaseM: config.finderCaptureBaseM,
+      story: m.story || buildTemplateStory(config.adventureTemplate, m.title || 'Adventure'),
+    }));
+    const baseLat = clues[0]?.latitude ? parseFloat(clues[0].latitude) : 37.34;
+    const baseLng = clues[0]?.longitude ? parseFloat(clues[0].longitude) : -95.26;
+    setClues(
+      buildTemplateClues(config.adventureTemplate, config.clueCount, baseLat, baseLng).map((clue) => ({
+        ...clue,
+        radiusMeters: String(config.clueRadiusM),
+      }))
+    );
+    setRewards(rewardsFromTemplates(buildTemplateRewards(config.adventureTemplate)));
+    setFormError('');
+  }
 
   function updateClue(id, patch) {
     setClues((list) => list.map((c) => (c.id === id ? { ...c, ...patch } : c)));
@@ -2343,6 +2502,11 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
       latitude: parseFloat(c.latitude),
       longitude: parseFloat(c.longitude),
       radiusMeters: parseFloat(c.radiusMeters),
+      clueType: c.clueType || 'text_riddle',
+      choices: Array.isArray(c.choices) ? c.choices : [],
+      audioUrl: c.audioUrl?.trim() || '',
+      videoUrl: c.videoUrl?.trim() || '',
+      imageUrl: c.imageUrl?.trim() || '',
     }));
 
     const enabledRewards = rewards.filter((r) => r.enabled);
@@ -2386,8 +2550,15 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
       qrClaimValue: claimFields.qrClaimValue,
       physicalMedallionCode: claimFields.physicalMedallionCode,
       hintAfterTap: claimFields.hintAfterTap,
-      finderSearchRadiusM: 200,
-      finderCaptureBaseM: 25,
+      finderSearchRadiusM: parseInt(meta.finderSearchRadiusM, 10) || 200,
+      finderCaptureBaseM: parseInt(meta.finderCaptureBaseM, 10) || 25,
+      adventureScale,
+      adventureTemplate,
+      experienceSettings: {
+        ...experienceSettings,
+        backyardPrecision: experienceSettings.backyardPrecision ?? adventureScale === 'backyard',
+        dynamicHintsEnabled: experienceSettings.dynamicHintsEnabled !== false,
+      },
       rewardCoins: meta.isFounderHunt ? 10000 : 25,
       potEntries: meta.isFounderHunt ? 10 : 3,
       collectionId: meta.collectionId.trim() || null,
@@ -2466,6 +2637,19 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
         <p>Build adventures with sponsors, rewards, and GPS clues</p>
       </div>
       <CreationFeeBanner state={state} auth={auth} />
+      <QuestoryAssistant onApplyDraft={applyAssistantDraft} />
+      <TemplatePicker selected={adventureTemplate} onSelect={handleTemplateSelect} />
+      <ScaleSelector value={adventureScale} onChange={handleScaleChange} />
+      <SmartBuilderPanel
+        templateId={adventureTemplate}
+        scaleId={adventureScale}
+        onApply={applySmartBuilder}
+      />
+      <ToolkitPanel
+        toolkit={getTemplateMeta(adventureTemplate).toolkit}
+        settings={experienceSettings}
+        onChange={(patch) => setExperienceSettings((settings) => ({ ...settings, ...patch }))}
+      />
       <div className="card admin-form">
         <label>Title</label>
         <input

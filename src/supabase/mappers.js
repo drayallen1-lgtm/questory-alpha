@@ -63,6 +63,11 @@ export function rowToAdventure(row, clues = []) {
       longitude: c.longitude,
       radiusMeters: c.radius_meters,
       bonusRewardText: c.bonus_reward_text || '',
+      clueType: c.clue_type || 'text_riddle',
+      choices: c.choices || [],
+      audioUrl: c.audio_url || '',
+      videoUrl: c.video_url || '',
+      imageUrl: c.image_url || '',
     })),
     creatorId: row.creator_id,
     playMode: row.play_mode || 'both',
@@ -84,6 +89,10 @@ export function rowToAdventure(row, clues = []) {
     rewardsPaused: Boolean(row.rewards_paused),
     manuallyEnded: Boolean(row.manually_ended),
     reopenedAt: row.reopened_at || null,
+    adventureScale: row.adventure_scale || 'city',
+    adventureTemplate: row.adventure_template || 'from_scratch',
+    experienceSettings: row.experience_settings || {},
+    creatorAnalytics: row.creator_analytics || {},
   });
 }
 
@@ -155,6 +164,10 @@ export function adventureToRow(adventure, creatorId) {
     rewards_paused: Boolean(adventure.rewardsPaused),
     manually_ended: Boolean(adventure.manuallyEnded),
     reopened_at: adventure.reopenedAt || null,
+    adventure_scale: adventure.adventureScale || 'city',
+    adventure_template: adventure.adventureTemplate || 'from_scratch',
+    experience_settings: adventure.experienceSettings || {},
+    creator_analytics: adventure.creatorAnalytics || {},
   };
 }
 
@@ -169,6 +182,11 @@ export function cluesToRows(adventure) {
     longitude: clue.longitude,
     radius_meters: clue.radiusMeters ?? 500,
     bonus_reward_text: clue.bonusRewardText || null,
+    clue_type: clue.clueType || 'text_riddle',
+    choices: clue.choices?.length ? clue.choices : [],
+    audio_url: clue.audioUrl || null,
+    video_url: clue.videoUrl || null,
+    image_url: clue.imageUrl || null,
   }));
 }
 

@@ -2845,3 +2845,186 @@ nav button.active {
 .adventure-end-rules {
   margin-top: 12px;
 }
+
+/* Sweep #5 — The Experience Engine */
+.experience-template-picker .template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.template-card {
+  text-align: left;
+  cursor: pointer;
+  padding: 12px;
+}
+
+.template-card.active {
+  border-color: var(--questory-accent);
+  background: rgba(20, 184, 166, 0.08);
+}
+
+.template-icon {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.scale-selector .scale-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.scale-option {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.scale-option.active {
+  border-color: var(--questory-accent);
+  background: rgba(20, 184, 166, 0.08);
+}
+
+.scale-option input {
+  margin-right: 8px;
+}
+
+.smart-builder-panel .builder-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.smart-builder-panel .builder-chips button.active {
+  border-color: var(--questory-accent);
+  color: var(--questory-accent);
+}
+
+.questory-assistant textarea {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.assistant-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.assistant-suggestions button {
+  font-size: 12px;
+}
+
+.assistant-draft {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.assistant-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.toolkit-panel select,
+.toolkit-panel input {
+  margin-bottom: 8px;
+}
+
+.clue-media-player {
+  margin: 10px 0;
+}
+
+.clue-media-player audio,
+.clue-media-player video {
+  width: 100%;
+  max-height: 220px;
+  border-radius: 8px;
+}
+
+.clue-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.dynamic-hint-panel {
+  margin-top: 10px;
+  background: rgba(20, 184, 166, 0.08);
+}
+
+.adventure-health-dashboard .health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.adventure-health-dashboard .health-stat {
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.adventure-health-dashboard .health-stat b {
+  display: block;
+  font-size: 18px;
+}
+
+.verification-mode-panel .verification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.creator-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--questory-accent);
+  margin: 4px 0;
+}
+
+.horror-atmosphere-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.35));
+  animation: horror-flicker 4s infinite;
+}
+
+@keyframes horror-flicker {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+.backyard-precision-banner {
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--questory-accent);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.experience-victory-message {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 12px 0;
+  color: var(--questory-accent);
+}

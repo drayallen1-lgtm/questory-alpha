@@ -29,6 +29,7 @@ import { DEFAULT_ECONOMY, normalizeEconomy } from './economy';
 import { DEFAULT_SOCIAL, normalizeSocial } from './social';
 import { DEFAULT_EXPANSION, normalizeExpansion } from './expansion';
 import { mergeAdventureInventory, normalizeFinalRewards, REWARD_POLICIES } from './rewardInventory';
+import { mergeAdventureExperience, DEFAULT_EXPERIENCE, normalizeExperience } from './experience';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -53,6 +54,7 @@ export const defaultState = {
   social: { ...DEFAULT_SOCIAL },
   expansion: { ...DEFAULT_EXPANSION },
   rewardClaims: {},
+  experience: { ...DEFAULT_EXPERIENCE },
   adventures: [
     {
       id: 'parsons-gold-rush',
@@ -220,6 +222,14 @@ export const defaultState = {
       qrClaimValue: 'IRONHORSE',
       finderSearchRadiusM: 200,
       finderCaptureBaseM: 25,
+      adventureScale: 'city',
+      adventureTemplate: 'family_fun',
+      experienceSettings: {
+        toolkit: 'family',
+        atmosphere: 'mild',
+        clueOrder: 'sequence',
+        dynamicHintsEnabled: true,
+      },
       rewardCoins: 50,
       potEntries: 3,
       story: 'Follow the iron rails to the old switching yard. A virtual medallion marks where the engine last stopped.',
@@ -368,6 +378,19 @@ export const defaultState = {
       legendaryType: 'midnight_train',
       isSponsoredDrop: true,
       sponsoredDropId: 'mcdonalds-golden-fry',
+      adventureScale: 'backyard',
+      adventureTemplate: 'horror',
+      finderSearchRadiusM: 5,
+      finderCaptureBaseM: 2,
+      experienceSettings: {
+        toolkit: 'horror',
+        atmosphere: 'creepy',
+        clueOrder: 'sequence',
+        soundEffects: ['footsteps', 'static', 'whispers'],
+        dynamicHintsEnabled: true,
+        backyardPrecision: true,
+        arHorror: true,
+      },
       sponsor: 'Parsons Heritage Trail',
       sponsorInfo: { name: 'Parsons Heritage Trail', logoUrl: '', website: 'https://www.parsonsks.com' },
       distance: '0.7 mi',
@@ -385,17 +408,20 @@ export const defaultState = {
           id: 'ud-1',
           title: 'Platform Echo',
           text: 'Count the benches on the north platform — that number opens the next clue.',
+          clueType: 'audio',
+          audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
           latitude: 37.3395,
           longitude: -95.2605,
-          radiusMeters: 500,
+          radiusMeters: 4,
         },
         {
           id: 'ud-2',
           title: 'Clock Tower',
           text: 'Beneath the clock face, find the year the depot was restored.',
+          clueType: 'text_riddle',
           latitude: 37.3398,
           longitude: -95.2612,
-          radiusMeters: 500,
+          radiusMeters: 4,
         },
       ],
       bonusFinds: [],
@@ -528,6 +554,7 @@ export function loadState() {
       social: normalizeSocial(saved.social),
       expansion: normalizeExpansion(saved.expansion),
       rewardClaims: saved.rewardClaims || {},
+      experience: normalizeExperience(saved.experience),
       claimHistory: buildClaimHistory(rewards, saved.claimHistory),
     };
   } catch {
@@ -737,7 +764,7 @@ export function normalizeAdventure(adventure) {
     sponsoredDropId: adventure.sponsoredDropId || null,
     storefrontPrice: adventure.storefrontPrice ?? null,
   };
-  return mergeAdventureInventory(normalized);
+  return mergeAdventureExperience(mergeAdventureInventory(normalized));
 }
 
 export function getSponsorInfo(adventure) {

@@ -56,6 +56,7 @@ import {
   NationalPassportPanel,
 } from './ExpansionUI';
 import { FeedRewardStatusBadges } from './RewardInventoryUI';
+import { CreatorVerifiedBadge } from './ExperienceUI';
 
 export function GoodMorningHome({ state, adventures, auth, nav }) {
   const greeting = getTimeGreeting();
@@ -67,11 +68,11 @@ export function GoodMorningHome({ state, adventures, auth, nav }) {
   return (
     <>
       <section className="hero home-greeting">
-        <div className="badge alpha">Sweep #4 · The Platform Expansion</div>
+        <div className="badge alpha">Sweep #5 · The Experience Engine</div>
         <h2>
           {greeting}, {name}
         </h2>
-        <p>AR medallions, cash hunts, creator storefronts — turn your city into an adventure.</p>
+        <p>Templates, smart builder, audio clues, and creator analytics — build any adventure scale.</p>
       </section>
 
       <PremiumSubscriptionBadge state={state} />
@@ -216,6 +217,7 @@ function AdventureFeedCard({ adventure, progress, state, nav }) {
       </div>
       <h3>{adventure.title}</h3>
       <VerifiedSponsorBadge adventure={adventure} />
+      <CreatorVerifiedBadge adventure={adventure} />
       {collection && (
         <p className="feed-collection">
           <Star size={14} /> {collection.name}
