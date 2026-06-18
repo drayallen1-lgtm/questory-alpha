@@ -10,6 +10,7 @@ export function createCompletionCertificate({
   rewardName,
   completedAt,
   sponsorInfo,
+  collectionName,
 }) {
   const completed = completedAt || new Date().toISOString();
   const sponsor = sponsorInfo || { name: '', logoUrl: '', website: '' };
@@ -19,6 +20,7 @@ export function createCompletionCertificate({
     adventureId,
     adventureName,
     rewardName,
+    collectionName: collectionName || '',
     type: 'certificate',
     completedAt: completed,
     claimedAt: completed,
@@ -49,6 +51,24 @@ export async function downloadProofCard(element, filename = 'questory-proof.png'
   link.download = filename;
   link.href = canvas.toDataURL('image/png');
   link.click();
+}
+
+export async function downloadSocialCard(element, filename = 'questory-social.png') {
+  return downloadProofCard(element, filename);
+}
+
+export function printCertificate(element) {
+  if (!element) return;
+  const win = window.open('', '_blank');
+  if (!win) return;
+  win.document.write(`
+    <html><head><title>Questory Certificate</title>
+    <style>body{font-family:Georgia,serif;padding:40px;background:#070f18;color:#f5e6c8;}</style>
+    </head><body>${element.outerHTML}</body></html>
+  `);
+  win.document.close();
+  win.focus();
+  win.print();
 }
 
 export async function copyShareText(text) {

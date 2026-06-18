@@ -25,6 +25,8 @@ import {
   Archive,
   RotateCcw,
   LogOut,
+  Crown,
+  Flame,
 } from 'lucide-react';
 import {
   STORAGE_KEY,
@@ -78,6 +80,15 @@ import {
   downloadProofCard,
   formatProofDate,
 } from './share';
+import { applyAdventureCompletion, applyDailyLogin, normalizeEngagement } from './engagement';
+import {
+  GoodMorningHome,
+  EnhancedAdventureFeed,
+  QuestoryPassport,
+  LeaderboardScreen,
+  EnhancedVictoryScreen,
+  CollectionProgressCard,
+} from './SweepUI';
 import './style.css';
 import { getInitialState, persistState } from './persistence';
 import { MapScreen, MiniClueMap } from './QuestoryMap';
@@ -113,6 +124,24 @@ function QuestoryApp() {
   const [loginError, setLoginError] = useState('');
   const [remoteLoading, setRemoteLoading] = useState(isSupabaseMode);
   const [adventureSyncError, setAdventureSyncError] = useState('');
+  const dailyLoginApplied = useRef(false);
+
+  useEffect(() => {
+    if (dailyLoginApplied.current) return;
+    dailyLoginApplied.current = true;
+    setState((s) => {
+      const result = applyDailyLogin(s);
+      if (result.coinsEarned > 0 && isSupabaseMode && user) {
+        saveUserProfileState(user.id, {
+          coins: result.state.coins,
+          entries: result.state.entries,
+          progress: result.state.progress,
+          engagement: result.state.engagement,
+        }).catch((err) => console.error('Daily login sync failed:', err));
+      }
+      return result.state;
+    });
+  }, [isSupabaseMode, user?.id]);
 
   useEffect(() => {
     const oauthError = parseOAuthCallbackError();
@@ -150,6 +179,7 @@ function QuestoryApp() {
           coins: user ? remote.coins : s.coins,
           entries: user ? remote.entries : s.entries,
           progress: user ? remote.progress : s.progress,
+          engagement: user ? remote.engagement : normalizeEngagement(s.engagement),
         }));
       } catch (err) {
         console.error('Questory Supabase load failed:', err);
@@ -170,6 +200,7 @@ function QuestoryApp() {
       coins: s.coins,
       entries: s.entries,
       progress: s.progress,
+      engagement: s.engagement,
     }).catch((err) => console.error('Profile sync failed:', err));
   }
 
@@ -367,17 +398,39 @@ function QuestoryApp() {
       rewardName: primaryReward.title,
       completedAt: claimedAt,
       sponsorInfo,
+      collectionName: adventure.collectionName || '',
     });
 
     setState((s) => {
-      const nextRewards = [...s.rewards, ...vaultRewards];
+      const completion = applyAdventureCompletion(s, adventure, s.adventures);
+      const collectionMedallionRewards = completion.collectionRewards.map((cr, i) =>
+        createVaultReward({
+          type: 'medallion',
+          icon: '🏆',
+          title: cr.medallion,
+          desc: `Collection complete: ${cr.collectionId}`,
+          valueLabel: 'Exclusive Collection Medallion',
+          redemptionInstructions: 'Saved in your Questory Passport.',
+          expirationDays: 0,
+          id: `${adventure.id}-collection-${i}`,
+          adventureId: adventure.id,
+          adventureTitle: adventure.title,
+          claimedAt,
+          sponsorName: sponsorInfo.name,
+          sponsorLogoUrl: sponsorInfo.logoUrl,
+          sponsorWebsite: sponsorInfo.website,
+        })
+      );
+      const nextRewards = [...s.rewards, ...vaultRewards, ...collectionMedallionRewards];
       const baseHistory = syncClaimHistory(nextRewards, s.claimHistory);
       const nextState = {
         ...s,
-        coins: s.coins + adventure.rewardCoins,
+        coins: s.coins + completion.coins,
         entries: s.entries + adventure.potEntries,
+        engagement: completion.engagement,
         screen: 'victory',
         victoryCertificate: certificate,
+        victoryEngagement: completion,
         progress: {
           ...s.progress,
           [adventure.id]: { ...p, claimed: true, claimedAt, medallionTapped: true },
@@ -515,9 +568,15 @@ function QuestoryApp() {
             }}
           />
         )}
-        {state.screen === 'home' && <Home nav={nav} />}
+        {state.screen === 'home' && (
+          <GoodMorningHome state={state} adventures={state.adventures} auth={auth} nav={nav} />
+        )}
         {state.screen === 'feed' && (
-          <AdventureFeed adventures={getPublishedAdventures(state.adventures)} nav={nav} />
+          <EnhancedAdventureFeed
+            adventures={state.adventures}
+            state={state}
+            nav={nav}
+          />
         )}
         {state.screen === 'map' && (
           <MapScreen
@@ -531,6 +590,8 @@ function QuestoryApp() {
             progress={progress}
             nav={nav}
             adminPreview={state.adminPreview}
+            state={state}
+            adventures={state.adventures}
           />
         )}
         {state.screen === 'play' && selected && (
@@ -569,11 +630,20 @@ function QuestoryApp() {
           needsLoginForVault ? (
             <SignInPrompt onLogin={() => setShowLogin(true)} />
           ) : (
-            <RewardVault state={state} onRedeem={redeemReward} />
+            <QuestoryPassport
+              state={state}
+              adventures={state.adventures}
+              onRedeem={redeemReward}
+            />
           )
         )}
+        {state.screen === 'leaderboard' && <LeaderboardScreen state={state} />}
         {state.screen === 'victory' && state.victoryCertificate && (
-          <VictoryScreen certificate={state.victoryCertificate} nav={nav} />
+          <EnhancedVictoryScreen
+            certificate={state.victoryCertificate}
+            engagementUpdate={state.victoryEngagement}
+            nav={nav}
+          />
         )}
         {state.screen === 'create' && (
           isSupabaseMode && !isAdmin ? (
@@ -716,6 +786,11 @@ function Header({ state, auth, onLoginClick }) {
             <Wallet size={16} />
             {state.coins} coins
           </div>
+          {(state.engagement?.streak?.count || 0) > 0 && (
+            <div className="header-streak" title="Daily streak">
+              🔥 {state.engagement.streak.count}
+            </div>
+          )}
         </div>
       </div>
       {signOutError && <p className="form-error header-signout-error">{signOutError}</p>}
@@ -812,7 +887,7 @@ function AdventureFeed({ adventures, nav }) {
   );
 }
 
-function AdventureDetail({ adventure, progress, nav, adminPreview }) {
+function AdventureDetail({ adventure, progress, nav, adminPreview, state, adventures }) {
   const playable = isAdventurePlayable(adventure, adminPreview);
   const pct = progress.claimed
     ? 100
@@ -833,15 +908,29 @@ function AdventureDetail({ adventure, progress, nav, adminPreview }) {
           <Eye size={16} /> Admin preview · {adventureStatusLabel(adventure.status)}
         </div>
       )}
+      {adventure.isFounderHunt && (
+        <div className="preview-banner founder-banner">
+          <Crown size={16} /> Founder Hunt · Found What Was Lost
+        </div>
+      )}
       {adminPreview && <AdminClaimCode adventure={adventure} />}
       <div className="card detail-hero">
         <div className="row">
-          <span className={`badge ${adventure.status}`}>
-            {adventureStatusLabel(adventure.status)}
-          </span>
+          {adventure.isFounderHunt ? (
+            <span className="badge founder-badge">
+              <Crown size={12} /> Founder Hunt
+            </span>
+          ) : (
+            <span className={`badge ${adventure.status}`}>
+              {adventureStatusLabel(adventure.status)}
+            </span>
+          )}
           <small>{adventure.distance}</small>
         </div>
         <h2>{adventure.title}</h2>
+        {adventure.collectionName && (
+          <p className="detail-collection">⭐ {adventure.collectionName}</p>
+        )}
         <p className="location">
           <MapPin size={14} /> {adventure.location}
         </p>
@@ -862,6 +951,14 @@ function AdventureDetail({ adventure, progress, nav, adminPreview }) {
               : `${progress.step} of ${adventure.clues.length} clues solved`}
         </small>
       </div>
+
+      {adventure.collectionId && state && adventures && (
+        <CollectionProgressCard
+          collectionId={adventure.collectionId}
+          state={state}
+          adventures={adventures}
+        />
+      )}
 
       <div className="card">
         <h3>Trail Overview</h3>
@@ -1754,6 +1851,15 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
     qrClaimValue: '',
     physicalMedallionCode: '',
     hintAfterTap: '',
+    collectionName: '',
+    collectionId: '',
+    collectionBadge: '',
+    collectionRewardCoins: 500,
+    collectionRewardMedallion: '',
+    isFounderHunt: false,
+    city: '',
+    state: '',
+    estimatedMinutes: 25,
   });
   const [clues, setClues] = useState([emptyClue(), emptyClue(), emptyClue()]);
   const [rewards, setRewards] = useState([
@@ -1874,8 +1980,20 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
       hintAfterTap: claimFields.hintAfterTap,
       finderSearchRadiusM: 200,
       finderCaptureBaseM: 25,
-      rewardCoins: 25,
-      potEntries: 3,
+      rewardCoins: meta.isFounderHunt ? 10000 : 25,
+      potEntries: meta.isFounderHunt ? 10 : 3,
+      collectionId: meta.collectionId.trim() || null,
+      collectionName: meta.collectionName.trim(),
+      collectionBadge: meta.collectionBadge.trim(),
+      collectionRewardCoins: parseInt(meta.collectionRewardCoins, 10) || 0,
+      collectionRewardMedallion: meta.collectionRewardMedallion.trim(),
+      isFounderHunt: Boolean(meta.isFounderHunt),
+      city: meta.city.trim() || meta.location.split(',')[0]?.trim() || '',
+      state: meta.state.trim() || meta.location.split(',')[1]?.trim() || 'Kansas',
+      region: meta.state.trim() || 'Kansas',
+      estimatedMinutes: parseInt(meta.estimatedMinutes, 10) || 25,
+      playersCompleted: 0,
+      firstFinderName: '',
       story,
       clues: savedClues,
       bonusFinds: buildBonusFinds(clues),
@@ -1978,6 +2096,67 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
           placeholder="Adventure story hook"
           rows={3}
         />
+
+        <div className="clues-section-head">
+          <h3>Collection & Engagement</h3>
+        </div>
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={meta.isFounderHunt}
+            onChange={(e) => setMeta((m) => ({ ...m, isFounderHunt: e.target.checked }))}
+          />
+          👑 Founder Hunt (+10,000 coins · Lifetime Premium badge)
+        </label>
+        <label>Collection Name</label>
+        <input
+          value={meta.collectionName}
+          onChange={(e) => setMeta((m) => ({ ...m, collectionName: e.target.value }))}
+          placeholder="Parsons Legends"
+        />
+        <label>Collection ID (slug)</label>
+        <input
+          value={meta.collectionId}
+          onChange={(e) => setMeta((m) => ({ ...m, collectionId: e.target.value }))}
+          placeholder="parsons-legends"
+        />
+        <label>Collection Badge</label>
+        <input
+          value={meta.collectionBadge}
+          onChange={(e) => setMeta((m) => ({ ...m, collectionBadge: e.target.value }))}
+          placeholder="Keeper of Parsons Badge"
+        />
+        <label>Collection Reward Medallion</label>
+        <input
+          value={meta.collectionRewardMedallion}
+          onChange={(e) => setMeta((m) => ({ ...m, collectionRewardMedallion: e.target.value }))}
+          placeholder="Parsons Legends Exclusive Medallion"
+        />
+        <label>Collection Reward Coins</label>
+        <input
+          type="number"
+          value={meta.collectionRewardCoins}
+          onChange={(e) => setMeta((m) => ({ ...m, collectionRewardCoins: e.target.value }))}
+        />
+        <label>City</label>
+        <input
+          value={meta.city}
+          onChange={(e) => setMeta((m) => ({ ...m, city: e.target.value }))}
+          placeholder="Parsons"
+        />
+        <label>State</label>
+        <input
+          value={meta.state}
+          onChange={(e) => setMeta((m) => ({ ...m, state: e.target.value }))}
+          placeholder="Kansas"
+        />
+        <label>Estimated Time (minutes)</label>
+        <input
+          type="number"
+          value={meta.estimatedMinutes}
+          onChange={(e) => setMeta((m) => ({ ...m, estimatedMinutes: e.target.value }))}
+        />
+
         <div className="clues-section-head">
           <h3>Final Treasure Claim</h3>
         </div>
@@ -2218,13 +2397,14 @@ function BottomNav({ screen, nav, adminPreview }) {
     ['home', 'Home'],
     ['feed', 'Feed'],
     ['map', 'Map'],
-    ['vault', 'Vault'],
+    ['vault', 'Passport'],
     ['create', 'Create'],
     ['admin', 'Admin'],
   ];
 
   const active = (id) => {
     if (screen === id) return true;
+    if (screen === 'leaderboard') return id === 'home';
     if (screen === 'play' || screen === 'detail' || screen === 'bonus') {
       return adminPreview ? id === 'admin' : id === 'feed';
     }

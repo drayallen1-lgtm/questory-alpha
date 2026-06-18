@@ -1873,3 +1873,256 @@ nav button.active {
     font-size: 38px;
   }
 }
+
+/* Sweep #1 — The Hook */
+.home-greeting h2 {
+  font-size: 28px;
+}
+
+.streak-card {
+  border-color: rgba(251, 146, 60, 0.35);
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.08), rgba(7, 15, 24, 0.9));
+}
+
+.streak-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.streak-icon {
+  color: #fb923c;
+}
+
+.home-stat-card p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.collection-near-card .collection-progress-row {
+  margin: 12px 0;
+}
+
+.home-quick-grid {
+  margin-top: 8px;
+}
+
+.home-quick-btn {
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--line);
+}
+
+.home-quick-btn b {
+  display: block;
+  margin: 8px 0 4px;
+}
+
+.feed-card.founder-hunt {
+  border-color: rgba(245, 200, 66, 0.45);
+  box-shadow: 0 0 20px rgba(245, 200, 66, 0.08);
+}
+
+.badge.founder-badge {
+  background: linear-gradient(135deg, #f5c842, #d97706);
+  color: #1a1200;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.founder-banner {
+  background: rgba(245, 200, 66, 0.12);
+  border-color: rgba(245, 200, 66, 0.35);
+}
+
+.feed-collection,
+.detail-collection {
+  color: var(--questory-accent);
+  font-weight: 600;
+}
+
+.feed-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 8px 0;
+}
+
+.feed-meta-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.feed-first-finder,
+.feed-badge-hint,
+.feed-sponsor {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 4px 0;
+}
+
+.chip-done {
+  background: rgba(94, 234, 212, 0.15);
+  color: var(--questory-accent);
+}
+
+.passport-region h3 {
+  letter-spacing: 0.08em;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.passport-city {
+  margin: 16px 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.passport-city-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.passport-collection {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+  align-items: flex-start;
+}
+
+.passport-collection span {
+  font-size: 18px;
+}
+
+.collection-complete-card {
+  border-color: rgba(245, 200, 66, 0.35);
+}
+
+.badge-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.badge-card {
+  text-align: center;
+}
+
+.badge-icon {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.badge-catalog-row {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.leaderboard-row.you {
+  background: rgba(94, 234, 212, 0.06);
+  margin: 0 -12px;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.lb-stats {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.social-card {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 360px;
+  background: linear-gradient(160deg, #0c1a28, #070f18);
+  border: 2px solid rgba(245, 200, 66, 0.4);
+  border-radius: 16px;
+  padding: 32px 24px;
+  text-align: center;
+  margin: 16px 0;
+}
+
+.social-card-brand {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--questory-accent);
+}
+
+.social-card-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 12px 0;
+}
+
+.social-card-adventure {
+  font-size: 18px;
+  color: #f5e6c8;
+}
+
+.social-card-date {
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.social-card-footer {
+  margin-top: 20px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.victory-rewards-summary p {
+  margin: 6px 0;
+}
+
+.collection-progress-card h4 {
+  margin: 0 0 8px;
+}
+
+.progress.compact {
+  height: 6px;
+  margin-top: 6px;
+}
+
+.header-streak {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(251, 146, 60, 0.15);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  cursor: pointer;
+}
+
+.finder-activate-hint .distance-away {
+  display: block;
+  margin-top: 4px;
+}

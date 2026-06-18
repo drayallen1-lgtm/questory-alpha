@@ -10,6 +10,35 @@ import {
   claimHistoryToRow,
 } from './mappers';
 import { defaultState } from '../seed';
+import { normalizeEngagement } from '../engagement';
+
+function profileToEngagement(profile) {
+  if (!profile) return normalizeEngagement();
+  return normalizeEngagement({
+    badges: profile.badges || [],
+    streak: profile.streak || undefined,
+    milesWalked: profile.miles_walked ?? 0,
+    adventuresCompleted: profile.adventures_completed ?? 0,
+    founderHuntsCompleted: profile.founder_hunts_completed ?? 0,
+    collectionsCompleted: profile.collections_completed || [],
+    firstFinderAdventures: profile.first_finder_adventures || [],
+    completedCollectionRewards: profile.completed_collection_rewards || [],
+  });
+}
+
+function engagementToProfileFields(engagement) {
+  const e = normalizeEngagement(engagement);
+  return {
+    badges: e.badges,
+    streak: e.streak,
+    miles_walked: e.milesWalked,
+    adventures_completed: e.adventuresCompleted,
+    founder_hunts_completed: e.founderHuntsCompleted,
+    collections_completed: e.collectionsCompleted,
+    first_finder_adventures: e.firstFinderAdventures,
+    completed_collection_rewards: e.completedCollectionRewards,
+  };
+}
 
 async function fetchCluesForAdventures(adventureIds) {
   if (!adventureIds.length) return {};
@@ -95,6 +124,7 @@ export async function loadRemoteData(userId, isAdmin) {
       coins: 0,
       entries: 0,
       progress: {},
+      engagement: normalizeEngagement(),
     };
   }
 
@@ -111,6 +141,7 @@ export async function loadRemoteData(userId, isAdmin) {
     coins: profile?.coins ?? 0,
     entries: profile?.entries ?? 0,
     progress: profile?.progress ?? {},
+    engagement: profileToEngagement(profile),
   };
 }
 
@@ -164,12 +195,11 @@ export async function deleteAdventureRemote(adventureId) {
   if (error) throw error;
 }
 
-export async function saveUserProfileState(userId, { coins, entries, progress }) {
+export async function saveUserProfileState(userId, { coins, entries, progress, engagement }) {
   if (!hasSupabase() || !userId) return;
-  const { error } = await supabase
-    .from('profiles')
-    .update({ coins, entries, progress })
-    .eq('id', userId);
+  const payload = { coins, entries, progress };
+  if (engagement) Object.assign(payload, engagementToProfileFields(engagement));
+  const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
   if (error) throw error;
 }
 
