@@ -43,10 +43,12 @@ create index if not exists verification_runs_adventure_idx on public.verificatio
 
 alter table public.verification_runs enable row level security;
 
+drop policy if exists "Creators read own verification runs" on public.verification_runs;
 create policy "Creators read own verification runs"
   on public.verification_runs for select
   using (creator_id = auth.uid() or public.is_admin());
 
+drop policy if exists "Creators insert verification runs" on public.verification_runs;
 create policy "Creators insert verification runs"
   on public.verification_runs for insert
   with check (creator_id = auth.uid() or public.is_admin());
