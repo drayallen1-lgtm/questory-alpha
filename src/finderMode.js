@@ -20,11 +20,13 @@ export function getMedallionLocation(adventure) {
 }
 
 export function getFinderSearchRadius(adventure) {
-  return adventure?.finderSearchRadiusM ?? FINDER_SEARCH_RADIUS_M;
+  const value = Number(adventure?.finderSearchRadiusM);
+  return Number.isFinite(value) && value > 0 ? value : FINDER_SEARCH_RADIUS_M;
 }
 
 export function getFinderCaptureBase(adventure) {
-  return adventure?.finderCaptureBaseM ?? FINDER_CAPTURE_BASE_M;
+  const value = Number(adventure?.finderCaptureBaseM);
+  return Number.isFinite(value) && value > 0 ? value : FINDER_CAPTURE_BASE_M;
 }
 
 export function getCaptureRadius(adventure, accuracyM = 0) {

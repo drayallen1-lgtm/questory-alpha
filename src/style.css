@@ -1470,6 +1470,31 @@ a.sponsor-name:hover {
   animation: signal-pulse 2s ease-out infinite;
 }
 
+.signal-pulse-ring.active {
+  border-color: rgba(245, 200, 66, 0.65);
+  animation-duration: 1.4s;
+}
+
+.finder-signal-preview {
+  margin: 16px 0;
+  text-align: left;
+}
+
+.finder-gps-status {
+  margin: 12px 0;
+  color: var(--questory-muted);
+}
+
+.finder-activate-hint {
+  margin: 12px 0;
+}
+
+.finder-activate-hint .distance-away {
+  display: block;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
 .signal-icon {
   color: var(--questory-accent);
   margin: 12px auto 8px;

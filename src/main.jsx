@@ -60,6 +60,7 @@ import { AdminClaimCode } from './AdminClaimCode';
 import {
   MedallionSignalScreen,
   FinderModeScreen,
+  FinderAwaitingPanel,
   TreasureClaimPanel,
   ClaimMethodSelector,
   claimMethodUsesFinder as adventureUsesFinder,
@@ -1055,15 +1056,11 @@ function AdventurePlay({ adventure, progress, onSolve, onClaim, nav, adminPrevie
         )}
 
         {awaitingFinder && (
-          <>
-            <p>
-              All clues solved. The virtual medallion is broadcasting — enter Finder Mode to
-              track the signal.
-            </p>
-            <button onClick={() => nav('medallion-signal', adventure.id, { adminPreview })}>
-              <Compass size={18} /> Medallion Signal Activated
-            </button>
-          </>
+          <FinderAwaitingPanel
+            adventure={adventure}
+            nav={nav}
+            adminPreview={adminPreview}
+          />
         )}
 
         {readyToClaim && (

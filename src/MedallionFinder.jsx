@@ -19,61 +19,12 @@ import {
 } from './finderMode';
 import { formatDistanceAway, getCurrentPosition } from './geolocation';
 
-export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
-  const physical = isPhysicalMedallionClaim(adventure);
-
-  return (
-    <>
-      <button
-        type="button"
-        className="ghost back"
-        onClick={() => nav('play', adventure.id, { adminPreview })}
-      >
-        ← Adventure Play
-      </button>
-      <div className="card medallion-signal-card">
-        <div className="signal-pulse-ring" aria-hidden />
-        <Radio size={36} className="signal-icon" />
-        <h2>Medallion Signal Activated.</h2>
-        <p>
-          {physical
-            ? 'The trail is complete. A hidden physical medallion is nearby — enter Finder Mode, follow the signal, and search the area.'
-            : 'The trail is complete. A virtual medallion is broadcasting nearby — enter Finder Mode and follow the signal.'}
-        </p>
-        <SponsorLine adventure={adventure} />
-        <button type="button" onClick={() => nav('finder', adventure.id, { adminPreview })}>
-          <Compass size={18} /> Enter Finder Mode
-        </button>
-      </div>
-    </>
-  );
-}
-
-function SponsorLine({ adventure }) {
-  const name = adventure.sponsorInfo?.name || adventure.sponsor;
-  if (!name) return null;
-  return <p className="finder-sponsor">Sponsored by {name}</p>;
-}
-
-export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMedallionTap }) {
+function useMedallionGps(adventure, watching = true) {
   const [distance, setDistance] = useState(null);
   const [accuracy, setAccuracy] = useState(null);
   const [gpsError, setGpsError] = useState('');
-  const [watching, setWatching] = useState(true);
-  const [devOverride, setDevOverride] = useState(false);
-  const [capturing, setCapturing] = useState(false);
-  const [tapError, setTapError] = useState('');
-  const tapLockRef = useRef(false);
-
-  const searchRadius = getFinderSearchRadius(adventure);
-  const captureRadius = getCaptureRadius(adventure, accuracy);
-  const signal = computeSignalStrength(distance, searchRadius);
-  const unlocked = canUnlockFinderMode(distance, accuracy, devOverride, searchRadius);
-  const inCaptureRange = canCaptureMedallion(distance, accuracy, devOverride, adventure);
   const medallion = getMedallionLocation(adventure);
-  const physical = isPhysicalMedallionClaim(adventure);
-  const claimMethod = normalizeClaimMethod(adventure.claimMethod);
-  const tapDisabled = !inCaptureRange || progress.medallionTapped || capturing;
+  const searchRadius = getFinderSearchRadius(adventure);
 
   useEffect(() => {
     if (!watching || !medallion) return undefined;
@@ -93,7 +44,7 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
         setGpsError('');
       } catch {
         if (!cancelled) {
-          setGpsError('Location unavailable. Enable GPS or use Dev Override.');
+          setGpsError('Location unavailable. Enable GPS to track the medallion signal.');
         }
       }
     }
@@ -105,6 +56,210 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
       clearInterval(id);
     };
   }, [adventure, watching, medallion]);
+
+  const inSearchArea = canUnlockFinderMode(distance, accuracy, false, searchRadius);
+  const signal = computeSignalStrength(distance, searchRadius);
+  const locating = distance == null && !gpsError;
+
+  return {
+    distance,
+    accuracy,
+    gpsError,
+    searchRadius,
+    medallion,
+    inSearchArea,
+    signal,
+    locating,
+  };
+}
+
+function FinderSignalPreview({ distance, accuracy, signal, searchRadius }) {
+  return (
+    <div className="finder-signal-preview">
+      <div className="finder-stat">
+        <small>Signal strength</small>
+        <div className="signal-meter" aria-label={`Signal ${signal}%`}>
+          <i style={{ width: `${signal}%` }} />
+        </div>
+        <strong>{signal}%</strong>
+      </div>
+      <div className="finder-stat-row">
+        <div>
+          <small>Distance to medallion</small>
+          <strong>{distance != null ? formatDistanceAway(distance) : 'Locating…'}</strong>
+        </div>
+        <div>
+          <small>Search area</small>
+          <strong>{searchRadius} m radius</strong>
+        </div>
+      </div>
+      {accuracy != null && (
+        <p className="admin-meta">
+          GPS accuracy ±{Math.round(accuracy)} m
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
+  const physical = isPhysicalMedallionClaim(adventure);
+  const { distance, accuracy, gpsError, searchRadius, medallion, inSearchArea, signal, locating } =
+    useMedallionGps(adventure);
+
+  if (!medallion) {
+    return (
+      <div className="card">
+        <p>Add GPS coordinates to the final clue to enable Finder Mode.</p>
+        <button type="button" className="ghost" onClick={() => nav('play', adventure.id, { adminPreview })}>
+          Back
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="ghost back"
+        onClick={() => nav('play', adventure.id, { adminPreview })}
+      >
+        ← Adventure Play
+      </button>
+      <div className="card medallion-signal-card">
+        <div className={`signal-pulse-ring ${inSearchArea ? 'active' : ''}`} aria-hidden />
+        <Radio size={36} className="signal-icon" />
+        <h2>Medallion Signal Activated.</h2>
+        <p>
+          {physical
+            ? 'The trail is complete. A hidden physical medallion is nearby — enter Finder Mode within the search area and follow the signal.'
+            : 'The trail is complete. A virtual medallion is broadcasting nearby — enter Finder Mode within the search area and follow the signal.'}
+        </p>
+        <SponsorLine adventure={adventure} />
+        {locating && <p className="finder-gps-status">Locating your position…</p>}
+        {gpsError && <p className="loc-feedback denied">{gpsError}</p>}
+        {!locating && !gpsError && !inSearchArea && (
+          <p className="loc-feedback denied finder-activate-hint">
+            Move closer to activate signal.
+            {distance != null && (
+              <span className="distance-away">{formatDistanceAway(distance)}</span>
+            )}
+          </p>
+        )}
+        {inSearchArea && (
+          <FinderSignalPreview
+            distance={distance}
+            accuracy={accuracy}
+            signal={signal}
+            searchRadius={searchRadius}
+          />
+        )}
+        <button
+          type="button"
+          disabled={!inSearchArea}
+          onClick={() => nav('finder', adventure.id, { adminPreview })}
+        >
+          <Compass size={18} /> Enter Finder Mode
+        </button>
+        {!inSearchArea && !locating && (
+          <p className="admin-meta">
+            Finder unlocks within {searchRadius} m of the medallion.
+          </p>
+        )}
+      </div>
+    </>
+  );
+}
+
+/** Play-screen panel: enter Finder when inside search area, not capture range. */
+export function FinderAwaitingPanel({ adventure, nav, adminPreview }) {
+  const physical = isPhysicalMedallionClaim(adventure);
+  const { distance, gpsError, searchRadius, medallion, inSearchArea, signal, locating } =
+    useMedallionGps(adventure);
+
+  if (!medallion) {
+    return (
+      <p>Complete the trail — add GPS to the final clue to enable Finder Mode.</p>
+    );
+  }
+
+  return (
+    <>
+      <p>
+        {physical
+          ? 'All clues solved. Follow the physical medallion signal in Finder Mode.'
+          : 'All clues solved. The virtual medallion is broadcasting — enter Finder Mode to track the signal.'}
+      </p>
+      {locating && <p className="finder-gps-status">Locating your position…</p>}
+      {gpsError && <p className="loc-feedback denied">{gpsError}</p>}
+      {!locating && !gpsError && !inSearchArea && (
+        <p className="loc-feedback denied finder-activate-hint">
+          Move closer to activate signal.
+          {distance != null && (
+            <span className="distance-away">{formatDistanceAway(distance)}</span>
+          )}
+        </p>
+      )}
+      {inSearchArea && (
+        <FinderSignalPreview
+          distance={distance}
+          signal={signal}
+          searchRadius={searchRadius}
+        />
+      )}
+      <button
+        type="button"
+        disabled={!inSearchArea}
+        onClick={() => nav('finder', adventure.id, { adminPreview })}
+      >
+        <Compass size={18} /> Enter Finder Mode
+      </button>
+      {!inSearchArea && !locating && (
+        <p className="admin-meta">
+          Signal activates within {searchRadius} m · tap unlocks in capture range.
+        </p>
+      )}
+    </>
+  );
+}
+
+function SponsorLine({ adventure }) {
+  const name = adventure.sponsorInfo?.name || adventure.sponsor;
+  if (!name) return null;
+  return <p className="finder-sponsor">Sponsored by {name}</p>;
+}
+
+export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMedallionTap }) {
+  const [watching, setWatching] = useState(true);
+  const [devOverride, setDevOverride] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [tapError, setTapError] = useState('');
+  const tapLockRef = useRef(false);
+
+  const { distance, accuracy, gpsError, searchRadius, medallion } = useMedallionGps(
+    adventure,
+    watching
+  );
+  const effectiveDistance = devOverride ? 10 : distance;
+  const effectiveAccuracy = devOverride ? 5 : accuracy;
+  const captureRadius = getCaptureRadius(adventure, effectiveAccuracy);
+  const signal = computeSignalStrength(effectiveDistance, searchRadius);
+  const inSearchArea = canUnlockFinderMode(
+    effectiveDistance,
+    effectiveAccuracy,
+    devOverride,
+    searchRadius
+  );
+  const inCaptureRange = canCaptureMedallion(
+    effectiveDistance,
+    effectiveAccuracy,
+    devOverride,
+    adventure
+  );
+  const physical = isPhysicalMedallionClaim(adventure);
+  const claimMethod = normalizeClaimMethod(adventure.claimMethod);
+  const tapDisabled = !inCaptureRange || progress.medallionTapped || capturing;
 
   async function handleTap() {
     if (tapLockRef.current || tapDisabled) return;
@@ -120,8 +275,8 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
     try {
       const result = await Promise.resolve(
         onMedallionTap?.({
-          distance,
-          accuracy,
+          distance: effectiveDistance,
+          accuracy: effectiveAccuracy,
           inCaptureRange,
           devOverride,
         })
@@ -143,9 +298,6 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
 
   function handleDevOverride() {
     setDevOverride(true);
-    setDistance(10);
-    setAccuracy(5);
-    setGpsError('');
     setTapError('');
     console.log('[Finder] Dev Override enabled');
   }
@@ -171,25 +323,34 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
         ← Signal
       </button>
       <div className="preview-banner finder-mode-banner">
-        <Compass size={16} /> Finder Mode · {unlocked ? 'Signal locked' : 'Searching…'}
+        <Compass size={16} /> Finder Mode ·{' '}
+        {inCaptureRange
+          ? 'Capture ready'
+          : inSearchArea
+            ? 'Signal active'
+            : 'Searching…'}
       </div>
 
       <div className="card finder-stats">
         <div className="finder-stat">
           <small>Signal strength</small>
           <div className="signal-meter" aria-label={`Signal ${signal}%`}>
-            <i style={{ width: `${signal}%` }} />
+            <i style={{ width: `${inSearchArea ? signal : 0}%` }} />
           </div>
-          <strong>{signal}%</strong>
+          <strong>{inSearchArea ? `${signal}%` : '—'}</strong>
         </div>
         <div className="finder-stat-row">
           <div>
             <small>Distance to medallion</small>
-            <strong>{distance != null ? formatDistanceAway(distance) : 'Locating…'}</strong>
+            <strong>
+              {effectiveDistance != null ? formatDistanceAway(effectiveDistance) : 'Locating…'}
+            </strong>
           </div>
           <div>
             <small>GPS accuracy</small>
-            <strong>{accuracy != null ? `±${Math.round(accuracy)} m` : '—'}</strong>
+            <strong>
+              {effectiveAccuracy != null ? `±${Math.round(effectiveAccuracy)} m` : '—'}
+            </strong>
           </div>
         </div>
         <div className="finder-stat-row">
@@ -199,9 +360,14 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
           </div>
           <div>
             <small>Capture range</small>
-            <strong>~{Math.round(captureRadius)} m + buffer</strong>
+            <strong>~{Math.round(captureRadius)} m</strong>
           </div>
         </div>
+        {!inSearchArea && effectiveDistance != null && !gpsError && (
+          <p className="loc-feedback denied finder-activate-hint">
+            Move closer to activate signal.
+          </p>
+        )}
         {gpsError && <p className="loc-feedback denied">{gpsError}</p>}
       </div>
 
@@ -218,9 +384,11 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
               ? physical
                 ? 'Signal peak reached. Tap to mark this search zone.'
                 : 'You are within capture range. Tap the medallion to secure it.'
-              : unlocked
-                ? `Move closer — within ~${Math.round(captureRadius)} m including GPS buffer.`
-                : `Enter the search area (within ${searchRadius} m) to strengthen the signal.`}
+              : inSearchArea
+                ? `Signal active. Move within ~${Math.round(captureRadius)} m to tap the medallion.`
+                : effectiveDistance != null
+                  ? 'Move closer to activate signal.'
+                  : 'Locating your position…'}
         </p>
         {tapError && <p className="form-error finder-tap-error">{tapError}</p>}
         <button
@@ -247,7 +415,7 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
           <ShieldCheck size={16} /> Dev Override
         </button>
         <p className="admin-meta">
-          <MapPin size={12} /> Hot zone begins at 75 m · unlock within {searchRadius} m
+          <MapPin size={12} /> Search area {searchRadius} m · capture ~{Math.round(captureRadius)} m
         </p>
       </div>
     </>
