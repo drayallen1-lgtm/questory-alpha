@@ -1528,6 +1528,8 @@ a.sponsor-name:hover {
 }
 
 .finder-medallion-card {
+  position: relative;
+  z-index: 1;
   text-align: center;
 }
 
@@ -1543,6 +1545,20 @@ a.sponsor-name:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
+}
+
+.finder-tap-btn {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.finder-tap-error {
+  margin: 10px 0 0;
+  text-align: left;
 }
 
 .finder-chest {

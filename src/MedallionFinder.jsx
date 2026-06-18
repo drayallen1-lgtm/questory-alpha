@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Compass, LocateFixed, MapPin, QrCode, Radio, ShieldCheck, Sparkles } from 'lucide-react';
 import {
   CLAIM_METHOD,
@@ -25,6 +25,7 @@ export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
   return (
     <>
       <button
+        type="button"
         className="ghost back"
         onClick={() => nav('play', adventure.id, { adminPreview })}
       >
@@ -40,7 +41,7 @@ export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
             : 'The trail is complete. A virtual medallion is broadcasting nearby — enter Finder Mode and follow the signal.'}
         </p>
         <SponsorLine adventure={adventure} />
-        <button onClick={() => nav('finder', adventure.id, { adminPreview })}>
+        <button type="button" onClick={() => nav('finder', adventure.id, { adminPreview })}>
           <Compass size={18} /> Enter Finder Mode
         </button>
       </div>
@@ -60,6 +61,9 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
   const [gpsError, setGpsError] = useState('');
   const [watching, setWatching] = useState(true);
   const [devOverride, setDevOverride] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [tapError, setTapError] = useState('');
+  const tapLockRef = useRef(false);
 
   const searchRadius = getFinderSearchRadius(adventure);
   const captureRadius = getCaptureRadius(adventure, accuracy);
@@ -68,6 +72,8 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
   const inCaptureRange = canCaptureMedallion(distance, accuracy, devOverride, adventure);
   const medallion = getMedallionLocation(adventure);
   const physical = isPhysicalMedallionClaim(adventure);
+  const claimMethod = normalizeClaimMethod(adventure.claimMethod);
+  const tapDisabled = !inCaptureRange || progress.medallionTapped || capturing;
 
   useEffect(() => {
     if (!watching || !medallion) return undefined;
@@ -100,9 +106,39 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
     };
   }, [adventure, watching, medallion]);
 
-  function handleTap() {
-    if (!inCaptureRange) return;
-    onMedallionTap();
+  async function handleTap() {
+    if (tapLockRef.current || tapDisabled) return;
+
+    console.log('[Finder] button clicked');
+    console.log('[Finder] within capture range:', inCaptureRange);
+    console.log('[Finder] claim method:', claimMethod);
+
+    tapLockRef.current = true;
+    setCapturing(true);
+    setTapError('');
+
+    try {
+      const result = await Promise.resolve(
+        onMedallionTap?.({
+          distance,
+          accuracy,
+          inCaptureRange,
+          devOverride,
+        })
+      );
+
+      console.log('[Finder] claim result/error:', result);
+
+      if (result && !result.ok) {
+        setTapError(result.message || 'Could not capture medallion. Try again.');
+      }
+    } catch (err) {
+      console.error('[Finder] tap error:', err);
+      setTapError(err?.message || 'Could not capture medallion. Try again.');
+    } finally {
+      setCapturing(false);
+      tapLockRef.current = false;
+    }
   }
 
   function handleDevOverride() {
@@ -110,13 +146,15 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
     setDistance(10);
     setAccuracy(5);
     setGpsError('');
+    setTapError('');
+    console.log('[Finder] Dev Override enabled');
   }
 
   if (!medallion) {
     return (
       <div className="card">
         <p>Add GPS coordinates to the final clue to enable Finder Mode.</p>
-        <button className="ghost" onClick={() => nav('play', adventure.id, { adminPreview })}>
+        <button type="button" className="ghost" onClick={() => nav('play', adventure.id, { adminPreview })}>
           Back
         </button>
       </div>
@@ -126,6 +164,7 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
   return (
     <>
       <button
+        type="button"
         className="ghost back"
         onClick={() => nav('medallion-signal', adventure.id, { adminPreview })}
       >
@@ -167,31 +206,44 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
       </div>
 
       <div className={`card finder-medallion-card ${inCaptureRange ? 'ready' : ''}`}>
-        <div className="finder-medallion-visual" aria-hidden>
+        <div className="finder-medallion-visual" aria-hidden="true">
           <span className="finder-chest">{physical ? '📍' : '🧭'}</span>
           <span className="finder-medallion">🥇</span>
         </div>
         <h3>{physical ? 'Physical Medallion Signal' : 'Virtual Medallion'}</h3>
         <p>
-          {inCaptureRange
-            ? physical
-              ? 'Signal peak reached. Tap to mark this search zone.'
-              : 'You are within capture range. Tap the medallion to secure it.'
-            : unlocked
-              ? `Move closer — within ~${Math.round(captureRadius)} m including GPS buffer.`
-              : `Enter the search area (within ${searchRadius} m) to strengthen the signal.`}
+          {capturing
+            ? 'Capturing medallion...'
+            : inCaptureRange
+              ? physical
+                ? 'Signal peak reached. Tap to mark this search zone.'
+                : 'You are within capture range. Tap the medallion to secure it.'
+              : unlocked
+                ? `Move closer — within ~${Math.round(captureRadius)} m including GPS buffer.`
+                : `Enter the search area (within ${searchRadius} m) to strengthen the signal.`}
         </p>
-        <button onClick={handleTap} disabled={!inCaptureRange || progress.medallionTapped}>
+        {tapError && <p className="form-error finder-tap-error">{tapError}</p>}
+        <button
+          type="button"
+          className="finder-tap-btn"
+          onClick={handleTap}
+          disabled={tapDisabled}
+          aria-busy={capturing}
+        >
           <Sparkles size={18} />
-          {progress.medallionTapped ? 'Signal captured' : 'Tap Medallion'}
+          {capturing
+            ? 'Capturing medallion...'
+            : progress.medallionTapped
+              ? 'Signal captured'
+              : 'Tap Medallion'}
         </button>
       </div>
 
       <div className="card finder-actions">
-        <button className="ghost" onClick={() => setWatching((v) => !v)}>
+        <button type="button" className="ghost" onClick={() => setWatching((v) => !v)}>
           <LocateFixed size={16} /> {watching ? 'Pause GPS' : 'Resume GPS'}
         </button>
-        <button className="ghost dev-unlock" onClick={handleDevOverride}>
+        <button type="button" className="ghost dev-unlock" onClick={handleDevOverride}>
           <ShieldCheck size={16} /> Dev Override
         </button>
         <p className="admin-meta">
@@ -244,7 +296,7 @@ export function TreasureClaimPanel({ adventure, progress, onClaim }) {
           onChange={(e) => setQrInput(e.target.value.toUpperCase())}
           placeholder="QR payload"
         />
-        <button onClick={handleQrClaim}>
+        <button type="button" onClick={handleQrClaim}>
           <QrCode size={18} /> Verify QR & Claim
         </button>
       </>
@@ -269,7 +321,7 @@ export function TreasureClaimPanel({ adventure, progress, onClaim }) {
           onChange={(e) => setPhysicalInput(e.target.value.toUpperCase())}
           placeholder="Engraved physical code"
         />
-        <button onClick={handlePhysicalClaim}>
+        <button type="button" onClick={handlePhysicalClaim}>
           <Sparkles size={18} /> Claim Treasure
         </button>
       </div>
@@ -281,7 +333,7 @@ export function TreasureClaimPanel({ adventure, progress, onClaim }) {
       <>
         <p>Enter the final claim code to unlock your rewards.</p>
         <input id="claim-code" placeholder="Enter secret code" />
-        <button onClick={handleCodeClaim}>
+        <button type="button" onClick={handleCodeClaim}>
           <Sparkles size={18} /> Claim Treasure
         </button>
       </>
@@ -293,7 +345,7 @@ export function TreasureClaimPanel({ adventure, progress, onClaim }) {
       <>
         <p>Virtual medallion secured. Enter the final claim code to complete your claim.</p>
         <input id="claim-code" placeholder="Enter secret code" />
-        <button onClick={handleCodeClaim}>
+        <button type="button" onClick={handleCodeClaim}>
           <Sparkles size={18} /> Claim Treasure
         </button>
       </>

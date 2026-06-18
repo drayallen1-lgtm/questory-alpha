@@ -49,6 +49,7 @@ import {
   CLAIM_METHOD,
   CLAIM_METHOD_OPTIONS,
   autoClaimsOnTap,
+  normalizeClaimMethod,
   validateClaimAttempt,
   claimMethodLabel,
   validateAdventureClaimFields,
@@ -319,8 +320,16 @@ function QuestoryApp() {
 
   function claimTreasure(adventure, code, options = {}) {
     const p = getAdventureProgress(state, adventure.id);
-    if (isSupabaseMode && !user) {
-      return { ok: false, message: 'Sign in to claim and save your rewards.' };
+    const method = normalizeClaimMethod(adventure.claimMethod);
+    const medallionAutoClaim =
+      Boolean(options.medallionTapped) && method === CLAIM_METHOD.TAP_MEDALLION;
+
+    if (isSupabaseMode && !user && !medallionAutoClaim) {
+      return {
+        ok: false,
+        message: 'Sign in to claim and save your rewards.',
+        requiresLogin: true,
+      };
     }
     if (p.claimed) {
       return { ok: false, message: 'You already claimed this adventure.' };
@@ -408,10 +417,36 @@ function QuestoryApp() {
     });
   }
 
-  function markMedallionTapped(adventure) {
+  function handleMedallionCapture(adventure, context = {}) {
+    const method = normalizeClaimMethod(adventure.claimMethod);
+    const inRange = Boolean(context.inCaptureRange || context.devOverride);
+
+    console.log('[Questory] Tap Medallion clicked', {
+      claimMethod: method,
+      inCaptureRange: inRange,
+      devOverride: Boolean(context.devOverride),
+      distance: context.distance,
+      accuracy: context.accuracy,
+    });
+
+    if (!inRange) {
+      const result = {
+        ok: false,
+        message: 'Move within capture range to tap the medallion.',
+      };
+      console.log('[Questory] medallion capture blocked', result);
+      return result;
+    }
+
     if (autoClaimsOnTap(adventure)) {
-      claimTreasure(adventure, adventure.claimCode, { medallionTapped: true });
-      return;
+      const result = claimTreasure(adventure, adventure.claimCode, {
+        medallionTapped: true,
+      });
+      console.log('[Questory] medallion auto-claim result', result);
+      if (!result.ok && result.requiresLogin) {
+        setShowLogin(true);
+      }
+      return result;
     }
 
     setState((s) => {
@@ -429,6 +464,10 @@ function QuestoryApp() {
       }
       return nextState;
     });
+
+    const result = { ok: true, nextScreen: 'play' };
+    console.log('[Questory] medallion tap advanced', result);
+    return result;
   }
 
   function continueAfterBonus() {
@@ -516,7 +555,7 @@ function QuestoryApp() {
             progress={progress}
             nav={nav}
             adminPreview={state.adminPreview}
-            onMedallionTap={() => markMedallionTapped(selected)}
+            onMedallionTap={(context) => handleMedallionCapture(selected, context)}
           />
         )}
         {state.screen === 'bonus' && state.pendingBonus && selected && (
