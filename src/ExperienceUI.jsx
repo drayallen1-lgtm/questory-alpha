@@ -49,7 +49,7 @@ export function TemplatePicker({ selected, onSelect }) {
           <button
             key={t.id}
             type="button"
-            className={`card mini template-card ${selected === t.id ? 'active' : ''}`}
+            className={`card mini template-card template-theme-${t.id} ${selected === t.id ? 'active' : ''}`}
             onClick={() => onSelect(t.id)}
           >
             <span className="template-icon">{t.icon}</span>
