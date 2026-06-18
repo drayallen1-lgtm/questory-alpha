@@ -99,6 +99,25 @@ import {
   COIN_SPEND,
 } from './economy';
 import {
+  addPhotoMemory,
+  addSeasonPoints,
+  computeAdventureHeat,
+  getHeatCategory,
+  getHeatLabel,
+  normalizeSocial,
+  recordGhostRun,
+} from './social';
+import {
+  SocialHub,
+  AdventureComments,
+  PhotoMemoryPrompt,
+  GhostTrailHint,
+  SeasonRankCard,
+  TeamHuntBadge,
+  LiveMapOverlay,
+} from './SocialUI';
+import { getMyTeam } from './social';
+import {
   GoodMorningHome,
   EnhancedAdventureFeed,
   QuestoryPassport,
@@ -151,6 +170,7 @@ function QuestoryApp() {
   const [remoteLoading, setRemoteLoading] = useState(isSupabaseMode);
   const [adventureSyncError, setAdventureSyncError] = useState('');
   const dailyLoginApplied = useRef(false);
+  const clueStartRef = useRef(Date.now());
 
   useEffect(() => {
     if (dailyLoginApplied.current) return;
@@ -208,6 +228,7 @@ function QuestoryApp() {
           progress: user ? remote.progress : s.progress,
           engagement: user ? remote.engagement : normalizeEngagement(s.engagement),
           economy: user ? remote.economy : normalizeEconomy(s.economy),
+          social: user ? remote.social : normalizeSocial(s.social),
         }));
       } catch (err) {
         console.error('Questory Supabase load failed:', err);
@@ -230,6 +251,7 @@ function QuestoryApp() {
       progress: s.progress,
       engagement: s.engagement,
       economy: s.economy,
+      social: s.social,
     }).catch((err) => console.error('Profile sync failed:', err));
   }
 
@@ -324,6 +346,7 @@ function QuestoryApp() {
 
   function solveClue(adventure) {
     const p = getAdventureProgress(state, adventure.id);
+    const clueDuration = Date.now() - clueStartRef.current;
     const nextStep = Math.min(adventure.clues.length, p.step + 1);
     const bonus = adventure.bonusFinds.find(
       (b) => b.afterStep === p.step && !p.bonuses.includes(b.id)
@@ -376,7 +399,8 @@ function QuestoryApp() {
         syncProfile(nextState);
         syncRewardsAndHistory(nextState.rewards, nextState.claimHistory);
       }
-      return nextState;
+      clueStartRef.current = Date.now();
+      return recordGhostRun(nextState, adventure.id, p.step, clueDuration);
     });
   }
 
@@ -475,6 +499,8 @@ function QuestoryApp() {
         claimHistory: upsertCertificate(baseHistory, certificate),
       };
       nextState = applySeasonalProgress(nextState, adventure);
+      nextState = addSeasonPoints(nextState, 100);
+      nextState.pendingPhotoMemory = adventure.id;
       if (isSupabaseMode && user) {
         syncProfile(nextState);
         syncRewardsAndHistory(nextState.rewards, nextState.claimHistory);
@@ -625,6 +651,8 @@ function QuestoryApp() {
           <MapScreen
             adventures={getPublishedAdventures(state.adventures)}
             nav={nav}
+            state={state}
+            setState={setState}
           />
         )}
         {state.screen === 'detail' && selected && (
@@ -634,7 +662,9 @@ function QuestoryApp() {
             nav={nav}
             adminPreview={state.adminPreview}
             state={state}
+            setState={setState}
             adventures={state.adventures}
+            isAdmin={isAdmin}
           />
         )}
         {state.screen === 'play' && selected && (
@@ -703,6 +733,15 @@ function QuestoryApp() {
             adventures={state.adventures}
           />
         )}
+        {state.screen === 'social' && (
+          <SocialHub
+            state={state}
+            setState={setState}
+            adventures={state.adventures}
+            nav={nav}
+            auth={auth}
+          />
+        )}
         {state.screen === 'leaderboard' && (
           <LeaderboardScreen state={state} adventures={state.adventures} />
         )}
@@ -721,6 +760,18 @@ function QuestoryApp() {
                   }
                 }}
                 onSkip={() => setState((s) => ({ ...s, pendingRating: null }))}
+              />
+            )}
+            {state.pendingPhotoMemory && selected && (
+              <PhotoMemoryPrompt
+                adventure={selected}
+                onCapture={(caption) => {
+                  setState((s) => ({
+                    ...addPhotoMemory(s, selected.id, caption),
+                    pendingPhotoMemory: null,
+                  }));
+                }}
+                onSkip={() => setState((s) => ({ ...s, pendingPhotoMemory: null }))}
               />
             )}
             <EnhancedVictoryScreen
@@ -978,11 +1029,21 @@ function AdventureFeed({ adventures, nav }) {
   );
 }
 
-function AdventureDetail({ adventure, progress, nav, adminPreview, state, adventures }) {
+function AdventureDetail({
+  adventure,
+  progress,
+  nav,
+  adminPreview,
+  state,
+  setState,
+  adventures,
+  isAdmin,
+}) {
   const playable = isAdventurePlayable(adventure, adminPreview);
   const pct = progress.claimed
     ? 100
     : Math.round((progress.step / Math.max(adventure.clues.length, 1)) * 100);
+  const myTeam = getMyTeam(state);
 
   return (
     <>
@@ -1023,6 +1084,7 @@ function AdventureDetail({ adventure, progress, nav, adminPreview, state, advent
           <p className="detail-collection">⭐ {adventure.collectionName}</p>
         )}
         <VerifiedSponsorBadge adventure={adventure} />
+        <TeamHuntBadge adventure={adventure} team={myTeam} />
         {isPremiumAdventure(adventure) && (
           <p className="detail-premium">Premium · {adventure.premiumCoinCost || 250} coins to unlock</p>
         )}
@@ -1098,6 +1160,21 @@ function AdventureDetail({ adventure, progress, nav, adminPreview, state, advent
           <span className="type physical">Legendary Drops</span>
         </div>
       </div>
+
+      {state && (
+        <div className="card heat-adventure-stat">
+          <Flame size={16} />{' '}
+          {getHeatLabel(adventure.heatCategory || getHeatCategory(adventure))} ·{' '}
+          {computeAdventureHeat(adventure, state)}° heat
+        </div>
+      )}
+
+      <AdventureComments
+        adventure={adventure}
+        state={state}
+        setState={setState}
+        isAdmin={isAdmin}
+      />
 
       <button
         disabled={!playable}
@@ -1311,6 +1388,7 @@ function AdventurePlay({
         {!atClaim && !progress.claimed && clue && (
           <>
             <p>{clue.text}</p>
+            <GhostTrailHint state={state} adventureId={adventure.id} clueIndex={clueIndex} />
             {hintText && <p className="coin-hint">{hintText}</p>}
             <CoinShopPanel
               adventure={adventure}
@@ -2028,6 +2106,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
     collectionRewardCoins: 500,
     collectionRewardMedallion: '',
     isFounderHunt: false,
+    playMode: 'both',
     tier: 'standard',
     premiumCoinCost: 250,
     city: '',
@@ -2182,6 +2261,8 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
       collectionRewardCoins: parseInt(meta.collectionRewardCoins, 10) || 0,
       collectionRewardMedallion: meta.collectionRewardMedallion.trim(),
       isFounderHunt: Boolean(meta.isFounderHunt),
+      playMode: meta.playMode || 'both',
+      heatCategory: 'trending',
       tier: meta.tier || 'standard',
       premiumCoinCost: parseInt(meta.premiumCoinCost, 10) || 250,
       couponQuantity: parseInt(meta.couponQuantity, 10) || null,
@@ -2316,6 +2397,15 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
         >
           <option value="standard">Standard (Free)</option>
           <option value="premium">Premium (Coins required)</option>
+        </select>
+        <label>Play Mode</label>
+        <select
+          value={meta.playMode}
+          onChange={(e) => setMeta((m) => ({ ...m, playMode: e.target.value }))}
+        >
+          <option value="solo">Solo only</option>
+          <option value="team">Team only</option>
+          <option value="both">Solo & Team</option>
         </select>
         {meta.tier === 'premium' && (
           <>
@@ -2634,8 +2724,10 @@ function BottomNav({ screen, nav, adminPreview, isSponsor }) {
     ? [
         ['home', 'Home'],
         ['feed', 'Feed'],
-        ['sponsor', 'Sponsor'],
+        ['map', 'Map'],
         ['vault', 'Passport'],
+        ['social', 'Social'],
+        ['sponsor', 'Sponsor'],
         ['create', 'Create'],
         ['admin', 'Admin'],
       ]
@@ -2644,6 +2736,7 @@ function BottomNav({ screen, nav, adminPreview, isSponsor }) {
         ['feed', 'Feed'],
         ['map', 'Map'],
         ['vault', 'Passport'],
+        ['social', 'Social'],
         ['create', 'Create'],
         ['admin', 'Admin'],
       ];
@@ -2652,14 +2745,17 @@ function BottomNav({ screen, nav, adminPreview, isSponsor }) {
     if (screen === id) return true;
     if (screen === 'leaderboard') return id === 'home';
     if (screen === 'creator') return id === 'feed';
+    if (screen === 'social') return id === 'social';
     if (screen === 'play' || screen === 'detail' || screen === 'bonus') {
       return adminPreview ? id === 'admin' : id === 'feed';
     }
     return false;
   };
 
+  const navClass = items.length > 7 ? 'bottom-nav-8' : 'bottom-nav-7';
+
   return (
-    <nav className="bottom-nav-6">
+    <nav className={navClass}>
       {items.map(([id, label]) => (
         <button
           className={active(id) ? 'active' : ''}

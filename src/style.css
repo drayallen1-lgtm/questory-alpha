@@ -1834,7 +1834,9 @@ nav {
 }
 
 nav.bottom-nav-5,
-nav.bottom-nav-6 {
+nav.bottom-nav-6,
+nav.bottom-nav-7,
+nav.bottom-nav-8 {
   grid-template-columns: repeat(5, 1fr);
 }
 
@@ -1842,10 +1844,20 @@ nav.bottom-nav-6 {
   grid-template-columns: repeat(6, 1fr);
 }
 
+nav.bottom-nav-7 {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+nav.bottom-nav-8 {
+  grid-template-columns: repeat(8, 1fr);
+}
+
 nav.bottom-nav-5 button,
-nav.bottom-nav-6 button {
-  font-size: 10px;
-  padding: 8px 2px;
+nav.bottom-nav-6 button,
+nav.bottom-nav-7 button,
+nav.bottom-nav-8 button {
+  font-size: 9px;
+  padding: 8px 1px;
 }
 
 nav button {
@@ -2263,5 +2275,205 @@ nav button.active {
   justify-content: space-between;
   align-items: center;
   padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Sweep #3 — The Social Layer */
+.social-hub-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.social-hub-tabs button {
+  flex: 1;
+  min-width: 72px;
+  font-size: 11px;
+  padding: 8px 6px;
+}
+
+.social-hub-tabs button.active {
+  background: linear-gradient(135deg, var(--questory-accent), #2dd4bf);
+  color: #042f2e;
+}
+
+.social-subhead {
+  margin: 16px 0 8px;
+  font-size: 14px;
+}
+
+.team-card {
+  margin-bottom: 10px;
+}
+
+.team-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.team-banner {
+  font-size: 28px;
+}
+
+.team-motto {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.story-ring {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
+.story-bubble {
+  min-width: 72px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.story-bubble-ring {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--questory-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 4px;
+  font-size: 22px;
+}
+
+.ghost-trail-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin: 8px 0;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.heat-discovery .heat-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.heat-discovery .heat-filters button {
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
+.heat-discovery .heat-filters button.active {
+  background: var(--questory-accent);
+  color: #042f2e;
+}
+
+.heat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.heat-score {
+  margin-left: auto;
+  font-weight: 700;
+  color: #f97316;
+}
+
+.heat-badge {
+  font-size: 11px;
+  color: #f97316;
+}
+
+.heat-adventure-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #f97316;
+}
+
+.season-rank-card h4 {
+  margin: 8px 0 4px;
+}
+
+.live-map-overlay select {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.live-event-card.live {
+  border-color: #ef4444;
+}
+
+.live-event-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+.countdown-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.comments-card .comment-row {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.comments-card .comment-row.pinned {
+  border-left: 3px solid var(--questory-accent);
+  padding-left: 8px;
+}
+
+.team-hunt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--questory-accent);
+  margin: 4px 0;
+}
+
+.photo-memory-modal {
+  text-align: center;
+  max-width: 340px;
+}
+
+.social-feed-preview {
+  margin-bottom: 12px;
+}
+
+.challenge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
   border-bottom: 1px solid var(--line);
 }

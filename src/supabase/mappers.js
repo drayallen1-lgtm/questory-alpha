@@ -65,6 +65,9 @@ export function rowToAdventure(row, clues = []) {
       bonusRewardText: c.bonus_reward_text || '',
     })),
     creatorId: row.creator_id,
+    playMode: row.play_mode || 'both',
+    heatScore: row.heat_score ?? 0,
+    heatCategory: row.heat_category || 'trending',
   });
 }
 
@@ -117,6 +120,9 @@ export function adventureToRow(adventure, creatorId) {
     pot_entries: adventure.potEntries ?? 0,
     bonus_finds: adventure.bonusFinds || [],
     final_rewards: adventure.finalRewards || [],
+    play_mode: adventure.playMode || 'both',
+    heat_score: adventure.heatScore ?? 0,
+    heat_category: adventure.heatCategory || 'trending',
   };
 }
 

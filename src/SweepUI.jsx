@@ -46,6 +46,8 @@ import {
   VerifiedSponsorBadge,
 } from './EconomyUI';
 import { getCreatorForAdventure } from './economy';
+import { computeAdventureHeat, getHeatCategory, getHeatLabel } from './social';
+import { HeatDiscovery, SeasonRankCard } from './SocialUI';
 
 export function GoodMorningHome({ state, adventures, auth, nav }) {
   const greeting = getTimeGreeting();
@@ -57,12 +59,14 @@ export function GoodMorningHome({ state, adventures, auth, nav }) {
   return (
     <>
       <section className="hero home-greeting">
-        <div className="badge alpha">Sweep #2 · The Economy</div>
+        <div className="badge alpha">Sweep #3 · The Social Layer</div>
         <h2>
           {greeting}, {name}
         </h2>
-        <p>Your collection-driven adventure platform. Every hunt brings you closer.</p>
+        <p>Teams, stories, and live events — your city is alive with explorers.</p>
       </section>
+
+      <SeasonRankCard state={state} />
 
       <div className="card streak-card">
         <div className="streak-row">
@@ -118,6 +122,11 @@ export function GoodMorningHome({ state, adventures, auth, nav }) {
           <b>Passport</b>
           <p>Track collections by city</p>
         </button>
+        <button type="button" className="card mini home-quick-btn" onClick={() => nav('social')}>
+          <Users size={20} />
+          <b>Social</b>
+          <p>Teams, friends, stories, challenges</p>
+        </button>
         <button type="button" className="card mini home-quick-btn" onClick={() => nav('leaderboard')}>
           <Trophy size={20} />
           <b>Leaderboards</b>
@@ -131,6 +140,8 @@ export function GoodMorningHome({ state, adventures, auth, nav }) {
           </button>
         )}
       </div>
+
+      <HeatDiscovery adventures={adventures} state={state} nav={nav} />
     </>
   );
 }
@@ -167,6 +178,8 @@ function AdventureFeedCard({ adventure, progress, state, nav }) {
   const collection = getCollectionDef(adventure.collectionId);
   const completed = progress.claimed;
   const creator = getCreatorForAdventure(adventure);
+  const heat = computeAdventureHeat(adventure, state);
+  const heatCat = adventure.heatCategory || getHeatCategory(adventure);
 
   return (
     <div className={`card hunt feed-card ${adventure.isFounderHunt ? 'founder-hunt' : ''}`}>
@@ -180,6 +193,7 @@ function AdventureFeedCard({ adventure, progress, state, nav }) {
         ) : (
           <span className="badge published">Live</span>
         )}
+        <span className="heat-badge">{getHeatLabel(heatCat)} · {heat}°</span>
         <small>{adventure.distance || `${parseMilesEstimate(adventure)} mi`}</small>
       </div>
       <h3>{adventure.title}</h3>

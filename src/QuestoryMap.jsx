@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MapPin, ChevronRight } from 'lucide-react';
+import { LiveMapOverlay } from './SocialUI';
+import { VISIBILITY_MODES } from './social';
 import {
   MAPBOX_FALLBACK_MESSAGE,
   getMapboxToken,
@@ -188,9 +190,15 @@ export function QuestoryMap({
   );
 }
 
-export function MapScreen({ adventures, nav }) {
+export function MapScreen({ adventures, nav, state, setState }) {
   const [focusedAdventure, setFocusedAdventure] = useState(null);
   const [previewAdventure, setPreviewAdventure] = useState(null);
+  const presence = state?.social?.mapPresence || {
+    explorersNearby: 12,
+    activeHunts: 4,
+    teamsCompeting: 3,
+  };
+  const visibility = state?.social?.visibility || VISIBILITY_MODES.TEAM;
 
   const adventureMarkers = buildAdventureMarkers(adventures);
   const clueMarkers = focusedAdventure ? buildClueMarkers(focusedAdventure) : [];
@@ -206,6 +214,19 @@ export function MapScreen({ adventures, nav }) {
         <h2>Adventure Map</h2>
         <p>Published trails and clue locations</p>
       </div>
+
+      {state && setState && (
+        <LiveMapOverlay
+          presence={presence}
+          visibility={visibility}
+          onVisibilityChange={(mode) =>
+            setState((s) => ({
+              ...s,
+              social: { ...s.social, visibility: mode },
+            }))
+          }
+        />
+      )}
 
       <QuestoryMap
         adventureMarkers={focusedAdventure ? [] : adventureMarkers}

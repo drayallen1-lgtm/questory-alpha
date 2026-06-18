@@ -26,6 +26,7 @@ import {
 } from './claimSystem';
 import { DEFAULT_ENGAGEMENT, normalizeEngagement } from './engagement';
 import { DEFAULT_ECONOMY, normalizeEconomy } from './economy';
+import { DEFAULT_SOCIAL, normalizeSocial } from './social';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -41,10 +42,12 @@ export const defaultState = {
   victoryCertificate: null,
   victoryEngagement: null,
   pendingRating: null,
+  pendingPhotoMemory: null,
   adminPreview: false,
   adminTab: 'drafts',
   engagement: { ...DEFAULT_ENGAGEMENT },
   economy: { ...DEFAULT_ECONOMY },
+  social: { ...DEFAULT_SOCIAL },
   adventures: [
     {
       id: 'parsons-gold-rush',
@@ -72,7 +75,8 @@ export const defaultState = {
       couponQuantity: 200,
       couponTerms: 'One per customer. Valid at participating Parsons locations.',
       couponExpirationDays: 7,
-      sponsor: 'Parsons Heritage Trail',
+      playMode: 'both',
+      heatCategory: 'trending',
       sponsorInfo: {
         name: 'Parsons Heritage Trail',
         logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Parsons_Kansas_Logo.png/120px-Parsons_Kansas_Logo.png',
@@ -80,6 +84,7 @@ export const defaultState = {
         verified: true,
         businessEmail: 'trails@parsonsks.com',
       },
+      sponsor: 'Parsons Heritage Trail',
       distance: '0.8 mi',
       prize: 'Legendary Medallion + Local Rewards',
       status: 'published',
@@ -460,9 +465,11 @@ export function loadState() {
       victoryCertificate: null,
       victoryEngagement: null,
       pendingRating: null,
+      pendingPhotoMemory: null,
       adminPreview: false,
       engagement: normalizeEngagement(saved.engagement),
       economy: normalizeEconomy(saved.economy),
+      social: normalizeSocial(saved.social),
       claimHistory: buildClaimHistory(rewards, saved.claimHistory),
     };
   } catch {
@@ -660,6 +667,8 @@ export function normalizeAdventure(adventure) {
     couponTerms: adventure.couponTerms || '',
     couponExpirationDays: adventure.couponExpirationDays ?? 7,
     campaignPaused: Boolean(adventure.campaignPaused),
+    playMode: adventure.playMode || 'both',
+    heatCategory: adventure.heatCategory || 'trending',
   };
 }
 

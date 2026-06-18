@@ -12,6 +12,7 @@ import {
 import { defaultState } from '../seed';
 import { normalizeEngagement } from '../engagement';
 import { normalizeEconomy } from '../economy';
+import { normalizeSocial } from '../social';
 
 function profileToEngagement(profile) {
   if (!profile) return normalizeEngagement();
@@ -48,6 +49,15 @@ function engagementToProfileFields(engagement) {
 
 function economyToProfileFields(economy) {
   return { economy: normalizeEconomy(economy) };
+}
+
+function profileToSocial(profile) {
+  if (!profile?.social) return normalizeSocial();
+  return normalizeSocial(profile.social);
+}
+
+function socialToProfileFields(social) {
+  return { social: normalizeSocial(social) };
 }
 
 async function fetchCluesForAdventures(adventureIds) {
@@ -136,6 +146,7 @@ export async function loadRemoteData(userId, isAdmin) {
       progress: {},
       engagement: normalizeEngagement(),
       economy: normalizeEconomy(),
+      social: normalizeSocial(),
     };
   }
 
@@ -154,6 +165,7 @@ export async function loadRemoteData(userId, isAdmin) {
     progress: profile?.progress ?? {},
     engagement: profileToEngagement(profile),
     economy: profileToEconomy(profile),
+    social: profileToSocial(profile),
   };
 }
 
@@ -207,11 +219,12 @@ export async function deleteAdventureRemote(adventureId) {
   if (error) throw error;
 }
 
-export async function saveUserProfileState(userId, { coins, entries, progress, engagement, economy }) {
+export async function saveUserProfileState(userId, { coins, entries, progress, engagement, economy, social }) {
   if (!hasSupabase() || !userId) return;
   const payload = { coins, entries, progress };
   if (engagement) Object.assign(payload, engagementToProfileFields(engagement));
   if (economy) Object.assign(payload, economyToProfileFields(economy));
+  if (social) Object.assign(payload, socialToProfileFields(social));
   const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
   if (error) throw error;
 }
