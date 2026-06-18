@@ -11,6 +11,7 @@ import {
 } from './mappers';
 import { defaultState } from '../seed';
 import { normalizeEngagement } from '../engagement';
+import { normalizeEconomy } from '../economy';
 
 function profileToEngagement(profile) {
   if (!profile) return normalizeEngagement();
@@ -26,6 +27,11 @@ function profileToEngagement(profile) {
   });
 }
 
+function profileToEconomy(profile) {
+  if (!profile?.economy) return normalizeEconomy();
+  return normalizeEconomy(profile.economy);
+}
+
 function engagementToProfileFields(engagement) {
   const e = normalizeEngagement(engagement);
   return {
@@ -38,6 +44,10 @@ function engagementToProfileFields(engagement) {
     first_finder_adventures: e.firstFinderAdventures,
     completed_collection_rewards: e.completedCollectionRewards,
   };
+}
+
+function economyToProfileFields(economy) {
+  return { economy: normalizeEconomy(economy) };
 }
 
 async function fetchCluesForAdventures(adventureIds) {
@@ -125,6 +135,7 @@ export async function loadRemoteData(userId, isAdmin) {
       entries: 0,
       progress: {},
       engagement: normalizeEngagement(),
+      economy: normalizeEconomy(),
     };
   }
 
@@ -142,6 +153,7 @@ export async function loadRemoteData(userId, isAdmin) {
     entries: profile?.entries ?? 0,
     progress: profile?.progress ?? {},
     engagement: profileToEngagement(profile),
+    economy: profileToEconomy(profile),
   };
 }
 
@@ -195,10 +207,11 @@ export async function deleteAdventureRemote(adventureId) {
   if (error) throw error;
 }
 
-export async function saveUserProfileState(userId, { coins, entries, progress, engagement }) {
+export async function saveUserProfileState(userId, { coins, entries, progress, engagement, economy }) {
   if (!hasSupabase() || !userId) return;
   const payload = { coins, entries, progress };
   if (engagement) Object.assign(payload, engagementToProfileFields(engagement));
+  if (economy) Object.assign(payload, economyToProfileFields(economy));
   const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
   if (error) throw error;
 }

@@ -50,6 +50,9 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(() => {
     const isAdmin = profile?.role === 'admin';
+    const isSponsor = profile?.role === 'sponsor' || isAdmin;
+    const isCreator = profile?.role === 'creator' || isAdmin;
+    const localDemoRoles = !hasSupabase();
 
     async function signInWithEmail(email, password) {
       if (!supabase) throw new Error('Cloud mode is off. Add Supabase env vars to enable sign-in.');
@@ -83,7 +86,9 @@ export function AuthProvider({ children }) {
       user,
       profile,
       loading,
-      isAdmin,
+      isAdmin: isAdmin || localDemoRoles,
+      isSponsor: isSponsor || localDemoRoles,
+      isCreator: isCreator || localDemoRoles,
       isSupabaseMode: hasSupabase(),
       signInWithEmail,
       signUpWithEmail,

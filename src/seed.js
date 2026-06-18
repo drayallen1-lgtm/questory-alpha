@@ -25,6 +25,7 @@ import {
   usesFinderMode,
 } from './claimSystem';
 import { DEFAULT_ENGAGEMENT, normalizeEngagement } from './engagement';
+import { DEFAULT_ECONOMY, normalizeEconomy } from './economy';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -33,14 +34,17 @@ export const defaultState = {
   entries: 0,
   screen: 'home',
   selectedAdventureId: null,
+  selectedCreatorId: null,
   progress: {},
   rewards: [],
   claimHistory: [],
   victoryCertificate: null,
   victoryEngagement: null,
+  pendingRating: null,
   adminPreview: false,
   adminTab: 'drafts',
   engagement: { ...DEFAULT_ENGAGEMENT },
+  economy: { ...DEFAULT_ECONOMY },
   adventures: [
     {
       id: 'parsons-gold-rush',
@@ -59,11 +63,22 @@ export const defaultState = {
       playersCompleted: 38,
       firstFinderName: 'Sarah J.',
       isFounderHunt: false,
+      tier: 'standard',
+      premiumCoinCost: 250,
+      creatorProfileId: 'parsons-heritage',
+      sponsorVerified: true,
+      avgRating: 4.8,
+      reviewCount: 241,
+      couponQuantity: 200,
+      couponTerms: 'One per customer. Valid at participating Parsons locations.',
+      couponExpirationDays: 7,
       sponsor: 'Parsons Heritage Trail',
       sponsorInfo: {
         name: 'Parsons Heritage Trail',
         logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Parsons_Kansas_Logo.png/120px-Parsons_Kansas_Logo.png',
         website: 'https://www.parsonsks.com',
+        verified: true,
+        businessEmail: 'trails@parsonsks.com',
       },
       distance: '0.8 mi',
       prize: 'Legendary Medallion + Local Rewards',
@@ -143,7 +158,9 @@ export const defaultState = {
           valueLabel: 'Free drink',
           redemptionInstructions:
             'Visit Main Street Roasters in downtown Parsons. Show this coupon in your Vault before ordering.',
-          expirationDays: 30,
+          expirationDays: 7,
+          terms: 'One free drink per Questory completion. Cannot combine with other offers.',
+          redeemLocation: 'Main Street Roasters, Parsons KS',
         },
         {
           type: 'physical',
@@ -354,6 +371,9 @@ export const defaultState = {
       state: 'Kansas',
       region: 'Kansas',
       isFounderHunt: true,
+      tier: 'premium',
+      premiumCoinCost: 250,
+      creatorProfileId: 'questory-founders',
       estimatedMinutes: 45,
       milesEstimate: 1.4,
       playersCompleted: 3,
@@ -439,8 +459,10 @@ export function loadState() {
       rewards,
       victoryCertificate: null,
       victoryEngagement: null,
+      pendingRating: null,
       adminPreview: false,
       engagement: normalizeEngagement(saved.engagement),
+      economy: normalizeEconomy(saved.economy),
       claimHistory: buildClaimHistory(rewards, saved.claimHistory),
     };
   } catch {
@@ -628,6 +650,16 @@ export function normalizeAdventure(adventure) {
     milesEstimate: adventure.milesEstimate ?? null,
     playersCompleted: adventure.playersCompleted ?? 0,
     firstFinderName: adventure.firstFinderName || '',
+    tier: adventure.tier || 'standard',
+    premiumCoinCost: adventure.premiumCoinCost ?? 250,
+    creatorProfileId: adventure.creatorProfileId || null,
+    sponsorVerified: Boolean(adventure.sponsorVerified || adventure.sponsorInfo?.verified),
+    avgRating: adventure.avgRating ?? 4.8,
+    reviewCount: adventure.reviewCount ?? 0,
+    couponQuantity: adventure.couponQuantity ?? null,
+    couponTerms: adventure.couponTerms || '',
+    couponExpirationDays: adventure.couponExpirationDays ?? 7,
+    campaignPaused: Boolean(adventure.campaignPaused),
   };
 }
 

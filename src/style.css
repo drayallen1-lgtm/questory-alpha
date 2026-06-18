@@ -2126,3 +2126,142 @@ nav button.active {
   display: block;
   margin-top: 4px;
 }
+
+/* Sweep #2 — The Economy */
+.verified-sponsor-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5eead4;
+  background: rgba(94, 234, 212, 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin: 6px 0;
+}
+
+.sponsor-metrics {
+  grid-template-columns: 1fr 1fr;
+}
+
+.sponsor-metrics .metric strong {
+  font-size: 22px;
+  display: block;
+}
+
+.analytics-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.analytics-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.sponsor-spend-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.coin-shop-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.coin-hint {
+  background: rgba(245, 200, 66, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.premium-gate {
+  text-align: center;
+}
+
+.creator-hero .creator-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 13px;
+  margin: 12px 0;
+}
+
+.creator-adventure-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin: 6px 0;
+}
+
+.rating-modal .star-picker {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.rating-modal .star {
+  font-size: 28px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 0;
+}
+
+.rating-modal .star.active {
+  color: #f5c842;
+}
+
+.vault-tabs-scroll {
+  flex-wrap: wrap;
+}
+
+.coupon-qr,
+.coupon-code {
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.sponsored-lb-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.seasonal-event {
+  border-color: rgba(94, 234, 212, 0.35);
+}
+
+.creation-fee-banner {
+  border-color: rgba(245, 200, 66, 0.35);
+}
+
+.feed-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.creator-link {
+  font-size: 13px;
+  margin: 6px 0;
+}
+
+.detail-premium {
+  color: #f5c842;
+  font-weight: 600;
+}
+
+.campaign-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}

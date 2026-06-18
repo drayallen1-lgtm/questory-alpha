@@ -14,6 +14,7 @@ import {
   Trophy,
   Users,
   Clock,
+  Building2,
 } from 'lucide-react';
 import {
   BADGE_DEFS,
@@ -37,6 +38,14 @@ import {
   downloadSocialCard,
   formatProofDate,
 } from './share';
+import {
+  AdventureRatingDisplay,
+  ExpandedVaultTabs,
+  SeasonalEventsBanner,
+  SponsoredLeaderboardsPanel,
+  VerifiedSponsorBadge,
+} from './EconomyUI';
+import { getCreatorForAdventure } from './economy';
 
 export function GoodMorningHome({ state, adventures, auth, nav }) {
   const greeting = getTimeGreeting();
@@ -48,7 +57,7 @@ export function GoodMorningHome({ state, adventures, auth, nav }) {
   return (
     <>
       <section className="hero home-greeting">
-        <div className="badge alpha">Sweep #1 · The Hook</div>
+        <div className="badge alpha">Sweep #2 · The Economy</div>
         <h2>
           {greeting}, {name}
         </h2>
@@ -66,6 +75,8 @@ export function GoodMorningHome({ state, adventures, auth, nav }) {
           </div>
         </div>
       </div>
+
+      <SeasonalEventsBanner state={state} />
 
       <div className="card home-stat-card">
         <h3>Nearby</h3>
@@ -112,12 +123,19 @@ export function GoodMorningHome({ state, adventures, auth, nav }) {
           <b>Leaderboards</b>
           <p>Local · State · National</p>
         </button>
+        {(auth?.isSponsor || auth?.isAdmin) && (
+          <button type="button" className="card mini home-quick-btn" onClick={() => nav('sponsor')}>
+            <Building2 size={20} />
+            <b>Sponsor Dashboard</b>
+            <p>Analytics, coupons, campaigns</p>
+          </button>
+        )}
       </div>
     </>
   );
 }
 
-export function EnhancedAdventureFeed({ adventures, state, nav }) {
+export function EnhancedAdventureFeed({ adventures, state, nav, auth }) {
   const published = getPublishedAdventures(adventures);
 
   return (
@@ -137,6 +155,7 @@ export function EnhancedAdventureFeed({ adventures, state, nav }) {
           key={adventure.id}
           adventure={adventure}
           progress={getAdventureProgress(state, adventure.id)}
+          state={state}
           nav={nav}
         />
       ))}
@@ -144,9 +163,10 @@ export function EnhancedAdventureFeed({ adventures, state, nav }) {
   );
 }
 
-function AdventureFeedCard({ adventure, progress, nav }) {
+function AdventureFeedCard({ adventure, progress, state, nav }) {
   const collection = getCollectionDef(adventure.collectionId);
   const completed = progress.claimed;
+  const creator = getCreatorForAdventure(adventure);
 
   return (
     <div className={`card hunt feed-card ${adventure.isFounderHunt ? 'founder-hunt' : ''}`}>
@@ -155,12 +175,15 @@ function AdventureFeedCard({ adventure, progress, nav }) {
           <span className="badge founder-badge">
             <Crown size={12} /> Founder Hunt
           </span>
+        ) : adventure.tier === 'premium' ? (
+          <span className="badge published">Premium · {adventure.premiumCoinCost || 250} coins</span>
         ) : (
           <span className="badge published">Live</span>
         )}
         <small>{adventure.distance || `${parseMilesEstimate(adventure)} mi`}</small>
       </div>
       <h3>{adventure.title}</h3>
+      <VerifiedSponsorBadge adventure={adventure} />
       {collection && (
         <p className="feed-collection">
           <Star size={14} /> {collection.name}
@@ -180,7 +203,15 @@ function AdventureFeedCard({ adventure, progress, nav }) {
         <span>
           <Users size={13} /> {adventure.playersCompleted || 0} completed
         </span>
+        <AdventureRatingDisplay adventure={adventure} state={state} />
       </div>
+      <button
+        type="button"
+        className="ghost creator-link"
+        onClick={() => nav('creator', null, { creatorId: creator.id })}
+      >
+        By {creator.name} · Follow
+      </button>
       {adventure.firstFinderName && (
         <p className="feed-first-finder">
           <Crown size={13} /> First Finder: {adventure.firstFinderName}
@@ -316,7 +347,7 @@ export function QuestoryPassport({ state, adventures, onRedeem }) {
       )}
 
       {tab === 'rewards' && (
-        <RewardVaultTab state={state} onRedeem={onRedeem} />
+        <ExpandedVaultTabs state={state} adventures={adventures} onRedeem={onRedeem} />
       )}
     </>
   );
@@ -367,7 +398,7 @@ function RewardVaultTab({ state, onRedeem }) {
   );
 }
 
-export function LeaderboardScreen({ state }) {
+export function LeaderboardScreen({ state, adventures }) {
   const [scope, setScope] = useState('local');
   const rows = getLeaderboard(scope, state);
   const stats = [
@@ -397,6 +428,7 @@ export function LeaderboardScreen({ state }) {
           </button>
         ))}
       </div>
+      <SponsoredLeaderboardsPanel />
       <div className="card leaderboard-card">
         {rows.map((row, i) => (
           <div className={`leaderboard-row ${row.isYou ? 'you' : ''}`} key={`${row.name}-${i}`}>

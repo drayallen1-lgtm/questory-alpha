@@ -82,6 +82,23 @@ import {
 } from './share';
 import { applyAdventureCompletion, applyDailyLogin, normalizeEngagement } from './engagement';
 import {
+  applySeasonalProgress,
+  canCreateAdventure,
+  enrichCouponReward,
+  hasPremiumUnlock,
+  isPremiumAdventure,
+  normalizeEconomy,
+  purchaseExtraAdventureSlot,
+  purchaseHint,
+  purchasePremiumUnlock,
+  purchaseRevealSearchRadius,
+  purchaseSkipClue,
+  spendCoins,
+  submitRating,
+  getCreatorForAdventure,
+  COIN_SPEND,
+} from './economy';
+import {
   GoodMorningHome,
   EnhancedAdventureFeed,
   QuestoryPassport,
@@ -89,6 +106,15 @@ import {
   EnhancedVictoryScreen,
   CollectionProgressCard,
 } from './SweepUI';
+import {
+  SponsorDashboard,
+  CreatorProfileScreen,
+  CoinShopPanel,
+  PremiumGate,
+  RatingModal,
+  CreationFeeBanner,
+  VerifiedSponsorBadge,
+} from './EconomyUI';
 import './style.css';
 import { getInitialState, persistState } from './persistence';
 import { MapScreen, MiniClueMap } from './QuestoryMap';
@@ -118,7 +144,7 @@ function App() {
 
 function QuestoryApp() {
   const auth = useAuth();
-  const { user, isAdmin, isSupabaseMode, loading: authLoading } = auth;
+  const { user, isAdmin, isSponsor, isCreator, isSupabaseMode, loading: authLoading } = auth;
   const [state, setState] = useState(getInitialState);
   const [showLogin, setShowLogin] = useState(false);
   const [loginError, setLoginError] = useState('');
@@ -137,6 +163,7 @@ function QuestoryApp() {
           entries: result.state.entries,
           progress: result.state.progress,
           engagement: result.state.engagement,
+          economy: result.state.economy,
         }).catch((err) => console.error('Daily login sync failed:', err));
       }
       return result.state;
@@ -180,6 +207,7 @@ function QuestoryApp() {
           entries: user ? remote.entries : s.entries,
           progress: user ? remote.progress : s.progress,
           engagement: user ? remote.engagement : normalizeEngagement(s.engagement),
+          economy: user ? remote.economy : normalizeEconomy(s.economy),
         }));
       } catch (err) {
         console.error('Questory Supabase load failed:', err);
@@ -201,6 +229,7 @@ function QuestoryApp() {
       entries: s.entries,
       progress: s.progress,
       engagement: s.engagement,
+      economy: s.economy,
     }).catch((err) => console.error('Profile sync failed:', err));
   }
 
@@ -222,6 +251,7 @@ function QuestoryApp() {
       ...s,
       screen,
       selectedAdventureId: adventureId ?? s.selectedAdventureId,
+      selectedCreatorId: options.creatorId ?? s.selectedCreatorId,
       adminPreview:
         'adminPreview' in options ? options.adminPreview : s.adminPreview,
       adminTab: options.adminTab ?? s.adminTab,
@@ -378,16 +408,21 @@ function QuestoryApp() {
     const claimedAt = new Date().toISOString();
     const sponsorInfo = getSponsorInfo(adventure);
     const vaultRewards = adventure.finalRewards.map((r, i) =>
-      createVaultReward({
-        ...r,
-        id: `${adventure.id}-final-${i}`,
-        adventureId: adventure.id,
-        adventureTitle: adventure.title,
-        claimedAt,
-        sponsorName: sponsorInfo.name,
-        sponsorLogoUrl: sponsorInfo.logoUrl,
-        sponsorWebsite: sponsorInfo.website,
-      })
+      enrichCouponReward(
+        createVaultReward({
+          ...r,
+          expirationDays:
+            r.type === 'coupon' ? adventure.couponExpirationDays ?? r.expirationDays : r.expirationDays,
+          id: `${adventure.id}-final-${i}`,
+          adventureId: adventure.id,
+          adventureTitle: adventure.title,
+          claimedAt,
+          sponsorName: sponsorInfo.name,
+          sponsorLogoUrl: sponsorInfo.logoUrl,
+          sponsorWebsite: sponsorInfo.website,
+        }),
+        adventure
+      )
     );
 
     const primaryReward =
@@ -423,7 +458,7 @@ function QuestoryApp() {
       );
       const nextRewards = [...s.rewards, ...vaultRewards, ...collectionMedallionRewards];
       const baseHistory = syncClaimHistory(nextRewards, s.claimHistory);
-      const nextState = {
+      let nextState = {
         ...s,
         coins: s.coins + completion.coins,
         entries: s.entries + adventure.potEntries,
@@ -431,6 +466,7 @@ function QuestoryApp() {
         screen: 'victory',
         victoryCertificate: certificate,
         victoryEngagement: completion,
+        pendingRating: adventure.id,
         progress: {
           ...s.progress,
           [adventure.id]: { ...p, claimed: true, claimedAt, medallionTapped: true },
@@ -438,6 +474,7 @@ function QuestoryApp() {
         rewards: nextRewards,
         claimHistory: upsertCertificate(baseHistory, certificate),
       };
+      nextState = applySeasonalProgress(nextState, adventure);
       if (isSupabaseMode && user) {
         syncProfile(nextState);
         syncRewardsAndHistory(nextState.rewards, nextState.claimHistory);
@@ -569,13 +606,19 @@ function QuestoryApp() {
           />
         )}
         {state.screen === 'home' && (
-          <GoodMorningHome state={state} adventures={state.adventures} auth={auth} nav={nav} />
+          <GoodMorningHome
+            state={state}
+            adventures={state.adventures}
+            auth={auth}
+            nav={nav}
+          />
         )}
         {state.screen === 'feed' && (
           <EnhancedAdventureFeed
             adventures={state.adventures}
             state={state}
             nav={nav}
+            auth={auth}
           />
         )}
         {state.screen === 'map' && (
@@ -598,6 +641,8 @@ function QuestoryApp() {
           <AdventurePlay
             adventure={selected}
             progress={progress}
+            state={state}
+            setState={setState}
             onSolve={() => solveClue(selected)}
             onClaim={(code, options) => claimTreasure(selected, code, options)}
             nav={nav}
@@ -637,16 +682,56 @@ function QuestoryApp() {
             />
           )
         )}
-        {state.screen === 'leaderboard' && <LeaderboardScreen state={state} />}
-        {state.screen === 'victory' && state.victoryCertificate && (
-          <EnhancedVictoryScreen
-            certificate={state.victoryCertificate}
-            engagementUpdate={state.victoryEngagement}
+        {state.screen === 'sponsor' &&
+          (isSupabaseMode && !user ? (
+            <SignInPrompt onLogin={() => setShowLogin(true)} />
+          ) : (
+            <SponsorDashboard
+              state={state}
+              adventures={state.adventures}
+              auth={auth}
+              setState={setState}
+              nav={nav}
+            />
+          ))}
+        {state.screen === 'creator' && state.selectedCreatorId && (
+          <CreatorProfileScreen
+            creatorId={state.selectedCreatorId}
+            state={state}
+            setState={setState}
             nav={nav}
+            adventures={state.adventures}
           />
         )}
+        {state.screen === 'leaderboard' && (
+          <LeaderboardScreen state={state} adventures={state.adventures} />
+        )}
+        {state.screen === 'victory' && state.victoryCertificate && (
+          <>
+            {state.pendingRating && selected && (
+              <RatingModal
+                adventure={selected}
+                onSubmit={(rating, review) => {
+                  setState((s) => ({
+                    ...submitRating(s, selected.id, rating, review),
+                    pendingRating: null,
+                  }));
+                  if (isSupabaseMode && user) {
+                    syncProfile(submitRating(state, selected.id, rating, review));
+                  }
+                }}
+                onSkip={() => setState((s) => ({ ...s, pendingRating: null }))}
+              />
+            )}
+            <EnhancedVictoryScreen
+              certificate={state.victoryCertificate}
+              engagementUpdate={state.victoryEngagement}
+              nav={nav}
+            />
+          </>
+        )}
         {state.screen === 'create' && (
-          isSupabaseMode && !isAdmin ? (
+          isSupabaseMode && !isAdmin && !isSponsor ? (
             <AdminGate onLogin={() => setShowLogin(true)} />
           ) : (
             <CreateAdventure
@@ -655,6 +740,7 @@ function QuestoryApp() {
               reset={resetPrototype}
               userId={user?.id}
               isSupabaseMode={isSupabaseMode}
+              auth={auth}
               onAdventuresSaved={refreshAdventuresFromRemote}
             />
           )
@@ -676,7 +762,12 @@ function QuestoryApp() {
           )
         )}
       </main>
-      <BottomNav screen={state.screen} nav={nav} adminPreview={state.adminPreview} />
+      <BottomNav
+        screen={state.screen}
+        nav={nav}
+        adminPreview={state.adminPreview}
+        isSponsor={isSponsor || isAdmin}
+      />
     </div>
   );
 }
@@ -931,6 +1022,17 @@ function AdventureDetail({ adventure, progress, nav, adminPreview, state, advent
         {adventure.collectionName && (
           <p className="detail-collection">⭐ {adventure.collectionName}</p>
         )}
+        <VerifiedSponsorBadge adventure={adventure} />
+        {isPremiumAdventure(adventure) && (
+          <p className="detail-premium">Premium · {adventure.premiumCoinCost || 250} coins to unlock</p>
+        )}
+        <button
+          type="button"
+          className="ghost creator-link"
+          onClick={() => nav('creator', null, { creatorId: getCreatorForAdventure(adventure).id })}
+        >
+          Creator: {getCreatorForAdventure(adventure).name}
+        </button>
         <p className="location">
           <MapPin size={14} /> {adventure.location}
         </p>
@@ -1083,7 +1185,16 @@ function GpsCheckIn({ clue, onUnlock }) {
   );
 }
 
-function AdventurePlay({ adventure, progress, onSolve, onClaim, nav, adminPreview }) {
+function AdventurePlay({
+  adventure,
+  progress,
+  state,
+  setState,
+  onSolve,
+  onClaim,
+  nav,
+  adminPreview,
+}) {
   const total = adventure.clues.length;
   const atClaim = progress.step >= total;
   const clueIndex = Math.min(progress.step, total - 1);
@@ -1097,6 +1208,58 @@ function AdventurePlay({ adventure, progress, onSolve, onClaim, nav, adminPrevie
     !progress.claimed &&
     method !== CLAIM_METHOD.TAP_MEDALLION &&
     (!finderFlow || progress.medallionTapped);
+  const hintKey = `${adventure.id}:${clueIndex}`;
+  const hintText = state.economy?.hintUnlocks?.[hintKey];
+  const premiumLocked =
+    isPremiumAdventure(adventure) && !hasPremiumUnlock(state, adventure.id) && !adminPreview;
+
+  function handleCoinSpend(type) {
+    let result;
+    if (type === 'hint') result = purchaseHint(state, adventure.id, clueIndex);
+    else if (type === 'skip') {
+      result = purchaseSkipClue(state, adventure.id, clueIndex);
+      if (result.ok) {
+        setState(result.state);
+        onSolve();
+        return;
+      }
+    } else if (type === 'reveal') result = purchaseRevealSearchRadius(state, adventure.id);
+    else if (type === 'medallion') {
+      result = spendCoins(state, COIN_SPEND.EXCLUSIVE_MEDALLION, 'exclusive_medallion', {
+        adventureId: adventure.id,
+      });
+      if (result.ok) {
+        setState({
+          ...result.state,
+          economy: {
+            ...result.state.economy,
+            exclusiveMedallions: [...(result.state.economy.exclusiveMedallions || []), adventure.id],
+          },
+        });
+        return;
+      }
+    }
+    if (!result) return;
+    if (result.ok) setState(result.state);
+    else alert(result.message);
+  }
+
+  function handlePremiumUnlock() {
+    const result = purchasePremiumUnlock(state, adventure);
+    if (result.ok) setState(result.state);
+    else alert(result.message);
+  }
+
+  if (premiumLocked) {
+    return (
+      <>
+        <button type="button" className="ghost back" onClick={() => nav('detail', adventure.id, { adminPreview })}>
+          ← Adventure Detail
+        </button>
+        <PremiumGate adventure={adventure} state={state} onUnlock={handlePremiumUnlock} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -1148,6 +1311,14 @@ function AdventurePlay({ adventure, progress, onSolve, onClaim, nav, adminPrevie
         {!atClaim && !progress.claimed && clue && (
           <>
             <p>{clue.text}</p>
+            {hintText && <p className="coin-hint">{hintText}</p>}
+            <CoinShopPanel
+              adventure={adventure}
+              state={state}
+              progress={progress}
+              clueIndex={clueIndex}
+              onSpend={handleCoinSpend}
+            />
             <GpsCheckIn clue={clue} onUnlock={onSolve} />
           </>
         )}
@@ -1838,7 +2009,7 @@ function RewardEditor({ reward, onChange }) {
   );
 }
 
-function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdventuresSaved }) {
+function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth, onAdventuresSaved }) {
   const [meta, setMeta] = useState({
     title: '',
     location: '',
@@ -1857,9 +2028,14 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
     collectionRewardCoins: 500,
     collectionRewardMedallion: '',
     isFounderHunt: false,
+    tier: 'standard',
+    premiumCoinCost: 250,
     city: '',
     state: '',
     estimatedMinutes: 25,
+    couponQuantity: 100,
+    couponTerms: 'One per customer.',
+    couponExpirationDays: 7,
   });
   const [clues, setClues] = useState([emptyClue(), emptyClue(), emptyClue()]);
   const [rewards, setRewards] = useState([
@@ -1906,6 +2082,24 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
   }
 
   async function saveAdventure() {
+    const createCheck = canCreateAdventure(state, {
+      isAdmin: auth?.isAdmin,
+      isSponsor: auth?.isSponsor,
+      userId,
+    });
+    if (!createCheck.ok) {
+      const buy = window.confirm(
+        `${createCheck.message}\n\nPurchase an extra slot for ${createCheck.cost} coins?`
+      );
+      if (!buy) return;
+      const slot = purchaseExtraAdventureSlot(state);
+      if (!slot.ok) {
+        setFormError(slot.message);
+        return;
+      }
+      setState(slot.state);
+    }
+
     const title = meta.title.trim() || 'New QUESTORY Adventure';
     const location = meta.location.trim() || 'Your City';
     const sponsorName = meta.sponsorName.trim() || 'Local Sponsor';
@@ -1988,6 +2182,12 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
       collectionRewardCoins: parseInt(meta.collectionRewardCoins, 10) || 0,
       collectionRewardMedallion: meta.collectionRewardMedallion.trim(),
       isFounderHunt: Boolean(meta.isFounderHunt),
+      tier: meta.tier || 'standard',
+      premiumCoinCost: parseInt(meta.premiumCoinCost, 10) || 250,
+      couponQuantity: parseInt(meta.couponQuantity, 10) || null,
+      couponTerms: meta.couponTerms?.trim() || '',
+      couponExpirationDays: parseInt(meta.couponExpirationDays, 10) || 7,
+      sponsorVerified: auth?.isSponsor || false,
       city: meta.city.trim() || meta.location.split(',')[0]?.trim() || '',
       state: meta.state.trim() || meta.location.split(',')[1]?.trim() || 'Kansas',
       region: meta.state.trim() || 'Kansas',
@@ -2043,6 +2243,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
         <h2>Create Adventure</h2>
         <p>Build adventures with sponsors, rewards, and GPS clues</p>
       </div>
+      <CreationFeeBanner state={state} auth={auth} />
       <div className="card admin-form">
         <label>Title</label>
         <input
@@ -2108,6 +2309,42 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, onAdv
           />
           👑 Founder Hunt (+10,000 coins · Lifetime Premium badge)
         </label>
+        <label>Adventure Tier</label>
+        <select
+          value={meta.tier}
+          onChange={(e) => setMeta((m) => ({ ...m, tier: e.target.value }))}
+        >
+          <option value="standard">Standard (Free)</option>
+          <option value="premium">Premium (Coins required)</option>
+        </select>
+        {meta.tier === 'premium' && (
+          <>
+            <label>Premium Admission (coins)</label>
+            <input
+              type="number"
+              value={meta.premiumCoinCost}
+              onChange={(e) => setMeta((m) => ({ ...m, premiumCoinCost: e.target.value }))}
+            />
+          </>
+        )}
+        <label>Coupon Quantity</label>
+        <input
+          type="number"
+          value={meta.couponQuantity}
+          onChange={(e) => setMeta((m) => ({ ...m, couponQuantity: e.target.value }))}
+        />
+        <label>Coupon Terms</label>
+        <input
+          value={meta.couponTerms}
+          onChange={(e) => setMeta((m) => ({ ...m, couponTerms: e.target.value }))}
+          placeholder="One per customer..."
+        />
+        <label>Coupon Expiration (days)</label>
+        <input
+          type="number"
+          value={meta.couponExpirationDays}
+          onChange={(e) => setMeta((m) => ({ ...m, couponExpirationDays: e.target.value }))}
+        />
         <label>Collection Name</label>
         <input
           value={meta.collectionName}
@@ -2392,19 +2629,29 @@ function AdminReview({
   );
 }
 
-function BottomNav({ screen, nav, adminPreview }) {
-  const items = [
-    ['home', 'Home'],
-    ['feed', 'Feed'],
-    ['map', 'Map'],
-    ['vault', 'Passport'],
-    ['create', 'Create'],
-    ['admin', 'Admin'],
-  ];
+function BottomNav({ screen, nav, adminPreview, isSponsor }) {
+  const items = isSponsor
+    ? [
+        ['home', 'Home'],
+        ['feed', 'Feed'],
+        ['sponsor', 'Sponsor'],
+        ['vault', 'Passport'],
+        ['create', 'Create'],
+        ['admin', 'Admin'],
+      ]
+    : [
+        ['home', 'Home'],
+        ['feed', 'Feed'],
+        ['map', 'Map'],
+        ['vault', 'Passport'],
+        ['create', 'Create'],
+        ['admin', 'Admin'],
+      ];
 
   const active = (id) => {
     if (screen === id) return true;
     if (screen === 'leaderboard') return id === 'home';
+    if (screen === 'creator') return id === 'feed';
     if (screen === 'play' || screen === 'detail' || screen === 'bonus') {
       return adminPreview ? id === 'admin' : id === 'feed';
     }
