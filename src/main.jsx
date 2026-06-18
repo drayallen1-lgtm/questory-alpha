@@ -118,6 +118,24 @@ import {
 } from './SocialUI';
 import { getMyTeam } from './social';
 import {
+  applyExpansionOnCompletion,
+  canAccessPremiumHunt,
+  normalizeExpansion,
+  recordArCapture,
+  usesArFinder,
+  usesFinderFlow,
+  FINDER_MODES,
+} from './expansion';
+import {
+  PlatformHub,
+  LegendaryHuntBadge,
+  CashHuntBadge,
+  SponsoredDropBadge,
+  PremiumSubscriptionBadge,
+  FinderModeSelector,
+  ArAssetSelector,
+} from './ExpansionUI';
+import {
   GoodMorningHome,
   EnhancedAdventureFeed,
   QuestoryPassport,
@@ -229,6 +247,7 @@ function QuestoryApp() {
           engagement: user ? remote.engagement : normalizeEngagement(s.engagement),
           economy: user ? remote.economy : normalizeEconomy(s.economy),
           social: user ? remote.social : normalizeSocial(s.social),
+          expansion: user ? remote.expansion : normalizeExpansion(s.expansion),
         }));
       } catch (err) {
         console.error('Questory Supabase load failed:', err);
@@ -252,6 +271,7 @@ function QuestoryApp() {
       engagement: s.engagement,
       economy: s.economy,
       social: s.social,
+      expansion: s.expansion,
     }).catch((err) => console.error('Profile sync failed:', err));
   }
 
@@ -390,7 +410,7 @@ function QuestoryApp() {
         claimHistory: syncClaimHistory(nextRewards, s.claimHistory),
         screen: bonus
           ? 'bonus'
-          : completedAllClues && adventureUsesFinder(adventure)
+          : completedAllClues && adventureUsesFinder(adventure) && usesFinderFlow(adventure)
             ? 'medallion-signal'
             : s.screen,
         pendingBonus: bonus || null,
@@ -501,6 +521,8 @@ function QuestoryApp() {
       nextState = applySeasonalProgress(nextState, adventure);
       nextState = addSeasonPoints(nextState, 100);
       nextState.pendingPhotoMemory = adventure.id;
+      const placement = (adventure.playersCompleted || 0) <= 1 ? 1 : (adventure.playersCompleted || 0) <= 5 ? 2 : 3;
+      nextState = applyExpansionOnCompletion(nextState, adventure, placement);
       if (isSupabaseMode && user) {
         syncProfile(nextState);
         syncRewardsAndHistory(nextState.rewards, nextState.claimHistory);
@@ -575,7 +597,10 @@ function QuestoryApp() {
           finderUnlocked: true,
         },
       };
-      const nextState = { ...s, screen: 'play', progress: nextProgress };
+      let nextState = { ...s, screen: 'play', progress: nextProgress };
+      if (usesArFinder(adventure)) {
+        nextState = recordArCapture(nextState, adventure.id);
+      }
       if (isSupabaseMode && user) {
         syncProfile(nextState);
       }
@@ -595,7 +620,9 @@ function QuestoryApp() {
       return {
         ...s,
         screen:
-          allDone && adventure && adventureUsesFinder(adventure) ? 'medallion-signal' : 'play',
+          allDone && adventure && adventureUsesFinder(adventure) && usesFinderFlow(adventure)
+            ? 'medallion-signal'
+            : 'play',
         pendingBonus: null,
       };
     });
@@ -738,6 +765,14 @@ function QuestoryApp() {
             state={state}
             setState={setState}
             adventures={state.adventures}
+            nav={nav}
+            auth={auth}
+          />
+        )}
+        {state.screen === 'platform' && (
+          <PlatformHub
+            state={state}
+            setState={setState}
             nav={nav}
             auth={auth}
           />
@@ -1085,6 +1120,9 @@ function AdventureDetail({
         )}
         <VerifiedSponsorBadge adventure={adventure} />
         <TeamHuntBadge adventure={adventure} team={myTeam} />
+        <LegendaryHuntBadge adventure={adventure} />
+        <CashHuntBadge adventure={adventure} />
+        <SponsoredDropBadge adventure={adventure} />
         {isPremiumAdventure(adventure) && (
           <p className="detail-premium">Premium · {adventure.premiumCoinCost || 250} coins to unlock</p>
         )}
@@ -1288,7 +1326,7 @@ function AdventurePlay({
   const hintKey = `${adventure.id}:${clueIndex}`;
   const hintText = state.economy?.hintUnlocks?.[hintKey];
   const premiumLocked =
-    isPremiumAdventure(adventure) && !hasPremiumUnlock(state, adventure.id) && !adminPreview;
+    isPremiumAdventure(adventure) && !canAccessPremiumHunt(state, adventure) && !adminPreview;
 
   function handleCoinSpend(type) {
     let result;
@@ -2107,6 +2145,8 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
     collectionRewardMedallion: '',
     isFounderHunt: false,
     playMode: 'both',
+    finderMode: FINDER_MODES.FINDER,
+    arAssetType: 'ghost_lantern',
     tier: 'standard',
     premiumCoinCost: 250,
     city: '',
@@ -2262,6 +2302,8 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
       collectionRewardMedallion: meta.collectionRewardMedallion.trim(),
       isFounderHunt: Boolean(meta.isFounderHunt),
       playMode: meta.playMode || 'both',
+      finderMode: meta.finderMode || FINDER_MODES.FINDER,
+      arAssetType: meta.arAssetType || 'ghost_lantern',
       heatCategory: 'trending',
       tier: meta.tier || 'standard',
       premiumCoinCost: parseInt(meta.premiumCoinCost, 10) || 250,
@@ -2407,6 +2449,16 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
           <option value="team">Team only</option>
           <option value="both">Solo & Team</option>
         </select>
+        <FinderModeSelector
+          value={meta.finderMode}
+          onChange={(mode) => setMeta((m) => ({ ...m, finderMode: mode }))}
+        />
+        {meta.finderMode === FINDER_MODES.AR_ENHANCED && (
+          <ArAssetSelector
+            value={meta.arAssetType}
+            onChange={(arAssetType) => setMeta((m) => ({ ...m, arAssetType }))}
+          />
+        )}
         {meta.tier === 'premium' && (
           <>
             <label>Premium Admission (coins)</label>
@@ -2746,6 +2798,7 @@ function BottomNav({ screen, nav, adminPreview, isSponsor }) {
     if (screen === 'leaderboard') return id === 'home';
     if (screen === 'creator') return id === 'feed';
     if (screen === 'social') return id === 'social';
+    if (screen === 'platform') return id === 'home';
     if (screen === 'play' || screen === 'detail' || screen === 'bonus') {
       return adminPreview ? id === 'admin' : id === 'feed';
     }

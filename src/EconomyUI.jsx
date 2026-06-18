@@ -31,6 +31,7 @@ import {
   redeemCouponByQr,
   toggleFollowCreator,
 } from './economy';
+import { SponsorMarketplacePanel, CreatorStorefrontTab } from './ExpansionUI';
 import { getPublishedAdventures } from './seed';
 
 export function SponsorDashboard({ state, adventures, auth, setState, nav }) {
@@ -164,6 +165,8 @@ export function SponsorDashboard({ state, adventures, auth, setState, nav }) {
           ))}
       </div>
 
+      <SponsorMarketplacePanel state={state} setState={setState} />
+
       <button type="button" className="ghost" onClick={() => nav('create')}>
         Create Sponsored Adventure
       </button>
@@ -217,6 +220,8 @@ export function CreatorProfileScreen({ creatorId, state, setState, nav, adventur
           </div>
         </div>
       )}
+
+      <CreatorStorefrontTab state={state} setState={setState} creatorId={creator.id} />
 
       <div className="card">
         <h3>Adventures</h3>

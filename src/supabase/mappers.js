@@ -68,6 +68,15 @@ export function rowToAdventure(row, clues = []) {
     playMode: row.play_mode || 'both',
     heatScore: row.heat_score ?? 0,
     heatCategory: row.heat_category || 'trending',
+    finderMode: row.finder_mode || 'finder',
+    arAssetType: row.ar_asset_type || 'ghost_lantern',
+    isLegendaryHunt: Boolean(row.is_legendary_hunt),
+    legendaryType: row.legendary_type || null,
+    cashPrizePool: row.cash_prize_pool != null ? Number(row.cash_prize_pool) : 0,
+    cashPayouts: row.cash_payouts || { first: 0.6, second: 0.3, random: 0.1 },
+    isSponsoredDrop: Boolean(row.is_sponsored_drop),
+    sponsoredDropId: row.sponsored_drop_id || null,
+    storefrontPrice: row.storefront_price != null ? Number(row.storefront_price) : null,
   });
 }
 
@@ -123,6 +132,15 @@ export function adventureToRow(adventure, creatorId) {
     play_mode: adventure.playMode || 'both',
     heat_score: adventure.heatScore ?? 0,
     heat_category: adventure.heatCategory || 'trending',
+    finder_mode: adventure.finderMode || 'finder',
+    ar_asset_type: adventure.arAssetType || 'ghost_lantern',
+    is_legendary_hunt: Boolean(adventure.isLegendaryHunt),
+    legendary_type: adventure.legendaryType || null,
+    cash_prize_pool: adventure.cashPrizePool ?? 0,
+    cash_payouts: adventure.cashPayouts || { first: 0.6, second: 0.3, random: 0.1 },
+    is_sponsored_drop: Boolean(adventure.isSponsoredDrop),
+    sponsored_drop_id: adventure.sponsoredDropId || null,
+    storefront_price: adventure.storefrontPrice ?? null,
   };
 }
 

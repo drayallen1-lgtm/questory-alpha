@@ -48,6 +48,13 @@ import {
 import { getCreatorForAdventure } from './economy';
 import { computeAdventureHeat, getHeatCategory, getHeatLabel } from './social';
 import { HeatDiscovery, SeasonRankCard } from './SocialUI';
+import {
+  LegendaryHuntBadge,
+  CashHuntBadge,
+  SponsoredDropBadge,
+  PremiumSubscriptionBadge,
+  NationalPassportPanel,
+} from './ExpansionUI';
 
 export function GoodMorningHome({ state, adventures, auth, nav }) {
   const greeting = getTimeGreeting();
@@ -59,13 +66,14 @@ export function GoodMorningHome({ state, adventures, auth, nav }) {
   return (
     <>
       <section className="hero home-greeting">
-        <div className="badge alpha">Sweep #3 · The Social Layer</div>
+        <div className="badge alpha">Sweep #4 · The Platform Expansion</div>
         <h2>
           {greeting}, {name}
         </h2>
-        <p>Teams, stories, and live events — your city is alive with explorers.</p>
+        <p>AR medallions, cash hunts, creator storefronts — turn your city into an adventure.</p>
       </section>
 
+      <PremiumSubscriptionBadge state={state} />
       <SeasonRankCard state={state} />
 
       <div className="card streak-card">
@@ -121,6 +129,11 @@ export function GoodMorningHome({ state, adventures, auth, nav }) {
           <Medal size={20} />
           <b>Passport</b>
           <p>Track collections by city</p>
+        </button>
+        <button type="button" className="card mini home-quick-btn" onClick={() => nav('platform')}>
+          <Building2 size={20} />
+          <b>Platform</b>
+          <p>AR, cash hunts, premium, studios</p>
         </button>
         <button type="button" className="card mini home-quick-btn" onClick={() => nav('social')}>
           <Users size={20} />
@@ -194,6 +207,9 @@ function AdventureFeedCard({ adventure, progress, state, nav }) {
           <span className="badge published">Live</span>
         )}
         <span className="heat-badge">{getHeatLabel(heatCat)} · {heat}°</span>
+        <LegendaryHuntBadge adventure={adventure} />
+        <CashHuntBadge adventure={adventure} />
+        <SponsoredDropBadge adventure={adventure} />
         <small>{adventure.distance || `${parseMilesEstimate(adventure)} mi`}</small>
       </div>
       <h3>{adventure.title}</h3>
@@ -289,6 +305,7 @@ export function QuestoryPassport({ state, adventures, onRedeem }) {
 
       {tab === 'passport' && (
         <>
+          <NationalPassportPanel state={state} />
           {passport.map((region) => (
             <div className="card passport-region" key={region.region}>
               <h3>{region.region.toUpperCase()}</h3>

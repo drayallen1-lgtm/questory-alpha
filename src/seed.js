@@ -27,6 +27,7 @@ import {
 import { DEFAULT_ENGAGEMENT, normalizeEngagement } from './engagement';
 import { DEFAULT_ECONOMY, normalizeEconomy } from './economy';
 import { DEFAULT_SOCIAL, normalizeSocial } from './social';
+import { DEFAULT_EXPANSION, normalizeExpansion } from './expansion';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -48,6 +49,7 @@ export const defaultState = {
   engagement: { ...DEFAULT_ENGAGEMENT },
   economy: { ...DEFAULT_ECONOMY },
   social: { ...DEFAULT_SOCIAL },
+  expansion: { ...DEFAULT_EXPANSION },
   adventures: [
     {
       id: 'parsons-gold-rush',
@@ -77,6 +79,12 @@ export const defaultState = {
       couponExpirationDays: 7,
       playMode: 'both',
       heatCategory: 'trending',
+      finderMode: 'ar_enhanced',
+      arAssetType: 'ancient_artifact',
+      isLegendaryHunt: true,
+      legendaryType: 'lost_ledger',
+      isSponsoredDrop: true,
+      sponsoredDropId: 'walmart-hidden-savings',
       sponsorInfo: {
         name: 'Parsons Heritage Trail',
         logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Parsons_Kansas_Logo.png/120px-Parsons_Kansas_Logo.png',
@@ -195,6 +203,9 @@ export const defaultState = {
       milesEstimate: 0.6,
       playersCompleted: 24,
       firstFinderName: 'Marcus T.',
+      finderMode: 'finder',
+      isSponsoredDrop: true,
+      sponsoredDropId: 'dq-blizzard-rush',
       sponsor: 'Parsons Heritage Trail',
       sponsorInfo: { name: 'Parsons Heritage Trail', logoUrl: '', website: 'https://www.parsonsks.com' },
       distance: '0.6 mi',
@@ -256,6 +267,9 @@ export const defaultState = {
       milesEstimate: 1.1,
       playersCompleted: 19,
       firstFinderName: 'Elena R.',
+      finderMode: 'finder',
+      isSponsoredDrop: true,
+      sponsoredDropId: 'pepsi-summer-refresh',
       sponsor: 'Neosho River Council',
       sponsorInfo: { name: 'Neosho River Council', logoUrl: '', website: '' },
       distance: '1.1 mi',
@@ -325,6 +339,12 @@ export const defaultState = {
       milesEstimate: 0.7,
       playersCompleted: 31,
       firstFinderName: 'Jake M.',
+      finderMode: 'ar_enhanced',
+      arAssetType: 'ghost_lantern',
+      isLegendaryHunt: true,
+      legendaryType: 'midnight_train',
+      isSponsoredDrop: true,
+      sponsoredDropId: 'mcdonalds-golden-fry',
       sponsor: 'Parsons Heritage Trail',
       sponsorInfo: { name: 'Parsons Heritage Trail', logoUrl: '', website: 'https://www.parsonsks.com' },
       distance: '0.7 mi',
@@ -379,6 +399,12 @@ export const defaultState = {
       tier: 'premium',
       premiumCoinCost: 250,
       creatorProfileId: 'questory-founders',
+      finderMode: 'finder',
+      arAssetType: 'founder_relic',
+      isLegendaryHunt: true,
+      legendaryType: 'founder_relic',
+      cashPrizePool: 250,
+      cashPayouts: { first: 0.6, second: 0.3, random: 0.1 },
       estimatedMinutes: 45,
       milesEstimate: 1.4,
       playersCompleted: 3,
@@ -430,8 +456,14 @@ export const defaultState = {
     },
     {
       id: 'neosho-legend',
-      title: 'The Neosho Legend',
-      location: 'Parsons, Kansas',
+      title: 'The Black Lantern',
+      location: 'Roaming · Next city unknown',
+      city: 'Unknown',
+      state: 'Kansas',
+      region: 'Kansas',
+      finderMode: 'finder',
+      isLegendaryHunt: true,
+      legendaryType: 'black_lantern',
       sponsor: 'QUESTORY Legendary Drop',
       sponsorInfo: {
         name: 'QUESTORY Legendary Drop',
@@ -470,6 +502,7 @@ export function loadState() {
       engagement: normalizeEngagement(saved.engagement),
       economy: normalizeEconomy(saved.economy),
       social: normalizeSocial(saved.social),
+      expansion: normalizeExpansion(saved.expansion),
       claimHistory: buildClaimHistory(rewards, saved.claimHistory),
     };
   } catch {
@@ -669,6 +702,15 @@ export function normalizeAdventure(adventure) {
     campaignPaused: Boolean(adventure.campaignPaused),
     playMode: adventure.playMode || 'both',
     heatCategory: adventure.heatCategory || 'trending',
+    finderMode: adventure.finderMode || 'finder',
+    arAssetType: adventure.arAssetType || 'ghost_lantern',
+    isLegendaryHunt: Boolean(adventure.isLegendaryHunt),
+    legendaryType: adventure.legendaryType || null,
+    cashPrizePool: adventure.cashPrizePool ?? 0,
+    cashPayouts: adventure.cashPayouts || { first: 0.6, second: 0.3, random: 0.1 },
+    isSponsoredDrop: Boolean(adventure.isSponsoredDrop),
+    sponsoredDropId: adventure.sponsoredDropId || null,
+    storefrontPrice: adventure.storefrontPrice ?? null,
   };
 }
 

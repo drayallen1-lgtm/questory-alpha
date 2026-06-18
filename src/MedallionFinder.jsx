@@ -18,6 +18,8 @@ import {
   usesFinderGps,
 } from './finderMode';
 import { formatDistanceAway, getCurrentPosition } from './geolocation';
+import { usesArFinder } from './expansion';
+import { ARFinderOverlay } from './ExpansionUI';
 
 function useMedallionGps(adventure, watching = true) {
   const [distance, setDistance] = useState(null);
@@ -371,41 +373,53 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
         {gpsError && <p className="loc-feedback denied">{gpsError}</p>}
       </div>
 
-      <div className={`card finder-medallion-card ${inCaptureRange ? 'ready' : ''}`}>
-        <div className="finder-medallion-visual" aria-hidden="true">
-          <span className="finder-chest">{physical ? '📍' : '🧭'}</span>
-          <span className="finder-medallion">🥇</span>
+      {usesArFinder(adventure) ? (
+        <div className="card finder-ar-card">
+          <ARFinderOverlay
+            adventure={adventure}
+            inCaptureRange={inCaptureRange}
+            capturing={capturing}
+            onCapture={handleTap}
+          />
+          {tapError && <p className="form-error finder-tap-error">{tapError}</p>}
         </div>
-        <h3>{physical ? 'Physical Medallion Signal' : 'Virtual Medallion'}</h3>
-        <p>
-          {capturing
-            ? 'Capturing medallion...'
-            : inCaptureRange
-              ? physical
-                ? 'Signal peak reached. Tap to mark this search zone.'
-                : 'You are within capture range. Tap the medallion to secure it.'
-              : inSearchArea
-                ? `Signal active. Move within ~${Math.round(captureRadius)} m to tap the medallion.`
-                : effectiveDistance != null
-                  ? 'Move closer to activate signal.'
-                  : 'Locating your position…'}
-        </p>
-        {tapError && <p className="form-error finder-tap-error">{tapError}</p>}
-        <button
-          type="button"
-          className="finder-tap-btn"
-          onClick={handleTap}
-          disabled={tapDisabled}
-          aria-busy={capturing}
-        >
-          <Sparkles size={18} />
-          {capturing
-            ? 'Capturing medallion...'
-            : progress.medallionTapped
-              ? 'Signal captured'
-              : 'Tap Medallion'}
-        </button>
-      </div>
+      ) : (
+        <div className={`card finder-medallion-card ${inCaptureRange ? 'ready' : ''}`}>
+          <div className="finder-medallion-visual" aria-hidden="true">
+            <span className="finder-chest">{physical ? '📍' : '🧭'}</span>
+            <span className="finder-medallion">🥇</span>
+          </div>
+          <h3>{physical ? 'Physical Medallion Signal' : 'Virtual Medallion'}</h3>
+          <p>
+            {capturing
+              ? 'Capturing medallion...'
+              : inCaptureRange
+                ? physical
+                  ? 'Signal peak reached. Tap to mark this search zone.'
+                  : 'You are within capture range. Tap the medallion to secure it.'
+                : inSearchArea
+                  ? `Signal active. Move within ~${Math.round(captureRadius)} m to tap the medallion.`
+                  : effectiveDistance != null
+                    ? 'Move closer to activate signal.'
+                    : 'Locating your position…'}
+          </p>
+          {tapError && <p className="form-error finder-tap-error">{tapError}</p>}
+          <button
+            type="button"
+            className="finder-tap-btn"
+            onClick={handleTap}
+            disabled={tapDisabled}
+            aria-busy={capturing}
+          >
+            <Sparkles size={18} />
+            {capturing
+              ? 'Capturing medallion...'
+              : progress.medallionTapped
+                ? 'Signal captured'
+                : 'Tap Medallion'}
+          </button>
+        </div>
+      )}
 
       <div className="card finder-actions">
         <button type="button" className="ghost" onClick={() => setWatching((v) => !v)}>
