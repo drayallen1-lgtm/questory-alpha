@@ -57,6 +57,7 @@ import {
   validateAdventureClaimFields,
   buildAdventureClaimFields,
   getClaimFieldConfig,
+  formatUserErrorMessage,
 } from './claimSystem';
 import { AdminClaimCode } from './AdminClaimCode';
 import {
@@ -513,26 +514,29 @@ function QuestoryApp() {
   async function claimTreasure(adventure, code, options = {}) {
     const p = getAdventureProgress(state, adventure.id);
     const method = normalizeClaimMethod(adventure.claimMethod);
+    const isDemo =
+      adventure.isDemoAdventure || adventure.id === DEMO_ADVENTURE_ID;
     const medallionAutoClaim =
       Boolean(options.medallionTapped) && method === CLAIM_METHOD.TAP_MEDALLION;
 
-    if (isSupabaseMode && !user && !medallionAutoClaim) {
+    if (isSupabaseMode && !user && !medallionAutoClaim && !isDemo) {
       return {
         ok: false,
+        success: false,
         message: 'Sign in to claim and save your rewards.',
         requiresLogin: true,
       };
     }
     if (p.claimed) {
-      return { ok: false, message: 'You already claimed this adventure.' };
+      return { ok: false, success: false, message: 'You already claimed this adventure.' };
     }
     if (p.step < adventure.clues.length) {
-      return { ok: false, message: 'Complete all clues first.' };
+      return { ok: false, success: false, message: 'Complete all clues first.' };
     }
 
     const validation = validateClaimAttempt(adventure, p, { code, ...options });
     if (!validation.ok) {
-      return validation;
+      return { ...validation, success: false };
     }
 
     const freshAdventure = applyEndingRewards(
@@ -540,19 +544,28 @@ function QuestoryApp() {
       p
     );
     if (isAdventureEnded(freshAdventure)) {
-      return { ok: false, message: 'This adventure has ended. Rewards are no longer available.' };
+      return {
+        ok: false,
+        success: false,
+        message: 'This adventure has ended. Rewards are no longer available.',
+      };
     }
 
     const userId = user?.id || 'local-user';
     const resolved =
-      isSupabaseMode && user
+      isSupabaseMode && user && !isDemo
         ? await resolveClaimRewardsAsync(state, freshAdventure, userId, {
             claimRemote: claimLimitedRewardRemote,
           })
         : resolveClaimRewards(state, freshAdventure, userId);
 
     if (!resolved.ok) {
-      return { ok: false, message: resolved.message, ended: resolved.ended };
+      return {
+        ok: false,
+        success: false,
+        message: resolved.message || 'Could not claim rewards.',
+        ended: resolved.ended,
+      };
     }
 
     const claimedAt = new Date().toISOString();
@@ -588,8 +601,13 @@ function QuestoryApp() {
       collectionName: freshAdventure.collectionName || '',
     });
 
+    const completion = applyAdventureCompletion(
+      resolved.state,
+      freshAdventure,
+      resolved.state.adventures
+    );
+
     setState((s) => {
-      const completion = applyAdventureCompletion(resolved.state, freshAdventure, resolved.state.adventures);
       const collectionMedallionRewards = completion.collectionRewards.map((cr, i) =>
         createVaultReward({
           type: 'medallion',
@@ -618,7 +636,7 @@ function QuestoryApp() {
         screen: 'victory',
         victoryCertificate: certificate,
         victoryEngagement: completion,
-        pendingRating: freshAdventure.id,
+        pendingRating: isDemo ? null : freshAdventure.id,
         claimMessage: resolved.message || null,
         progress: {
           ...s.progress,
@@ -629,7 +647,7 @@ function QuestoryApp() {
       };
       nextState = applySeasonalProgress(nextState, freshAdventure);
       nextState = addSeasonPoints(nextState, 100);
-      nextState.pendingPhotoMemory = freshAdventure.id;
+      nextState.pendingPhotoMemory = isDemo ? null : freshAdventure.id;
       const placement =
         (freshAdventure.playersCompleted || 0) <= 1
           ? 1
@@ -648,7 +666,16 @@ function QuestoryApp() {
       return nextState;
     });
 
-    return { ok: true, message: resolved.message };
+    return {
+      ok: true,
+      success: true,
+      message: resolved.message || 'Treasure claimed!',
+      reward: primaryReward,
+      victoryData: {
+        certificate,
+        engagement: completion,
+      },
+    };
   }
 
   function redeemReward(rewardId) {
@@ -1574,13 +1601,13 @@ function AdventurePlay({
     }
     if (!result) return;
     if (result.ok) setState(result.state);
-    else alert(result.message);
+    else alert(formatUserErrorMessage(result));
   }
 
   function handlePremiumUnlock() {
     const result = purchasePremiumUnlock(state, adventure);
     if (result.ok) setState(result.state);
-    else alert(result.message);
+    else alert(formatUserErrorMessage(result));
   }
 
   if (premiumLocked) {

@@ -14,6 +14,7 @@ import {
   Wallet,
   Zap,
 } from 'lucide-react';
+import { formatUserErrorMessage } from './claimSystem';
 import {
   AR_ASSET_LABELS,
   CREATOR_STOREFRONT,
@@ -143,7 +144,7 @@ export function CashWalletPanel({ state, setState }) {
       setState(result.state);
       setWithdrawAmount('');
     } else {
-      alert(result.message);
+      alert(formatUserErrorMessage(result));
     }
   }
 
@@ -211,7 +212,7 @@ export function CreatorStorefrontPanel({ state, setState }) {
               onClick={() => {
                 const result = purchaseStorefrontProduct(state, product);
                 if (result.ok) setState(result.state);
-                else alert(result.message);
+                else alert(formatUserErrorMessage(result));
               }}
             >
               <ShoppingBag size={16} /> Purchase

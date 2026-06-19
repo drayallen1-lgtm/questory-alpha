@@ -6,6 +6,7 @@ import {
   normalizeClaimMethod,
   claimMethodUsesFinder,
   isPhysicalMedallionClaim,
+  handleClaimResponse,
 } from './claimSystem';
 import {
   canCaptureMedallion,
@@ -441,20 +442,17 @@ export function TreasureClaimPanel({ adventure, progress, onClaim }) {
   const [qrInput, setQrInput] = useState('');
   const [physicalInput, setPhysicalInput] = useState('');
 
-  function handleCodeClaim() {
+  async function handleCodeClaim() {
     const code = document.getElementById('claim-code')?.value?.trim().toUpperCase();
-    const result = onClaim(code);
-    if (result && !result.ok) alert(result.message);
+    await handleClaimResponse(onClaim, code);
   }
 
-  function handleQrClaim() {
-    const result = onClaim(qrInput.trim().toUpperCase());
-    if (result && !result.ok) alert(result.message);
+  async function handleQrClaim() {
+    await handleClaimResponse(onClaim, qrInput.trim().toUpperCase());
   }
 
-  function handlePhysicalClaim() {
-    const result = onClaim(physicalInput.trim().toUpperCase());
-    if (result && !result.ok) alert(result.message);
+  async function handlePhysicalClaim() {
+    await handleClaimResponse(onClaim, physicalInput.trim().toUpperCase());
   }
 
   if (progress.claimed) {

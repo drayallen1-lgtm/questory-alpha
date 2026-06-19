@@ -13,6 +13,7 @@ import {
   Users,
   Wind,
 } from 'lucide-react';
+import { formatUserErrorMessage } from './claimSystem';
 import {
   CREATOR_TITLES,
   HIDDEN_DISCOVERIES,
@@ -307,7 +308,7 @@ function HiddenDiscoveriesPanel({ state, setState, weather }) {
                   onClick={() => {
                     const result = attemptDiscovery(state, d.id, { weather });
                     if (result.ok) setState(result.state);
-                    else if (result.message) window.alert(result.message);
+                    else window.alert(formatUserErrorMessage(result));
                   }}
                 >
                   Investigate

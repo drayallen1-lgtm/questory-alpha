@@ -11,6 +11,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
+import { formatUserErrorMessage } from './claimSystem';
 import {
   EMPTY_STATE_COPY,
   JOURNEY_CHOICES,
@@ -173,7 +174,7 @@ export function QuickCreateWizard({ state, setState, onClose, userId, isSupabase
       onPublished?.(adventure);
       onClose?.();
     } catch (err) {
-      window.alert(err.message || 'Could not publish adventure.');
+      window.alert(formatUserErrorMessage(err) || 'Could not publish adventure.');
     } finally {
       setPublishing(false);
     }
@@ -377,7 +378,7 @@ export function SponsorExpressPanel({ state, setState, userId, isSupabaseMode })
       }
       setState((s) => publishQuickAdventure(s, adventure, { goToInvite: true }));
     } catch (err) {
-      window.alert(err.message || 'Could not launch campaign.');
+      window.alert(formatUserErrorMessage(err) || 'Could not launch campaign.');
     } finally {
       setLaunching(false);
     }

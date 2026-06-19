@@ -198,6 +198,36 @@ export function validateClaimAttempt(
   return { ok: false, message: 'Unknown claim method.' };
 }
 
+export function formatUserErrorMessage(error) {
+  if (!error) return 'Something went wrong.';
+  if (typeof error === 'string') return error;
+  if (typeof error === 'object') {
+    return error.message || error.error || error.reason || 'Something went wrong.';
+  }
+  return String(error) || 'Something went wrong.';
+}
+
+/** Await sync or async claim handlers; show alert only on failure. */
+export async function handleClaimResponse(onClaim, payload) {
+  try {
+    const result = await Promise.resolve(onClaim(payload));
+    if (!result) {
+      alert('Something went wrong.');
+      return null;
+    }
+    const failed =
+      result.ok === false || (result.success === false && result.ok !== true);
+    if (failed) {
+      alert(formatUserErrorMessage(result));
+      return result;
+    }
+    return result;
+  } catch (error) {
+    alert(formatUserErrorMessage(error));
+    return null;
+  }
+}
+
 export function getAdminClaimSecrets(adventure) {
   const method = normalizeClaimMethod(adventure.claimMethod);
   const secrets = [];
