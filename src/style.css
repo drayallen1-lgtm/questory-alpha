@@ -3725,3 +3725,267 @@ nav button.active {
   font-weight: 800;
   color: var(--questory-accent);
 }
+
+/* Sweep #7 — The Invitation */
+.invitation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(7, 15, 24, 0.92);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.invitation-panel {
+  width: min(100%, 440px);
+  background: linear-gradient(165deg, rgba(21, 36, 56, 0.98), rgba(11, 19, 29, 0.99));
+  border: 1px solid rgba(94, 234, 212, 0.22);
+  border-radius: 24px;
+  padding: 24px 20px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+
+.invitation-panel h1,
+.invitation-panel h2 {
+  color: var(--xp-heading, #f8fafc);
+}
+
+.invite-subhead,
+.invitation-panel p {
+  color: var(--xp-body, #94a3b8);
+}
+
+.invite-slide-icon {
+  font-size: 56px;
+  display: block;
+  margin: 16px 0;
+}
+
+.invite-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.invite-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.invite-dots span.active {
+  background: var(--questory-accent);
+  box-shadow: 0 0 10px rgba(94, 234, 212, 0.4);
+}
+
+.invite-nav-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.invite-nav-row button {
+  flex: 1;
+}
+
+.invite-skip,
+.invite-close {
+  width: auto;
+  margin-left: auto;
+  display: block;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.journey-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.journey-card {
+  text-align: left;
+  color: var(--xp-heading, #f8fafc);
+  padding: 14px;
+}
+
+.journey-icon {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.journey-card small {
+  color: var(--xp-body, #94a3b8);
+}
+
+.backyard-demo-card {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: linear-gradient(145deg, rgba(251, 191, 36, 0.1), rgba(11, 19, 29, 0.95));
+}
+
+.backyard-demo-card h3 {
+  color: var(--xp-heading, #f8fafc);
+}
+
+.demo-done {
+  color: var(--questory-accent);
+}
+
+.quick-create-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wizard-steps {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.wizard-steps span {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  background: rgba(15, 26, 40, 0.95);
+  border: 1px solid var(--line);
+  color: var(--xp-body, #94a3b8);
+}
+
+.wizard-steps span.active {
+  border-color: var(--questory-accent);
+  color: var(--xp-heading, #f8fafc);
+  background: rgba(94, 234, 212, 0.14);
+}
+
+.wizard-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 16px;
+}
+
+.wizard-chip-grid button {
+  width: auto;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--xp-heading, #f8fafc);
+  background: rgba(15, 26, 40, 0.95);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.wizard-chip-grid button.active {
+  border-color: var(--questory-accent);
+  background: rgba(94, 234, 212, 0.14);
+}
+
+.kid-template-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.kid-template-card {
+  color: var(--xp-heading, #f8fafc);
+  text-align: center;
+  padding: 14px;
+}
+
+.kid-template-card span {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.invite-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.invite-preview,
+.invite-qr {
+  color: var(--xp-body, #94a3b8);
+  margin: 10px 0;
+}
+
+.invite-qr {
+  text-align: center;
+}
+
+.celebration-panel {
+  text-align: center;
+}
+
+.celebration-sparkle {
+  color: var(--questory-accent);
+  margin-bottom: 8px;
+}
+
+.empty-state-illustrated {
+  text-align: center;
+  padding: 28px 16px;
+}
+
+.empty-illustration {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.empty-state-illustrated h3 {
+  color: var(--xp-heading, #f8fafc);
+}
+
+.accessibility-toggles label.checkbox-row {
+  text-transform: none;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--xp-body-soft, #cbd5e1);
+}
+
+.app.grandma-mode {
+  font-size: 18px;
+}
+
+.app.grandma-mode button {
+  padding: 16px 18px;
+  font-size: 17px;
+  min-height: 52px;
+}
+
+.app.grandma-mode label {
+  font-size: 14px;
+}
+
+.app.grandma-mode h2 {
+  font-size: 30px;
+}
+
+.app.high-contrast .card {
+  border-color: rgba(248, 250, 252, 0.35);
+}
+
+.app.larger-text small,
+.app.larger-text p {
+  font-size: 15px;
+}
+
+.app.kid-mode .kid-mode-creator {
+  border-color: rgba(251, 113, 133, 0.35);
+}

@@ -223,6 +223,24 @@ import {
   WorldHealthDashboard,
   EndingRevealBanner,
 } from './WorldEngineUI';
+import {
+  shouldShowWelcome,
+  shouldShowJourney,
+  getAccessibilityClassName,
+  completeDemoIfNeeded,
+  shouldShowFirstCompletionCelebration,
+  DEMO_ADVENTURE_ID,
+} from './invitation';
+import {
+  WelcomeOnboarding,
+  ChooseYourJourney,
+  QuickCreateWizard,
+  InvitePlayersPanel,
+  FirstCompletionCelebration,
+  SponsorExpressPanel,
+  KidModeCreator,
+  InvitationHomeBanner,
+} from './InvitationUI';
 
 function App() {
   return (
@@ -240,6 +258,8 @@ function QuestoryApp() {
   const [loginError, setLoginError] = useState('');
   const [remoteLoading, setRemoteLoading] = useState(isSupabaseMode);
   const [adventureSyncError, setAdventureSyncError] = useState('');
+  const [showFirstCelebration, setShowFirstCelebration] = useState(false);
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
   const dailyLoginApplied = useRef(false);
   const clueStartRef = useRef(Date.now());
 
@@ -303,6 +323,9 @@ function QuestoryApp() {
           expansion: user ? remote.expansion : normalizeExpansion(s.expansion),
           experience: user ? remote.experience : normalizeExperience(s.experience),
           world: user ? remote.world : normalizeWorld(s.world),
+          onboarding: user ? remote.onboarding : s.onboarding,
+          accessibility: user ? remote.accessibility : s.accessibility,
+          firstTimeMetrics: user ? remote.firstTimeMetrics : s.firstTimeMetrics,
         }));
       } catch (err) {
         console.error('Questory Supabase load failed:', err);
@@ -329,6 +352,9 @@ function QuestoryApp() {
       expansion: s.expansion,
       experience: s.experience,
       world: s.world,
+      onboarding: s.onboarding,
+      accessibility: s.accessibility,
+      firstTimeMetrics: s.firstTimeMetrics,
     }).catch((err) => console.error('Profile sync failed:', err));
   }
 
@@ -343,6 +369,8 @@ function QuestoryApp() {
   }
 
   const selected = state.adventures.find((a) => a.id === state.selectedAdventureId);
+  const inviteAdventure =
+    state.adventures.find((a) => a.id === state.pendingInviteAdventureId) || selected;
   const progress = selected ? getAdventureProgress(state, selected.id) : null;
 
   function nav(screen, adventureId = state.selectedAdventureId, options = {}) {
@@ -354,6 +382,7 @@ function QuestoryApp() {
       adminPreview:
         'adminPreview' in options ? options.adminPreview : s.adminPreview,
       adminTab: options.adminTab ?? s.adminTab,
+      quickSponsor: 'quickSponsor' in options ? options.quickSponsor : s.quickSponsor,
     }));
   }
 
@@ -608,6 +637,10 @@ function QuestoryApp() {
             ? 2
             : 3;
       nextState = applyExpansionOnCompletion(nextState, freshAdventure, placement);
+      nextState = completeDemoIfNeeded(nextState, freshAdventure.id);
+      if (shouldShowFirstCompletionCelebration({ ...s, engagement: completion.engagement })) {
+        setShowFirstCelebration(true);
+      }
       if (isSupabaseMode && user) {
         syncProfile(nextState);
         syncRewardsAndHistory(nextState.rewards, nextState.claimHistory);
@@ -722,7 +755,44 @@ function QuestoryApp() {
 
   return (
     <div>
-      <main className="app">
+      <main className={`app ${getAccessibilityClassName(state.accessibility)}`}>
+        {shouldShowWelcome(state) && (
+          <WelcomeOnboarding state={state} setState={setState} />
+        )}
+        {!shouldShowWelcome(state) && shouldShowJourney(state) && (
+          <ChooseYourJourney state={state} setState={setState} nav={nav} />
+        )}
+        {showQuickCreate && (
+          <QuickCreateWizard
+            state={state}
+            setState={setState}
+            userId={user?.id}
+            isSupabaseMode={isSupabaseMode}
+            onClose={() => setShowQuickCreate(false)}
+          />
+        )}
+        {(state.screen === 'invite' || state.pendingInviteAdventureId) && inviteAdventure && (
+          <InvitePlayersPanel
+            adventure={inviteAdventure}
+            state={state}
+            setState={setState}
+            onClose={() =>
+              setState((s) => ({
+                ...s,
+                screen: s.screen === 'invite' ? 'detail' : s.screen,
+                pendingInviteAdventureId: null,
+              }))
+            }
+          />
+        )}
+        {showFirstCelebration && (
+          <FirstCompletionCelebration
+            state={state}
+            setState={setState}
+            nav={nav}
+            onClose={() => setShowFirstCelebration(false)}
+          />
+        )}
         <Header state={state} auth={auth} onLoginClick={() => setShowLogin(true)} />
         <AuthDebugPanel />
         {!isSupabaseMode && (
@@ -925,6 +995,7 @@ function QuestoryApp() {
               isSupabaseMode={isSupabaseMode}
               auth={auth}
               onAdventuresSaved={refreshAdventuresFromRemote}
+              onQuickCreate={() => setShowQuickCreate(true)}
             />
           )
         )}
@@ -2345,7 +2416,7 @@ function rewardsFromTemplates(templates) {
   });
 }
 
-function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth, onAdventuresSaved }) {
+function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth, onAdventuresSaved, onQuickCreate }) {
   const [meta, setMeta] = useState({
     title: '',
     location: '',
@@ -2694,7 +2765,34 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
         <h2>Create Adventure</h2>
         <p>Build adventures with sponsors, rewards, and GPS clues</p>
       </div>
+      <div className="quick-create-row">
+        <button type="button" onClick={onQuickCreate}>
+          Quick Create — about 60 seconds
+        </button>
+        <button type="button" className="ghost" onClick={() => setState((s) => ({ ...s, screen: 'play', selectedAdventureId: DEMO_ADVENTURE_ID }))}>
+          Try the demo first
+        </button>
+      </div>
+      {(state.accessibility?.kidMode || auth?.isCreator) && (
+        <KidModeCreator
+          state={state}
+          setState={setState}
+          userId={userId}
+          isSupabaseMode={isSupabaseMode}
+          onClose={() => {}}
+        />
+      )}
+      {(state.quickSponsor || auth?.isSponsor || auth?.isAdmin) && (
+        <SponsorExpressPanel
+          state={state}
+          setState={setState}
+          userId={userId}
+          isSupabaseMode={isSupabaseMode}
+        />
+      )}
       <CreationFeeBanner state={state} auth={auth} />
+      {!state.accessibility?.simplifiedUI && (
+        <>
       <QuestoryAssistant onApplyDraft={applyAssistantDraft} />
       <TemplatePicker selected={adventureTemplate} onSelect={handleTemplateSelect} />
       <ScaleSelector value={adventureScale} onChange={handleScaleChange} />
@@ -2708,6 +2806,8 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
         settings={experienceSettings}
         onChange={(patch) => setExperienceSettings((settings) => ({ ...settings, ...patch }))}
       />
+        </>
+      )}
       <div className="card admin-form">
         <label>Title</label>
         <input

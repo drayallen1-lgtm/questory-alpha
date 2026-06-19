@@ -59,6 +59,7 @@ import {
 import { FeedRewardStatusBadges } from './RewardInventoryUI';
 import { CreatorVerifiedBadge } from './ExperienceUI';
 import { GlobalLoreBanner, WorldEventBadge, CreatorPrestigeBadge } from './WorldEngineUI';
+import { InvitationEmptyState, InvitationHomeBanner } from './InvitationUI';
 import { isAdventureUnlocked } from './worldEngine';
 
 export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
@@ -71,13 +72,14 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
   return (
     <>
       <section className="hero home-greeting">
-        <div className="badge alpha">Sweep #6 · The World Engine</div>
+        <div className="badge alpha">Sweep #7 · The Invitation</div>
         <h2>
           {greeting}, {name}
         </h2>
-        <p>Living world events, weather, NPC guides, branching paths, and hidden discoveries.</p>
+        <p>Create a hunt in 60 seconds. Play the demo. Invite your people.</p>
       </section>
 
+      <InvitationHomeBanner state={state} setState={setState} nav={nav} />
       <GlobalLoreBanner state={state} setState={setState} />
 
       <PremiumSubscriptionBadge state={state} />
@@ -181,10 +183,7 @@ export function EnhancedAdventureFeed({ adventures, state, nav, auth }) {
         <p>Collections, badges, and hunts near you</p>
       </div>
       {!published.length && (
-        <div className="card empty-vault">
-          <Compass size={28} />
-          <p>No published adventures yet. Publish a draft from Admin.</p>
-        </div>
+        <InvitationEmptyState type="feed" />
       )}
       {published.map((adventure) => (
         <AdventureFeedCard

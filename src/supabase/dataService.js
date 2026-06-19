@@ -16,6 +16,11 @@ import { normalizeSocial } from '../social';
 import { normalizeExpansion } from '../expansion';
 import { normalizeExperience } from '../experience';
 import { normalizeWorld } from '../worldEngine';
+import {
+  normalizeOnboarding,
+  normalizeAccessibility,
+  normalizeFirstTimeMetrics,
+} from '../invitation';
 
 function profileToEngagement(profile) {
   if (!profile) return normalizeEngagement();
@@ -88,6 +93,33 @@ function profileToWorld(profile) {
 
 function worldToProfileFields(world) {
   return { world: normalizeWorld(world) };
+}
+
+function profileToOnboarding(profile) {
+  if (!profile?.onboarding) return normalizeOnboarding();
+  return normalizeOnboarding(profile.onboarding);
+}
+
+function onboardingToProfileFields(onboarding) {
+  return { onboarding: normalizeOnboarding(onboarding) };
+}
+
+function profileToAccessibility(profile) {
+  if (!profile?.accessibility) return normalizeAccessibility();
+  return normalizeAccessibility(profile.accessibility);
+}
+
+function accessibilityToProfileFields(accessibility) {
+  return { accessibility: normalizeAccessibility(accessibility) };
+}
+
+function profileToFirstTimeMetrics(profile) {
+  if (!profile?.first_time_metrics) return normalizeFirstTimeMetrics();
+  return normalizeFirstTimeMetrics(profile.first_time_metrics);
+}
+
+function firstTimeMetricsToProfileFields(metrics) {
+  return { first_time_metrics: normalizeFirstTimeMetrics(metrics) };
 }
 
 async function fetchCluesForAdventures(adventureIds) {
@@ -180,6 +212,9 @@ export async function loadRemoteData(userId, isAdmin) {
       expansion: normalizeExpansion(),
       experience: normalizeExperience(),
       world: normalizeWorld(),
+      onboarding: normalizeOnboarding(),
+      accessibility: normalizeAccessibility(),
+      firstTimeMetrics: normalizeFirstTimeMetrics(),
     };
   }
 
@@ -202,6 +237,9 @@ export async function loadRemoteData(userId, isAdmin) {
     expansion: profileToExpansion(profile),
     experience: profileToExperience(profile),
     world: profileToWorld(profile),
+    onboarding: profileToOnboarding(profile),
+    accessibility: profileToAccessibility(profile),
+    firstTimeMetrics: profileToFirstTimeMetrics(profile),
   };
 }
 
@@ -255,7 +293,7 @@ export async function deleteAdventureRemote(adventureId) {
   if (error) throw error;
 }
 
-export async function saveUserProfileState(userId, { coins, entries, progress, engagement, economy, social, expansion, experience, world }) {
+export async function saveUserProfileState(userId, { coins, entries, progress, engagement, economy, social, expansion, experience, world, onboarding, accessibility, firstTimeMetrics }) {
   if (!hasSupabase() || !userId) return;
   const payload = { coins, entries, progress };
   if (engagement) Object.assign(payload, engagementToProfileFields(engagement));
@@ -264,6 +302,9 @@ export async function saveUserProfileState(userId, { coins, entries, progress, e
   if (expansion) Object.assign(payload, expansionToProfileFields(expansion));
   if (experience) Object.assign(payload, experienceToProfileFields(experience));
   if (world) Object.assign(payload, worldToProfileFields(world));
+  if (onboarding) Object.assign(payload, onboardingToProfileFields(onboarding));
+  if (accessibility) Object.assign(payload, accessibilityToProfileFields(accessibility));
+  if (firstTimeMetrics) Object.assign(payload, firstTimeMetricsToProfileFields(firstTimeMetrics));
   const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
   if (error) throw error;
 }

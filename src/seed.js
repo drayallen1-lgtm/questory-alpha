@@ -31,6 +31,15 @@ import { DEFAULT_EXPANSION, normalizeExpansion } from './expansion';
 import { mergeAdventureInventory, normalizeFinalRewards, REWARD_POLICIES } from './rewardInventory';
 import { mergeAdventureExperience, DEFAULT_EXPERIENCE, normalizeExperience } from './experience';
 import { mergeAdventureWorld, DEFAULT_WORLD, normalizeWorld } from './worldEngine';
+import {
+  DEFAULT_ONBOARDING,
+  DEFAULT_ACCESSIBILITY,
+  DEFAULT_FIRST_TIME_METRICS,
+  normalizeOnboarding,
+  normalizeAccessibility,
+  normalizeFirstTimeMetrics,
+  ensureDemoAdventure,
+} from './invitation';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -57,7 +66,12 @@ export const defaultState = {
   rewardClaims: {},
   experience: { ...DEFAULT_EXPERIENCE },
   world: { ...DEFAULT_WORLD },
-  adventures: [
+  onboarding: { ...DEFAULT_ONBOARDING },
+  accessibility: { ...DEFAULT_ACCESSIBILITY },
+  firstTimeMetrics: { ...DEFAULT_FIRST_TIME_METRICS },
+  pendingInviteAdventureId: null,
+  quickSponsor: false,
+  adventures: ensureDemoAdventure([
     {
       id: 'parsons-gold-rush',
       title: 'The Hidden Ledger',
@@ -591,7 +605,7 @@ export const defaultState = {
         },
       ],
     },
-  ],
+  ]),
 };
 
 export function loadState() {
@@ -618,6 +632,10 @@ export function loadState() {
       rewardClaims: saved.rewardClaims || {},
       experience: normalizeExperience(saved.experience),
       world: normalizeWorld(saved.world),
+      onboarding: normalizeOnboarding(saved.onboarding),
+      accessibility: normalizeAccessibility(saved.accessibility),
+      firstTimeMetrics: normalizeFirstTimeMetrics(saved.firstTimeMetrics),
+      pendingInviteAdventureId: saved.pendingInviteAdventureId || null,
       claimHistory: buildClaimHistory(rewards, saved.claimHistory),
     };
   } catch {
@@ -737,10 +755,10 @@ export function syncClaimHistory(rewards) {
 }
 
 function mergeAdventures(saved) {
-  if (!saved?.length) return defaultState.adventures;
+  if (!saved?.length) return ensureDemoAdventure(defaultState.adventures);
   const seedIds = new Set(defaultState.adventures.map((a) => a.id));
   const custom = saved.filter((a) => !seedIds.has(a.id)).map(normalizeAdventure);
-  return defaultState.adventures.map((seed) => {
+  const merged = defaultState.adventures.map((seed) => {
     const override = saved.find((a) => a.id === seed.id);
     if (!override) return seed;
     return normalizeAdventure({
@@ -751,6 +769,7 @@ function mergeAdventures(saved) {
       finalRewards: seed.finalRewards.length ? seed.finalRewards : override.finalRewards,
     });
   }).concat(custom);
+  return ensureDemoAdventure(merged);
 }
 
 export function migrateAdventureStatus(status) {
