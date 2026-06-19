@@ -331,7 +331,12 @@ export async function saveUserProfileState(userId, { coins, entries, progress, e
   if (firstTimeMetrics) Object.assign(payload, firstTimeMetricsToProfileFields(firstTimeMetrics));
   if (growth) Object.assign(payload, growthToProfileFields(growth));
   if (launchFunnel) Object.assign(payload, launchFunnelToProfileFields(launchFunnel));
-  const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
+  let { error } = await supabase.from('profiles').update(payload).eq('id', userId);
+  if (error && payload.launch_funnel) {
+    const fallbackPayload = { ...payload };
+    delete fallbackPayload.launch_funnel;
+    ({ error } = await supabase.from('profiles').update(fallbackPayload).eq('id', userId));
+  }
   if (error) throw error;
 }
 

@@ -93,6 +93,7 @@ export function recordLaunchError(state, context, error) {
 }
 
 export function recordSessionStart(state) {
+  if (!state) return state;
   const funnel = normalizeLaunchFunnel(state.launchFunnel);
   const now = new Date().toISOString();
   const isReturn = funnel.sessionCount >= 1;
@@ -180,10 +181,16 @@ export function getLaunchFunnelProgress(state) {
 }
 
 export function getAdminLaunchAnalytics(state, adventures = []) {
-  const funnel = getLaunchFunnelProgress(state);
-  const lf = normalizeLaunchFunnel(state.launchFunnel);
+  const safeState = state || {
+    launchFunnel: {},
+    firstTimeMetrics: {},
+    coins: 0,
+    engagement: {},
+  };
+  const funnel = getLaunchFunnelProgress(safeState);
+  const lf = normalizeLaunchFunnel(safeState.launchFunnel);
   const published = adventures.filter((a) => a.status === 'published').length;
-  const metrics = state.firstTimeMetrics || {};
+  const metrics = safeState.firstTimeMetrics || {};
 
   const completedSteps = funnel.filter((s) => s.completed).length;
   const conversionRate = funnel.length ? Math.round((completedSteps / funnel.length) * 100) : 0;
@@ -203,8 +210,8 @@ export function getAdminLaunchAnalytics(state, adventures = []) {
       invitesShared: Boolean(metrics.inviteShared),
       returnVisits: Boolean(metrics.returnVisit),
       publishedAdventures: published,
-      coins: state.coins || 0,
-      adventuresCompleted: state.engagement?.adventuresCompleted || 0,
+      coins: safeState.coins || 0,
+      adventuresCompleted: safeState.engagement?.adventuresCompleted || 0,
     },
     recentErrors: lf.errors.slice(0, 5),
   };

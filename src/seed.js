@@ -41,6 +41,7 @@ import {
   ensureDemoAdventure,
 } from './invitation';
 import { DEFAULT_LAUNCH_FUNNEL, normalizeLaunchFunnel } from './stability';
+import { DEFAULT_GROWTH, normalizeGrowth } from './growth';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 

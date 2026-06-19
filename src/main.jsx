@@ -258,6 +258,7 @@ import {
   AppLoadingOverlay,
   ErrorRecoveryBanner,
   AdminLaunchAnalytics,
+  AppErrorBoundary,
 } from './StabilityUI';
 import {
   normalizeLaunchFunnel,
@@ -270,9 +271,11 @@ import {
 
 function App() {
   return (
-    <AuthProvider>
-      <QuestoryApp />
-    </AuthProvider>
+    <AppErrorBoundary>
+      <AuthProvider>
+        <QuestoryApp />
+      </AuthProvider>
+    </AppErrorBoundary>
   );
 }
 

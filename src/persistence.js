@@ -1,13 +1,29 @@
-import { STORAGE_KEY, loadState } from './seed';
+import { STORAGE_KEY, loadState, defaultState } from './seed';
 import { hasSupabase } from './supabase/client';
+import { normalizeLaunchFunnel } from './stability';
+import { normalizeGrowth } from './growth';
+
+function normalizeAppState(state) {
+  return {
+    ...state,
+    growth: normalizeGrowth(state?.growth),
+    launchFunnel: normalizeLaunchFunnel(state?.launchFunnel),
+  };
+}
 
 /** Initial React state — adventures come from Supabase when cloud mode is on. */
 export function getInitialState() {
-  const local = loadState();
-  if (hasSupabase()) {
-    return { ...local, adventures: [] };
+  try {
+    const local = normalizeAppState(loadState());
+    if (hasSupabase()) {
+      return { ...local, adventures: [] };
+    }
+    return local;
+  } catch (err) {
+    console.error('Questory state init failed:', err);
+    const fallback = normalizeAppState(defaultState);
+    return hasSupabase() ? { ...fallback, adventures: [] } : fallback;
   }
-  return local;
 }
 
 /** Persist user progress locally; adventures stay in Supabase in cloud mode. */

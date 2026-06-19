@@ -10,6 +10,7 @@ import {
   getAdminLaunchAnalytics,
   getLaunchFunnelProgress,
   markPersonaTested,
+  safeMessage,
 } from './stability';
 
 export function AppLoadingOverlay({ message = 'Loading Questory…' }) {
@@ -173,4 +174,41 @@ export function ButtonLoading({ loading, loadingLabel, children }) {
     );
   }
   return children;
+}
+
+export class AppErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('Questory render error:', error, info);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="app stability-crash-screen">
+          <ErrorRecoveryBanner
+            message={safeMessage(this.state.error, 'Something went wrong loading Questory.')}
+            onRetry={() => window.location.reload()}
+            onDismiss={() => this.setState({ error: null })}
+          />
+          <div className="card stability-empty">
+            <h3>Questory hit a snag</h3>
+            <p>Your progress is saved locally. Try refreshing — if this keeps happening, clear cache and reload.</p>
+            <button type="button" onClick={() => window.location.reload()}>
+              Reload Questory
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }

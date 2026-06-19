@@ -4412,3 +4412,7 @@ nav button.active {
     min-height: 56px;
   }
 }
+
+.stability-crash-screen {
+  padding-top: 24px;
+}
