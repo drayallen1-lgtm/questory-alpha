@@ -3457,3 +3457,271 @@ nav button.active {
     width: 100%;
   }
 }
+
+/* Sweep #6 — The World Engine */
+.world-status-card {
+  background: linear-gradient(145deg, rgba(30, 58, 95, 0.55), rgba(11, 19, 29, 0.95));
+  border-color: rgba(94, 234, 212, 0.2);
+}
+
+.world-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.world-weather-pill,
+.world-season-pill {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  color: var(--xp-heading);
+}
+
+.world-status-desc {
+  color: var(--xp-body);
+  margin: 0;
+}
+
+.narrative-banner,
+.lore-live-banner {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.12), rgba(11, 19, 29, 0.95));
+  border-color: rgba(167, 139, 250, 0.25);
+}
+
+.narrative-chapter-title {
+  color: var(--xp-heading);
+  font-weight: 700;
+  margin: 6px 0;
+}
+
+.narrative-chapter-body,
+.lore-live-banner p {
+  color: var(--xp-body);
+}
+
+.world-event-row,
+.discovery-row,
+.npc-card,
+.featured-creator-row,
+.lore-event-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.world-event-row:last-child,
+.discovery-row:last-child,
+.npc-card:last-child {
+  border-bottom: 0;
+}
+
+.world-event-icon,
+.npc-avatar {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.world-event-row b,
+.discovery-row b,
+.npc-card b {
+  color: var(--xp-heading);
+  display: block;
+}
+
+.world-event-row p,
+.discovery-row p,
+.npc-dialogue {
+  color: var(--xp-body);
+  font-size: 13px;
+  margin: 4px 0;
+}
+
+.world-event-row button {
+  width: auto;
+  padding: 8px 12px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.world-event-row.joined {
+  opacity: 0.85;
+}
+
+.weather-panel .weather-current {
+  color: var(--xp-heading);
+}
+
+.weather-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.weather-option {
+  width: auto;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--xp-heading);
+  background: rgba(15, 26, 40, 0.92);
+  border: 1px solid var(--line);
+}
+
+.weather-option.active {
+  border-color: var(--questory-accent);
+  box-shadow: 0 0 16px rgba(94, 234, 212, 0.15);
+}
+
+.weather-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.weather-overlay.weather-rain {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.08), transparent);
+}
+
+.weather-overlay.weather-fog {
+  background: radial-gradient(circle, transparent 30%, rgba(148, 163, 184, 0.15));
+}
+
+.weather-overlay.weather-snow {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent);
+}
+
+.weather-overlay.weather-night {
+  background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.35));
+}
+
+.badge.world-event-badge {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.creator-prestige-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #d4af37;
+  margin: 4px 0;
+}
+
+.badge.locked {
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.feed-card.locked-hunt {
+  opacity: 0.88;
+  border-style: dashed;
+}
+
+.locked-adventure-notice {
+  text-align: center;
+  color: var(--xp-body);
+}
+
+.branch-choice-panel h4 {
+  color: var(--xp-heading);
+  margin: 0 0 6px;
+}
+
+.branch-option {
+  margin: 6px 0;
+  text-align: left;
+  color: var(--xp-heading);
+}
+
+.npc-play-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  background: linear-gradient(145deg, rgba(21, 36, 56, 0.72), rgba(11, 19, 29, 0.92));
+}
+
+.ending-reveal-banner {
+  background: linear-gradient(135deg, rgba(94, 234, 212, 0.12), rgba(11, 19, 29, 0.92));
+  border-color: rgba(94, 234, 212, 0.25);
+  color: var(--xp-heading);
+  margin-bottom: 10px;
+}
+
+.world-health-dashboard .drop-off-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--xp-body);
+}
+
+.drop-off-row.severity-high strong {
+  color: #ef4444;
+}
+
+.drop-off-row.severity-medium strong {
+  color: #fbbf24;
+}
+
+.creator-rec {
+  font-size: 13px;
+  color: var(--xp-body-soft);
+  padding: 6px 0;
+  border-left: 3px solid var(--line);
+  padding-left: 10px;
+  margin: 6px 0;
+}
+
+.creator-rec.priority-high {
+  border-left-color: #ef4444;
+}
+
+.limited-badge-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.limited-badge {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(15, 26, 40, 0.92);
+  border: 1px solid var(--line);
+  color: var(--xp-body);
+  opacity: 0.55;
+}
+
+.limited-badge.earned {
+  opacity: 1;
+  color: var(--xp-heading);
+  border-color: rgba(94, 234, 212, 0.35);
+}
+
+.limited-badge.rarity-ultra_rare.earned {
+  border-color: rgba(167, 139, 250, 0.45);
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.2);
+}
+
+.creator-title-pill {
+  display: inline-block;
+  font-size: 11px;
+  margin-left: 6px;
+  color: #d4af37;
+}
+
+.creator-rank {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--questory-accent);
+}

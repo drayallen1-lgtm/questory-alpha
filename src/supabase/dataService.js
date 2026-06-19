@@ -15,6 +15,7 @@ import { normalizeEconomy } from '../economy';
 import { normalizeSocial } from '../social';
 import { normalizeExpansion } from '../expansion';
 import { normalizeExperience } from '../experience';
+import { normalizeWorld } from '../worldEngine';
 
 function profileToEngagement(profile) {
   if (!profile) return normalizeEngagement();
@@ -78,6 +79,15 @@ function profileToExperience(profile) {
 
 function experienceToProfileFields(experience) {
   return { experience: normalizeExperience(experience) };
+}
+
+function profileToWorld(profile) {
+  if (!profile?.world) return normalizeWorld();
+  return normalizeWorld(profile.world);
+}
+
+function worldToProfileFields(world) {
+  return { world: normalizeWorld(world) };
 }
 
 async function fetchCluesForAdventures(adventureIds) {
@@ -169,6 +179,7 @@ export async function loadRemoteData(userId, isAdmin) {
       social: normalizeSocial(),
       expansion: normalizeExpansion(),
       experience: normalizeExperience(),
+      world: normalizeWorld(),
     };
   }
 
@@ -190,6 +201,7 @@ export async function loadRemoteData(userId, isAdmin) {
     social: profileToSocial(profile),
     expansion: profileToExpansion(profile),
     experience: profileToExperience(profile),
+    world: profileToWorld(profile),
   };
 }
 
@@ -243,7 +255,7 @@ export async function deleteAdventureRemote(adventureId) {
   if (error) throw error;
 }
 
-export async function saveUserProfileState(userId, { coins, entries, progress, engagement, economy, social, expansion, experience }) {
+export async function saveUserProfileState(userId, { coins, entries, progress, engagement, economy, social, expansion, experience, world }) {
   if (!hasSupabase() || !userId) return;
   const payload = { coins, entries, progress };
   if (engagement) Object.assign(payload, engagementToProfileFields(engagement));
@@ -251,6 +263,7 @@ export async function saveUserProfileState(userId, { coins, entries, progress, e
   if (social) Object.assign(payload, socialToProfileFields(social));
   if (expansion) Object.assign(payload, expansionToProfileFields(expansion));
   if (experience) Object.assign(payload, experienceToProfileFields(experience));
+  if (world) Object.assign(payload, worldToProfileFields(world));
   const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
   if (error) throw error;
 }

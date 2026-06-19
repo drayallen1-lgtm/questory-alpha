@@ -188,6 +188,12 @@ import {
   PlayForBadgeOnlyNotice,
 } from './RewardInventoryUI';
 import { normalizeExperience } from './experience';
+import {
+  applyEndingRewards,
+  isAdventureUnlocked,
+  normalizeWorld,
+  selectBranchPath,
+} from './worldEngine';
 import { ADVENTURE_TEMPLATES, SCALE_PRESETS, buildTemplateClues, buildTemplateRewards, buildTemplateStory, getTemplateMeta } from './templates';
 import {
   TemplatePicker,
@@ -205,6 +211,18 @@ import {
   ExperienceVictoryMessage,
   HorrorAtmosphereOverlay,
 } from './ExperienceUI';
+import {
+  WorldEngineHub,
+  WeatherOverlay,
+  GlobalLoreBanner,
+  WorldEventBadge,
+  CreatorPrestigeBadge,
+  LockedAdventureNotice,
+  BranchChoicePanel,
+  NpcPlayCard,
+  WorldHealthDashboard,
+  EndingRevealBanner,
+} from './WorldEngineUI';
 
 function App() {
   return (
@@ -284,6 +302,7 @@ function QuestoryApp() {
           social: user ? remote.social : normalizeSocial(s.social),
           expansion: user ? remote.expansion : normalizeExpansion(s.expansion),
           experience: user ? remote.experience : normalizeExperience(s.experience),
+          world: user ? remote.world : normalizeWorld(s.world),
         }));
       } catch (err) {
         console.error('Questory Supabase load failed:', err);
@@ -309,6 +328,7 @@ function QuestoryApp() {
       social: s.social,
       expansion: s.expansion,
       experience: s.experience,
+      world: s.world,
     }).catch((err) => console.error('Profile sync failed:', err));
   }
 
@@ -486,7 +506,10 @@ function QuestoryApp() {
       return validation;
     }
 
-    const freshAdventure = state.adventures.find((a) => a.id === adventure.id) || adventure;
+    const freshAdventure = applyEndingRewards(
+      state.adventures.find((a) => a.id === adventure.id) || adventure,
+      p
+    );
     if (isAdventureEnded(freshAdventure)) {
       return { ok: false, message: 'This adventure has ended. Rewards are no longer available.' };
     }
@@ -723,6 +746,7 @@ function QuestoryApp() {
         {state.screen === 'home' && (
           <GoodMorningHome
             state={state}
+            setState={setState}
             adventures={state.adventures}
             auth={auth}
             nav={nav}
@@ -838,6 +862,14 @@ function QuestoryApp() {
             setState={setState}
             nav={nav}
             auth={auth}
+          />
+        )}
+        {state.screen === 'world' && (
+          <WorldEngineHub
+            state={state}
+            setState={setState}
+            adventures={state.adventures}
+            nav={nav}
           />
         )}
         {state.screen === 'leaderboard' && (
@@ -1140,7 +1172,8 @@ function AdventureDetail({
   isAdmin,
 }) {
   const ended = isAdventureEnded(adventure);
-  const playable = isAdventurePlayable(adventure, adminPreview) && (!ended || progress.claimed);
+  const unlocked = isAdventureUnlocked(state, adventure);
+  const playable = isAdventurePlayable(adventure, adminPreview) && (!ended || progress.claimed) && unlocked;
   const pct = progress.claimed
     ? 100
     : Math.round((progress.step / Math.max(adventure.clues.length, 1)) * 100);
@@ -1186,6 +1219,8 @@ function AdventureDetail({
         )}
         <AdventureEndedBanner adventure={adventure} />
         <CreatorVerifiedBadge adventure={adventure} />
+        <WorldEventBadge adventure={adventure} />
+        <CreatorPrestigeBadge adventure={adventure} adventures={adventures} />
         <BackyardPrecisionBanner adventure={adventure} />
         <VerifiedSponsorBadge adventure={adventure} />
         <TeamHuntBadge adventure={adventure} team={myTeam} />
@@ -1277,10 +1312,12 @@ function AdventureDetail({
       )}
 
       <RewardStatusPanel adventure={adventure} />
+      {!unlocked && <LockedAdventureNotice adventure={adventure} state={state} />}
 
       {(isAdmin || adminPreview) && state && setState && (
         <>
           <AdventureHealthDashboard adventure={adventure} state={state} />
+          <WorldHealthDashboard adventure={adventure} state={state} />
           <VerificationModePanel
             adventure={adventure}
             state={state}
@@ -1324,7 +1361,9 @@ function AdventureDetail({
       >
         {ended && !progress.claimed
           ? 'Adventure Ended'
-          : progress.claimed
+          : !unlocked
+            ? 'Locked — Discover in World'
+            : progress.claimed
             ? 'Replay Trail'
             : progress.step > 0
               ? 'Continue Adventure'
@@ -1334,7 +1373,7 @@ function AdventureDetail({
   );
 }
 
-function GpsCheckIn({ clue, onUnlock }) {
+function GpsCheckIn({ clue, onUnlock, disabled = false }) {
   const [status, setStatus] = useState('idle');
   const [distanceAway, setDistanceAway] = useState(null);
   const [checking, setChecking] = useState(false);
@@ -1395,11 +1434,11 @@ function GpsCheckIn({ clue, onUnlock }) {
         </div>
       )}
 
-      <button onClick={handleGpsCheckIn} disabled={checking}>
-        <MapPin size={18} /> {checking ? 'Checking…' : 'GPS Check-In'}
+      <button onClick={handleGpsCheckIn} disabled={checking || disabled}>
+        <MapPin size={18} /> {checking ? 'Checking…' : disabled ? 'Choose a path first' : 'GPS Check-In'}
       </button>
 
-      <button className="ghost dev-unlock" onClick={onUnlock} disabled={checking}>
+      <button className="ghost dev-unlock" onClick={onUnlock} disabled={checking || disabled}>
         Dev Unlock
       </button>
     </div>
@@ -1498,6 +1537,7 @@ function AdventurePlay({
         </div>
       )}
       {adminPreview && <AdminClaimCode adventure={adventure} />}
+      <WeatherOverlay state={state} />
       <HorrorAtmosphereOverlay adventure={adventure} />
       <BackyardPrecisionBanner adventure={adventure} />
       <div className="card">
@@ -1535,6 +1575,17 @@ function AdventurePlay({
 
         {!atClaim && !progress.claimed && clue && (
           <>
+            <NpcPlayCard
+              adventure={adventure}
+              state={state}
+              setState={setState}
+              clueIndex={clueIndex}
+            />
+            <BranchChoicePanel
+              clue={clue}
+              progress={progress}
+              onSelect={(pathId) => setState((s) => selectBranchPath(s, adventure.id, pathId, clueIndex))}
+            />
             <CluePlayContent clue={clue} />
             <GhostTrailHint state={state} adventureId={adventure.id} clueIndex={clueIndex} />
             {dynamicHint && <p className="coin-hint">{dynamicHint}</p>}
@@ -1552,7 +1603,11 @@ function AdventurePlay({
               clueIndex={clueIndex}
               onSpend={handleCoinSpend}
             />
-            <GpsCheckIn clue={clue} onUnlock={onSolve} />
+            <GpsCheckIn
+              clue={clue}
+              onUnlock={onSolve}
+              disabled={clue.branchOptions?.length > 0 && !progress.pathId}
+            />
           </>
         )}
 
@@ -1565,7 +1620,10 @@ function AdventurePlay({
         )}
 
         {readyToClaim && (
-          <TreasureClaimPanel adventure={adventure} progress={progress} onClaim={onClaim} />
+          <>
+            <EndingRevealBanner adventure={adventure} progress={progress} />
+            <TreasureClaimPanel adventure={adventure} progress={progress} onClaim={onClaim} />
+          </>
         )}
 
         {progress.claimed && (
@@ -3083,6 +3141,7 @@ function BottomNav({ screen, nav, adminPreview, isSponsor }) {
     if (screen === 'creator') return id === 'feed';
     if (screen === 'social') return id === 'social';
     if (screen === 'platform') return id === 'home';
+    if (screen === 'world') return id === 'home';
     if (screen === 'play' || screen === 'detail' || screen === 'bonus') {
       return adminPreview ? id === 'admin' : id === 'feed';
     }

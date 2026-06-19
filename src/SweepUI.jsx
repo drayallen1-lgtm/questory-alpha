@@ -15,6 +15,7 @@ import {
   Users,
   Clock,
   Building2,
+  Globe,
 } from 'lucide-react';
 import {
   BADGE_DEFS,
@@ -57,8 +58,10 @@ import {
 } from './ExpansionUI';
 import { FeedRewardStatusBadges } from './RewardInventoryUI';
 import { CreatorVerifiedBadge } from './ExperienceUI';
+import { GlobalLoreBanner, WorldEventBadge, CreatorPrestigeBadge } from './WorldEngineUI';
+import { isAdventureUnlocked } from './worldEngine';
 
-export function GoodMorningHome({ state, adventures, auth, nav }) {
+export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
   const greeting = getTimeGreeting();
   const name = getGreetingName(auth, state);
   const streak = state.engagement?.streak?.count || 0;
@@ -68,12 +71,14 @@ export function GoodMorningHome({ state, adventures, auth, nav }) {
   return (
     <>
       <section className="hero home-greeting">
-        <div className="badge alpha">Sweep #5 · The Experience Engine</div>
+        <div className="badge alpha">Sweep #6 · The World Engine</div>
         <h2>
           {greeting}, {name}
         </h2>
-        <p>Templates, smart builder, audio clues, and creator analytics — build any adventure scale.</p>
+        <p>Living world events, weather, NPC guides, branching paths, and hidden discoveries.</p>
       </section>
+
+      <GlobalLoreBanner state={state} setState={setState} />
 
       <PremiumSubscriptionBadge state={state} />
       <SeasonRankCard state={state} />
@@ -122,6 +127,11 @@ export function GoodMorningHome({ state, adventures, auth, nav }) {
       )}
 
       <div className="grid home-quick-grid">
+        <button type="button" className="card mini home-quick-btn" onClick={() => nav('world')}>
+          <Globe size={20} />
+          <b>World</b>
+          <p>Events, weather, secrets, lore</p>
+        </button>
         <button type="button" className="card mini home-quick-btn" onClick={() => nav('feed')}>
           <Compass size={20} />
           <b>Explore Hunts</b>
@@ -195,9 +205,10 @@ function AdventureFeedCard({ adventure, progress, state, nav }) {
   const creator = getCreatorForAdventure(adventure);
   const heat = computeAdventureHeat(adventure, state);
   const heatCat = adventure.heatCategory || getHeatCategory(adventure);
+  const unlocked = isAdventureUnlocked(state, adventure);
 
   return (
-    <div className={`card hunt feed-card ${adventure.isFounderHunt ? 'founder-hunt' : ''}`}>
+    <div className={`card hunt feed-card ${adventure.isFounderHunt ? 'founder-hunt' : ''} ${!unlocked ? 'locked-hunt' : ''}`}>
       <div className="row">
         {adventure.isFounderHunt ? (
           <span className="badge founder-badge">
@@ -213,11 +224,14 @@ function AdventureFeedCard({ adventure, progress, state, nav }) {
         <CashHuntBadge adventure={adventure} />
         <SponsoredDropBadge adventure={adventure} />
         <FeedRewardStatusBadges adventure={adventure} />
+        {!unlocked && <span className="badge locked">🔒 Hidden</span>}
         <small>{adventure.distance || `${parseMilesEstimate(adventure)} mi`}</small>
       </div>
       <h3>{adventure.title}</h3>
       <VerifiedSponsorBadge adventure={adventure} />
       <CreatorVerifiedBadge adventure={adventure} />
+      <WorldEventBadge adventure={adventure} />
+      <CreatorPrestigeBadge adventure={adventure} adventures={state.adventures} />
       {collection && (
         <p className="feed-collection">
           <Star size={14} /> {collection.name}

@@ -68,6 +68,7 @@ export function rowToAdventure(row, clues = []) {
       audioUrl: c.audio_url || '',
       videoUrl: c.video_url || '',
       imageUrl: c.image_url || '',
+      branchOptions: c.branch_options || [],
     })),
     creatorId: row.creator_id,
     playMode: row.play_mode || 'both',
@@ -93,6 +94,7 @@ export function rowToAdventure(row, clues = []) {
     adventureTemplate: row.adventure_template || 'from_scratch',
     experienceSettings: row.experience_settings || {},
     creatorAnalytics: row.creator_analytics || {},
+    worldConfig: row.world_config || {},
   });
 }
 
@@ -168,6 +170,7 @@ export function adventureToRow(adventure, creatorId) {
     adventure_template: adventure.adventureTemplate || 'from_scratch',
     experience_settings: adventure.experienceSettings || {},
     creator_analytics: adventure.creatorAnalytics || {},
+    world_config: adventure.worldConfig || {},
   };
 }
 
@@ -187,6 +190,7 @@ export function cluesToRows(adventure) {
     audio_url: clue.audioUrl || null,
     video_url: clue.videoUrl || null,
     image_url: clue.imageUrl || null,
+    branch_options: clue.branchOptions?.length ? clue.branchOptions : [],
   }));
 }
 

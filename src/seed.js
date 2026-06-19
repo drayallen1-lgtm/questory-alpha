@@ -30,6 +30,7 @@ import { DEFAULT_SOCIAL, normalizeSocial } from './social';
 import { DEFAULT_EXPANSION, normalizeExpansion } from './expansion';
 import { mergeAdventureInventory, normalizeFinalRewards, REWARD_POLICIES } from './rewardInventory';
 import { mergeAdventureExperience, DEFAULT_EXPERIENCE, normalizeExperience } from './experience';
+import { mergeAdventureWorld, DEFAULT_WORLD, normalizeWorld } from './worldEngine';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -55,6 +56,7 @@ export const defaultState = {
   expansion: { ...DEFAULT_EXPANSION },
   rewardClaims: {},
   experience: { ...DEFAULT_EXPERIENCE },
+  world: { ...DEFAULT_WORLD },
   adventures: [
     {
       id: 'parsons-gold-rush',
@@ -391,6 +393,39 @@ export const defaultState = {
         backyardPrecision: true,
         arHorror: true,
       },
+      worldConfig: {
+        branchingEnabled: true,
+        worldEventTags: ['ghost-walk'],
+        hiddenDiscoveryIds: ['depot-lantern'],
+        alternateEndings: [
+          {
+            id: 'ghost',
+            pathId: 'ghost',
+            title: 'Ghost Ledger Ending',
+            description: 'You followed the conductor into the shadows.',
+            medallionTitle: 'Depot Ghost Medallion',
+          },
+          {
+            id: 'historian',
+            pathId: 'historian',
+            title: 'Historian Ending',
+            description: 'The archives reveal what the platform hides.',
+            medallionTitle: 'Archivist Crest',
+          },
+        ],
+        npcs: [
+          {
+            id: 'conductor-ghost',
+            name: 'The Conductor',
+            role: 'Story Guide',
+            avatar: '🎩',
+            dialogues: [
+              { id: 'intro', text: 'The rails remember every soul who passed through.', mood: 'mysterious' },
+              { id: 'branch', text: 'Brave the platform shadows, or search the archives.', mood: 'warning' },
+            ],
+          },
+        ],
+      },
       sponsor: 'Parsons Heritage Trail',
       sponsorInfo: { name: 'Parsons Heritage Trail', logoUrl: '', website: 'https://www.parsonsks.com' },
       distance: '0.7 mi',
@@ -410,6 +445,10 @@ export const defaultState = {
           text: 'Count the benches on the north platform — that number opens the next clue.',
           clueType: 'audio',
           audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+          branchOptions: [
+            { id: 'platform', label: 'Brave the platform shadows', pathId: 'ghost' },
+            { id: 'archives', label: 'Search the archive room', pathId: 'historian' },
+          ],
           latitude: 37.3395,
           longitude: -95.2605,
           radiusMeters: 4,
@@ -519,15 +558,38 @@ export const defaultState = {
         logoUrl: '',
         website: 'https://questory.app',
       },
-      distance: 'Coming Soon',
+      distance: 'Hidden',
       prize: 'Physical legendary medallion',
-      status: 'archived',
+      status: 'published',
       difficulty: 5,
       claimCode: 'NEOSHO',
-      story: 'A second trail along the Neosho River unlocks soon.',
-      clues: [],
+      worldConfig: {
+        unlockRequirement: { type: 'discovery', discoveryId: 'black-lantern-whisper' },
+        worldEventTags: ['legendary-roaming'],
+      },
+      story: 'A second trail along the Neosho River — unlock via a hidden discovery in the World tab.',
+      clues: [
+        {
+          id: 'nl-1',
+          title: 'Lantern Signal',
+          text: 'Where the river bends, the black lantern flickers once at midnight.',
+          latitude: 37.3385,
+          longitude: -95.257,
+          radiusMeters: 500,
+        },
+      ],
       bonusFinds: [],
-      finalRewards: [],
+      finalRewards: [
+        {
+          type: 'medallion',
+          icon: '🏮',
+          title: 'Black Lantern Medallion',
+          desc: 'Ultra-rare roaming legendary',
+          valueLabel: 'Legendary',
+          redemptionInstructions: 'Saved in your Questory Passport.',
+          expirationDays: 0,
+        },
+      ],
     },
   ],
 };
@@ -555,6 +617,7 @@ export function loadState() {
       expansion: normalizeExpansion(saved.expansion),
       rewardClaims: saved.rewardClaims || {},
       experience: normalizeExperience(saved.experience),
+      world: normalizeWorld(saved.world),
       claimHistory: buildClaimHistory(rewards, saved.claimHistory),
     };
   } catch {
@@ -764,7 +827,7 @@ export function normalizeAdventure(adventure) {
     sponsoredDropId: adventure.sponsoredDropId || null,
     storefrontPrice: adventure.storefrontPrice ?? null,
   };
-  return mergeAdventureExperience(mergeAdventureInventory(normalized));
+  return mergeAdventureWorld(mergeAdventureExperience(mergeAdventureInventory(normalized)));
 }
 
 export function getSponsorInfo(adventure) {
