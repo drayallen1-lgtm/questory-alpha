@@ -12,6 +12,7 @@ import {
   Trophy,
   Zap,
 } from 'lucide-react';
+import { formatSuccessMessage } from './claimSystem';
 import {
   SEED_LIVE_EVENTS,
   SEASON_TIERS,
@@ -141,7 +142,15 @@ function TeamsPanel({ state, setState }) {
             <p className="admin-meta">
               {team.members} members · {team.points} pts · {team.badge}
             </p>
-            <button type="button" className="ghost" onClick={() => setState((s) => joinTeam(s, team.id))}>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => {
+                const wasJoined = state.social?.myTeamId === team.id;
+                setState((s) => joinTeam(s, team.id));
+                if (!wasJoined) alert(formatSuccessMessage({ message: `Joined ${team.name}!` }));
+              }}
+            >
               {state.social?.myTeamId === team.id ? 'Joined ✓' : 'Join Team'}
             </button>
           </div>
@@ -178,7 +187,11 @@ function FriendsPanel({ state, setState, adventures }) {
           <button
             type="button"
             className="ghost"
-            onClick={() => setState((st) => followEntity(st, s.type, s.id, s.name))}
+            onClick={() => {
+              const already = state.social?.follows?.some((f) => f.id === s.id && f.type === s.type);
+              setState((st) => followEntity(st, s.type, s.id, s.name));
+              if (!already) alert(formatSuccessMessage({ message: `Following ${s.name}!` }));
+            }}
           >
             Follow
           </button>

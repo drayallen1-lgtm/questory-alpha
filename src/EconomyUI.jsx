@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatUserErrorMessage } from './claimSystem';
 import {
   BarChart3,
   Building2,
@@ -51,7 +52,7 @@ export function SponsorDashboard({ state, adventures, auth, setState, nav }) {
   function handleScanCoupon() {
     const result = redeemCouponByQr(state, qrInput.trim());
     if (!result.ok) {
-      setScanMsg(result.message);
+      setScanMsg(formatUserErrorMessage(result));
       return;
     }
     setState(result.state);

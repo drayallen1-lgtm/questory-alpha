@@ -3,7 +3,7 @@
   --card: #0f1a28;
   --card2: #152438;
   --text: #f6fbff;
-  --muted: #9fb1c7;
+  --muted: #b8c9dc;
   --gold: #f5c842;
   --amber: #e8a317;
   --green: #41df8c;
@@ -11,8 +11,8 @@
   --line: #243548;
   --questory-accent: #5eead4;
   --xp-heading: #f8fafc;
-  --xp-body: #94a3b8;
-  --xp-body-soft: #cbd5e1;
+  --xp-body: #cbd5e1;
+  --xp-body-soft: #e2e8f0;
 }
 
 * {
@@ -93,7 +93,7 @@ label {
   display: block;
   font-size: 12px;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--xp-body);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-top: 8px;
@@ -900,10 +900,16 @@ small.progress-label {
 .empty-vault {
   text-align: center;
   padding: 28px 16px;
+  color: var(--xp-body);
+}
+
+.empty-vault p {
+  color: var(--xp-body);
+  margin: 8px 0 0;
 }
 
 .empty-vault svg {
-  color: var(--muted);
+  color: var(--xp-body);
   margin-bottom: 8px;
 }
 
@@ -1737,6 +1743,17 @@ a.sponsor-name:hover {
   text-align: center;
   font-size: 12px;
   margin-bottom: 0;
+  color: var(--xp-body);
+}
+
+.card p,
+.card small {
+  color: var(--xp-body);
+}
+
+.card h3,
+.card h4 {
+  color: var(--xp-heading);
 }
 
 .clues-section-head {

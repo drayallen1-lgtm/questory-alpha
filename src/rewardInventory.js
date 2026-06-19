@@ -1,3 +1,5 @@
+import { mapReasonToMessage } from './stability';
+
 export const REWARD_POLICIES = {
   CONTINUE_NO_REWARD: 'continue_no_reward',
   CONTINUE_BADGE_COINS_ONLY: 'continue_badge_coins_only',
@@ -200,6 +202,10 @@ function claimKey(adventureId, rewardId) {
   return `${adventureId}:${rewardId}`;
 }
 
+function failReason(reason, extra = {}) {
+  return { ok: false, reason, message: mapReasonToMessage(reason) || 'Something went wrong.', ...extra };
+}
+
 export function hasUserClaimedReward(rewardClaims, adventureId, rewardId, userId) {
   return (rewardClaims[claimKey(adventureId, rewardId)] || []).includes(userId);
 }
@@ -209,21 +215,16 @@ export function claimLimitedRewardLocal(state, adventure, reward, userId = 'loca
   const key = claimKey(adventure.id, reward.id);
 
   if (hasUserClaimedReward(rewardClaims, adventure.id, reward.id, userId)) {
-    return { ok: false, reason: 'already_claimed' };
+    return failReason('already_claimed');
   }
   if (adventure.rewardsPaused || reward.rewardsPaused) {
-    return { ok: false, reason: 'rewards_paused' };
+    return failReason('rewards_paused');
   }
   if (!isRewardInWindow(reward)) {
-    return { ok: false, reason: 'outside_window' };
+    return failReason('outside_window');
   }
   if (isRewardDepleted(reward)) {
-    return {
-      ok: false,
-      reason: 'depleted',
-      policy: reward.rewardPolicy,
-      reward,
-    };
+    return failReason('depleted', { policy: reward.rewardPolicy, reward });
   }
 
   const adventures = state.adventures.map((a) => {

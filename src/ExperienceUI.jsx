@@ -11,6 +11,7 @@ import {
   Video,
   Wand2,
 } from 'lucide-react';
+import { formatUserErrorMessage } from './claimSystem';
 import {
   ADVENTURE_SCALES,
   CLUE_TYPE_LABELS,
@@ -259,7 +260,7 @@ export function QuestoryAssistant({ onApplyDraft }) {
           </div>
         </div>
       )}
-      {draft && !draft.ok && <p className="form-error">{draft.message}</p>}
+      {draft && !draft.ok && <p className="form-error">{formatUserErrorMessage(draft)}</p>}
     </div>
   );
 }

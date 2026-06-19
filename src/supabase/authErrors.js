@@ -1,3 +1,5 @@
+import { safeMessage } from '../stability';
+
 const AUTH_ERROR_MESSAGES = {
   invalid_credentials: 'Incorrect email or password. Please try again.',
   email_not_confirmed:
@@ -43,7 +45,7 @@ export function formatAuthError(err) {
     return 'Google sign-in redirect is misconfigured. Add your site URL to Supabase Auth redirect URLs.';
   }
 
-  return message;
+  return safeMessage(message, 'Something went wrong. Please try again.');
 }
 
 /** Parse Supabase OAuth error returned in the URL hash after redirect. */

@@ -451,7 +451,7 @@ function QuestoryApp() {
         .then(() => refreshAdventuresFromRemote())
         .catch((err) => {
           console.error('Publish sync failed:', err);
-          setAdventureSyncError(err.message || 'Could not publish adventure.');
+          setAdventureSyncError(formatUserErrorMessage(err) || 'Could not publish adventure.');
         });
     }
   }
@@ -463,7 +463,7 @@ function QuestoryApp() {
         .then(() => refreshAdventuresFromRemote())
         .catch((err) => {
           console.error('Archive sync failed:', err);
-          setAdventureSyncError(err.message || 'Could not archive adventure.');
+          setAdventureSyncError(formatUserErrorMessage(err) || 'Could not archive adventure.');
         });
     }
   }
@@ -475,7 +475,7 @@ function QuestoryApp() {
         .then(() => refreshAdventuresFromRemote())
         .catch((err) => {
           console.error('Restore sync failed:', err);
-          setAdventureSyncError(err.message || 'Could not restore adventure.');
+          setAdventureSyncError(formatUserErrorMessage(err) || 'Could not restore adventure.');
         });
     }
   }
@@ -494,7 +494,7 @@ function QuestoryApp() {
         .then(() => refreshAdventuresFromRemote())
         .catch((err) => {
           console.error('Delete sync failed:', err);
-          setAdventureSyncError(err.message || 'Could not delete adventure.');
+          setAdventureSyncError(formatUserErrorMessage(err) || 'Could not delete adventure.');
         });
     }
   }
@@ -1202,7 +1202,7 @@ function Header({ state, auth, onLoginClick }) {
     try {
       await auth.signOut();
     } catch (err) {
-      setSignOutError(err.message || 'Could not sign out. Please try again.');
+      setSignOutError(formatUserErrorMessage(err) || 'Could not sign out. Please try again.');
     }
   }
 
@@ -2698,7 +2698,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
       if (!buy) return;
       const slot = purchaseExtraAdventureSlot(state);
       if (!slot.ok) {
-        setFormError(slot.message);
+        setFormError(formatUserErrorMessage(slot) || 'Not enough coins.');
         return;
       }
       setState(slot.state);
@@ -2852,7 +2852,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
         }));
         onAdventuresSaved?.();
       } catch (err) {
-        setFormError(err.message || 'Could not save draft to Supabase.');
+        setFormError(formatUserErrorMessage(err) || 'Could not save draft to Supabase.');
       } finally {
         setSaving(false);
       }

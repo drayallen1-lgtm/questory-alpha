@@ -14,7 +14,7 @@ import {
   Wallet,
   Zap,
 } from 'lucide-react';
-import { formatUserErrorMessage } from './claimSystem';
+import { formatUserErrorMessage, formatSuccessMessage } from './claimSystem';
 import {
   AR_ASSET_LABELS,
   CREATOR_STOREFRONT,
@@ -305,7 +305,15 @@ export function SponsorMarketplacePanel({ state, setState }) {
             key={template.id}
             type="button"
             className="card mini marketplace-template"
-            onClick={() => setState((s) => launchMarketplaceCampaign(s, template, { reward, sponsorName }))}
+            onClick={() => {
+              const result = launchMarketplaceCampaign(state, template, { reward, sponsorName });
+              if (result.ok) {
+                setState(result.state);
+                alert(formatSuccessMessage(result, 'Campaign launched!'));
+              } else {
+                alert(formatUserErrorMessage(result));
+              }
+            }}
           >
             <b>{template.label}</b>
             <small>${template.budget} · {template.radiusMiles} mi · {template.durationDays}d</small>

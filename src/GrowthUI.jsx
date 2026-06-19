@@ -331,7 +331,11 @@ export function FollowingFeedPanel({ state, setState, adventures, nav }) {
             <button
               type="button"
               className="ghost"
-              onClick={() => setState(followCreatorFromFeed(state, item.creatorId, 'Parsons Heritage'))}
+              onClick={() => {
+                const already = state.social?.follows?.some((f) => f.id === item.creatorId);
+                setState(followCreatorFromFeed(state, item.creatorId, 'Parsons Heritage'));
+                if (!already) alert(formatSuccessMessage({ message: 'Following Parsons Heritage!' }));
+              }}
             >
               Follow
             </button>

@@ -22,7 +22,7 @@ import {
   normalizeFirstTimeMetrics,
 } from '../invitation';
 import { normalizeGrowth } from '../growth';
-import { normalizeLaunchFunnel } from '../stability';
+import { normalizeLaunchFunnel, mapReasonToMessage } from '../stability';
 
 function profileToEngagement(profile) {
   if (!profile) return normalizeEngagement();
@@ -356,7 +356,11 @@ export async function upsertClaimHistory(userId, entries) {
 
 export async function claimLimitedRewardRemote(adventureId, rewardId, userId) {
   if (!hasSupabase() || !userId) {
-    return { ok: false, reason: 'not_authenticated' };
+    return {
+      ok: false,
+      reason: 'not_authenticated',
+      message: mapReasonToMessage('not_authenticated'),
+    };
   }
   const { data, error } = await supabase.rpc('claim_limited_reward', {
     p_adventure_id: adventureId,
@@ -364,7 +368,11 @@ export async function claimLimitedRewardRemote(adventureId, rewardId, userId) {
     p_user_id: userId,
   });
   if (error) throw error;
-  return data || { ok: false, reason: 'unknown' };
+  const result = data || { ok: false, reason: 'unknown' };
+  if (!result.ok && !result.message) {
+    result.message = mapReasonToMessage(result.reason) || 'Something went wrong.';
+  }
+  return result;
 }
 
 export async function claimLimitedRewardsForAdventure(adventure, userId) {

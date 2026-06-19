@@ -425,11 +425,15 @@ export function purchaseStorefrontProduct(state, product) {
 }
 
 export function launchMarketplaceCampaign(state, template, { reward, sponsorName }) {
+  const name = sponsorName?.trim();
+  if (!name) {
+    return { ok: false, message: 'Enter your business name to launch a campaign.' };
+  }
   const expansion = normalizeExpansion(state.expansion);
   const campaign = {
     id: `campaign-${Date.now()}`,
     templateId: template.id,
-    sponsorName: sponsorName?.trim() || 'Local Business',
+    sponsorName: name,
     reward: reward?.trim() || 'Special offer',
     budget: template.budget,
     radiusMiles: template.radiusMiles,
@@ -438,10 +442,14 @@ export function launchMarketplaceCampaign(state, template, { reward, sponsorName
     createdAt: new Date().toISOString(),
   };
   return {
-    ...state,
-    expansion: {
-      ...expansion,
-      marketplaceCampaigns: [campaign, ...expansion.marketplaceCampaigns],
+    ok: true,
+    message: `${template.label} campaign launched for ${name}!`,
+    state: {
+      ...state,
+      expansion: {
+        ...expansion,
+        marketplaceCampaigns: [campaign, ...expansion.marketplaceCampaigns],
+      },
     },
   };
 }

@@ -7,6 +7,7 @@ import {
   claimMethodUsesFinder,
   isPhysicalMedallionClaim,
   handleClaimResponse,
+  formatUserErrorMessage,
 } from './claimSystem';
 import {
   canCaptureMedallion,
@@ -288,11 +289,11 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
       console.log('[Finder] claim result/error:', result);
 
       if (result && !result.ok) {
-        setTapError(result.message || 'Could not capture medallion. Try again.');
+        setTapError(formatUserErrorMessage(result) || 'Could not capture medallion. Try again.');
       }
     } catch (err) {
       console.error('[Finder] tap error:', err);
-      setTapError(err?.message || 'Could not capture medallion. Try again.');
+      setTapError(formatUserErrorMessage(err) || 'Could not capture medallion. Try again.');
     } finally {
       setCapturing(false);
       tapLockRef.current = false;

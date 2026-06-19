@@ -1,4 +1,7 @@
 import { usesFinderGps } from './finderMode';
+import { safeMessage } from './stability';
+
+export { safeMessage };
 
 export const CLAIM_METHOD = {
   SECRET_CODE: 'secret_code',
@@ -197,8 +200,6 @@ export function validateClaimAttempt(
 
   return { ok: false, message: 'Unknown claim method.' };
 }
-
-import { safeMessage } from './stability';
 
 export function formatUserErrorMessage(error) {
   return safeMessage(error, 'Something went wrong.');

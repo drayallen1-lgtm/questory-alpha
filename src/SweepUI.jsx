@@ -74,11 +74,11 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
   return (
     <>
       <section className="hero home-greeting">
-        <div className="badge alpha">Sweep #8 · The Growth Engine</div>
+        <div className="badge alpha">Questory · Launch Ready</div>
         <h2>
           {greeting}, {name}
         </h2>
-        <p>Invite friends, share quest codes, grow your community.</p>
+        <p>Play hunts near you. Create in minutes. Invite your people.</p>
       </section>
 
       <GrowthHomeBanner state={state} setState={setState} nav={nav} adventures={adventures} />
