@@ -233,6 +233,12 @@ import {
   DEMO_ADVENTURE_ID,
 } from './invitation';
 import {
+  applyGrowthOnCompletion,
+  normalizeGrowth,
+  recordAdventureStart,
+  recordAdventureView,
+} from './growth';
+import {
   WelcomeOnboarding,
   ChooseYourJourney,
   QuickCreateWizard,
@@ -242,6 +248,11 @@ import {
   KidModeCreator,
   InvitationHomeBanner,
 } from './InvitationUI';
+import {
+  GrowthEngineHub,
+  GrowthHomeBanner,
+  QuestCodeBadge,
+} from './GrowthUI';
 
 function App() {
   return (
@@ -327,6 +338,7 @@ function QuestoryApp() {
           onboarding: user ? remote.onboarding : s.onboarding,
           accessibility: user ? remote.accessibility : s.accessibility,
           firstTimeMetrics: user ? remote.firstTimeMetrics : s.firstTimeMetrics,
+          growth: user ? remote.growth : normalizeGrowth(s.growth),
         }));
       } catch (err) {
         console.error('Questory Supabase load failed:', err);
@@ -356,6 +368,7 @@ function QuestoryApp() {
       onboarding: s.onboarding,
       accessibility: s.accessibility,
       firstTimeMetrics: s.firstTimeMetrics,
+      growth: s.growth,
     }).catch((err) => console.error('Profile sync failed:', err));
   }
 
@@ -375,16 +388,26 @@ function QuestoryApp() {
   const progress = selected ? getAdventureProgress(state, selected.id) : null;
 
   function nav(screen, adventureId = state.selectedAdventureId, options = {}) {
-    setState((s) => ({
-      ...s,
-      screen,
-      selectedAdventureId: adventureId ?? s.selectedAdventureId,
-      selectedCreatorId: options.creatorId ?? s.selectedCreatorId,
-      adminPreview:
-        'adminPreview' in options ? options.adminPreview : s.adminPreview,
-      adminTab: options.adminTab ?? s.adminTab,
-      quickSponsor: 'quickSponsor' in options ? options.quickSponsor : s.quickSponsor,
-    }));
+    setState((s) => {
+      let next = {
+        ...s,
+        screen,
+        selectedAdventureId: adventureId ?? s.selectedAdventureId,
+        selectedCreatorId: options.creatorId ?? s.selectedCreatorId,
+        adminPreview:
+          'adminPreview' in options ? options.adminPreview : s.adminPreview,
+        adminTab: options.adminTab ?? s.adminTab,
+        quickSponsor: 'quickSponsor' in options ? options.quickSponsor : s.quickSponsor,
+        growthTab: options.growthTab ?? s.growthTab,
+      };
+      if (screen === 'detail' && adventureId) {
+        next = recordAdventureView(next, adventureId);
+      }
+      if (screen === 'play' && adventureId) {
+        next = recordAdventureStart(next, adventureId);
+      }
+      return next;
+    });
   }
 
   function updateAdventure(adventureId, patch) {
@@ -656,6 +679,7 @@ function QuestoryApp() {
             : 3;
       nextState = applyExpansionOnCompletion(nextState, freshAdventure, placement);
       nextState = completeDemoIfNeeded(nextState, freshAdventure.id);
+      nextState = applyGrowthOnCompletion(nextState, freshAdventure);
       if (shouldShowFirstCompletionCelebration({ ...s, engagement: completion.engagement })) {
         setShowFirstCelebration(true);
       }
@@ -967,6 +991,15 @@ function QuestoryApp() {
             setState={setState}
             adventures={state.adventures}
             nav={nav}
+          />
+        )}
+        {state.screen === 'growth' && (
+          <GrowthEngineHub
+            state={state}
+            setState={setState}
+            adventures={state.adventures}
+            nav={nav}
+            initialTab={state.growthTab || 'referrals'}
           />
         )}
         {state.screen === 'leaderboard' && (
@@ -3268,7 +3301,7 @@ function BottomNav({ screen, nav, adminPreview, isSponsor }) {
     if (screen === 'creator') return id === 'feed';
     if (screen === 'social') return id === 'social';
     if (screen === 'platform') return id === 'home';
-    if (screen === 'world') return id === 'home';
+    if (screen === 'world' || screen === 'growth') return id === 'home';
     if (screen === 'play' || screen === 'detail' || screen === 'bonus') {
       return adminPreview ? id === 'admin' : id === 'feed';
     }

@@ -40,6 +40,7 @@ import {
   normalizeFirstTimeMetrics,
   ensureDemoAdventure,
 } from './invitation';
+import { DEFAULT_GROWTH, mergeAdventureGrowth, normalizeGrowth } from './growth';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -69,6 +70,8 @@ export const defaultState = {
   onboarding: { ...DEFAULT_ONBOARDING },
   accessibility: { ...DEFAULT_ACCESSIBILITY },
   firstTimeMetrics: { ...DEFAULT_FIRST_TIME_METRICS },
+  growth: { ...DEFAULT_GROWTH },
+  growthTab: 'referrals',
   pendingInviteAdventureId: null,
   quickSponsor: false,
   adventures: ensureDemoAdventure([
@@ -635,6 +638,8 @@ export function loadState() {
       onboarding: normalizeOnboarding(saved.onboarding),
       accessibility: normalizeAccessibility(saved.accessibility),
       firstTimeMetrics: normalizeFirstTimeMetrics(saved.firstTimeMetrics),
+      growth: normalizeGrowth(saved.growth),
+      growthTab: saved.growthTab || 'referrals',
       pendingInviteAdventureId: saved.pendingInviteAdventureId || null,
       claimHistory: buildClaimHistory(rewards, saved.claimHistory),
     };
@@ -846,7 +851,9 @@ export function normalizeAdventure(adventure) {
     sponsoredDropId: adventure.sponsoredDropId || null,
     storefrontPrice: adventure.storefrontPrice ?? null,
   };
-  return mergeAdventureWorld(mergeAdventureExperience(mergeAdventureInventory(normalized)));
+  return mergeAdventureGrowth(
+    mergeAdventureWorld(mergeAdventureExperience(mergeAdventureInventory(normalized)))
+  );
 }
 
 export function getSponsorInfo(adventure) {

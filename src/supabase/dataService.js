@@ -21,6 +21,7 @@ import {
   normalizeAccessibility,
   normalizeFirstTimeMetrics,
 } from '../invitation';
+import { normalizeGrowth } from '../growth';
 
 function profileToEngagement(profile) {
   if (!profile) return normalizeEngagement();
@@ -122,6 +123,15 @@ function firstTimeMetricsToProfileFields(metrics) {
   return { first_time_metrics: normalizeFirstTimeMetrics(metrics) };
 }
 
+function profileToGrowth(profile) {
+  if (!profile?.growth) return normalizeGrowth();
+  return normalizeGrowth(profile.growth);
+}
+
+function growthToProfileFields(growth) {
+  return { growth: normalizeGrowth(growth) };
+}
+
 async function fetchCluesForAdventures(adventureIds) {
   if (!adventureIds.length) return {};
   const { data, error } = await supabase
@@ -215,6 +225,7 @@ export async function loadRemoteData(userId, isAdmin) {
       onboarding: normalizeOnboarding(),
       accessibility: normalizeAccessibility(),
       firstTimeMetrics: normalizeFirstTimeMetrics(),
+      growth: normalizeGrowth(),
     };
   }
 
@@ -240,6 +251,7 @@ export async function loadRemoteData(userId, isAdmin) {
     onboarding: profileToOnboarding(profile),
     accessibility: profileToAccessibility(profile),
     firstTimeMetrics: profileToFirstTimeMetrics(profile),
+    growth: profileToGrowth(profile),
   };
 }
 
@@ -293,7 +305,7 @@ export async function deleteAdventureRemote(adventureId) {
   if (error) throw error;
 }
 
-export async function saveUserProfileState(userId, { coins, entries, progress, engagement, economy, social, expansion, experience, world, onboarding, accessibility, firstTimeMetrics }) {
+export async function saveUserProfileState(userId, { coins, entries, progress, engagement, economy, social, expansion, experience, world, onboarding, accessibility, firstTimeMetrics, growth }) {
   if (!hasSupabase() || !userId) return;
   const payload = { coins, entries, progress };
   if (engagement) Object.assign(payload, engagementToProfileFields(engagement));
@@ -305,6 +317,7 @@ export async function saveUserProfileState(userId, { coins, entries, progress, e
   if (onboarding) Object.assign(payload, onboardingToProfileFields(onboarding));
   if (accessibility) Object.assign(payload, accessibilityToProfileFields(accessibility));
   if (firstTimeMetrics) Object.assign(payload, firstTimeMetricsToProfileFields(firstTimeMetrics));
+  if (growth) Object.assign(payload, growthToProfileFields(growth));
   const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
   if (error) throw error;
 }

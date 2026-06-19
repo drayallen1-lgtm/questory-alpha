@@ -60,6 +60,7 @@ import { FeedRewardStatusBadges } from './RewardInventoryUI';
 import { CreatorVerifiedBadge } from './ExperienceUI';
 import { GlobalLoreBanner, WorldEventBadge, CreatorPrestigeBadge } from './WorldEngineUI';
 import { InvitationEmptyState, InvitationHomeBanner } from './InvitationUI';
+import { GrowthHomeBanner, QuestCodeBadge, FollowingFeedSection } from './GrowthUI';
 import { isAdventureUnlocked } from './worldEngine';
 
 export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
@@ -72,13 +73,14 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
   return (
     <>
       <section className="hero home-greeting">
-        <div className="badge alpha">Sweep #7 · The Invitation</div>
+        <div className="badge alpha">Sweep #8 · The Growth Engine</div>
         <h2>
           {greeting}, {name}
         </h2>
-        <p>Create a hunt in 60 seconds. Play the demo. Invite your people.</p>
+        <p>Invite friends, share quest codes, grow your community.</p>
       </section>
 
+      <GrowthHomeBanner state={state} setState={setState} nav={nav} adventures={adventures} />
       <InvitationHomeBanner state={state} setState={setState} nav={nav} />
       <GlobalLoreBanner state={state} setState={setState} />
 
@@ -129,6 +131,11 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
       )}
 
       <div className="grid home-quick-grid">
+        <button type="button" className="card mini home-quick-btn" onClick={() => nav('growth')}>
+          <Users size={20} />
+          <b>Growth</b>
+          <p>Referrals, codes, remixes</p>
+        </button>
         <button type="button" className="card mini home-quick-btn" onClick={() => nav('world')}>
           <Globe size={20} />
           <b>World</b>
@@ -178,6 +185,7 @@ export function EnhancedAdventureFeed({ adventures, state, nav, auth }) {
 
   return (
     <>
+      <FollowingFeedSection state={state} nav={nav} setState={() => {}} adventures={adventures} />
       <div className="section-head">
         <h2>Explore Feed</h2>
         <p>Collections, badges, and hunts near you</p>
@@ -229,8 +237,9 @@ function AdventureFeedCard({ adventure, progress, state, nav }) {
       <h3>{adventure.title}</h3>
       <VerifiedSponsorBadge adventure={adventure} />
       <CreatorVerifiedBadge adventure={adventure} />
-      <WorldEventBadge adventure={adventure} />
-      <CreatorPrestigeBadge adventure={adventure} adventures={state.adventures} />
+        <WorldEventBadge adventure={adventure} />
+        <CreatorPrestigeBadge adventure={adventure} adventures={state.adventures} />
+        <QuestCodeBadge adventure={adventure} />
       {collection && (
         <p className="feed-collection">
           <Star size={14} /> {collection.name}

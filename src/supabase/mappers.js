@@ -95,6 +95,10 @@ export function rowToAdventure(row, clues = []) {
     experienceSettings: row.experience_settings || {},
     creatorAnalytics: row.creator_analytics || {},
     worldConfig: row.world_config || {},
+    questCode: row.quest_code || '',
+    remixOf: row.remix_of || null,
+    remixCredit: row.remix_credit || null,
+    growthAnalytics: row.growth_analytics || {},
   });
 }
 
@@ -171,6 +175,10 @@ export function adventureToRow(adventure, creatorId) {
     experience_settings: adventure.experienceSettings || {},
     creator_analytics: adventure.creatorAnalytics || {},
     world_config: adventure.worldConfig || {},
+    quest_code: adventure.questCode || null,
+    remix_of: adventure.remixOf || null,
+    remix_credit: adventure.remixCredit || null,
+    growth_analytics: adventure.growthAnalytics || {},
   };
 }
 
