@@ -22,6 +22,7 @@ import {
   normalizeFirstTimeMetrics,
 } from '../invitation';
 import { normalizeGrowth } from '../growth';
+import { normalizeLaunchFunnel } from '../stability';
 
 function profileToEngagement(profile) {
   if (!profile) return normalizeEngagement();
@@ -132,6 +133,15 @@ function growthToProfileFields(growth) {
   return { growth: normalizeGrowth(growth) };
 }
 
+function profileToLaunchFunnel(profile) {
+  if (!profile?.launch_funnel) return normalizeLaunchFunnel();
+  return normalizeLaunchFunnel(profile.launch_funnel);
+}
+
+function launchFunnelToProfileFields(launchFunnel) {
+  return { launch_funnel: normalizeLaunchFunnel(launchFunnel) };
+}
+
 async function fetchCluesForAdventures(adventureIds) {
   if (!adventureIds.length) return {};
   const { data, error } = await supabase
@@ -226,6 +236,7 @@ export async function loadRemoteData(userId, isAdmin) {
       accessibility: normalizeAccessibility(),
       firstTimeMetrics: normalizeFirstTimeMetrics(),
       growth: normalizeGrowth(),
+      launchFunnel: normalizeLaunchFunnel(),
     };
   }
 
@@ -252,6 +263,7 @@ export async function loadRemoteData(userId, isAdmin) {
     accessibility: profileToAccessibility(profile),
     firstTimeMetrics: profileToFirstTimeMetrics(profile),
     growth: profileToGrowth(profile),
+    launchFunnel: profileToLaunchFunnel(profile),
   };
 }
 
@@ -305,7 +317,7 @@ export async function deleteAdventureRemote(adventureId) {
   if (error) throw error;
 }
 
-export async function saveUserProfileState(userId, { coins, entries, progress, engagement, economy, social, expansion, experience, world, onboarding, accessibility, firstTimeMetrics, growth }) {
+export async function saveUserProfileState(userId, { coins, entries, progress, engagement, economy, social, expansion, experience, world, onboarding, accessibility, firstTimeMetrics, growth, launchFunnel }) {
   if (!hasSupabase() || !userId) return;
   const payload = { coins, entries, progress };
   if (engagement) Object.assign(payload, engagementToProfileFields(engagement));
@@ -318,6 +330,7 @@ export async function saveUserProfileState(userId, { coins, entries, progress, e
   if (accessibility) Object.assign(payload, accessibilityToProfileFields(accessibility));
   if (firstTimeMetrics) Object.assign(payload, firstTimeMetricsToProfileFields(firstTimeMetrics));
   if (growth) Object.assign(payload, growthToProfileFields(growth));
+  if (launchFunnel) Object.assign(payload, launchFunnelToProfileFields(launchFunnel));
   const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
   if (error) throw error;
 }

@@ -58,6 +58,7 @@ import {
   buildAdventureClaimFields,
   getClaimFieldConfig,
   formatUserErrorMessage,
+  formatSuccessMessage,
 } from './claimSystem';
 import { AdminClaimCode } from './AdminClaimCode';
 import {
@@ -253,6 +254,19 @@ import {
   GrowthHomeBanner,
   QuestCodeBadge,
 } from './GrowthUI';
+import {
+  AppLoadingOverlay,
+  ErrorRecoveryBanner,
+  AdminLaunchAnalytics,
+} from './StabilityUI';
+import {
+  normalizeLaunchFunnel,
+  recordSessionStart,
+  trackDemoComplete,
+  trackCreatePublished,
+  trackInviteShared,
+  recordLaunchError,
+} from './stability';
 
 function App() {
   return (
@@ -292,6 +306,10 @@ function QuestoryApp() {
       return result.state;
     });
   }, [isSupabaseMode, user?.id]);
+
+  useEffect(() => {
+    setState((s) => recordSessionStart(s));
+  }, []);
 
   useEffect(() => {
     const oauthError = parseOAuthCallbackError();
@@ -339,10 +357,12 @@ function QuestoryApp() {
           accessibility: user ? remote.accessibility : s.accessibility,
           firstTimeMetrics: user ? remote.firstTimeMetrics : s.firstTimeMetrics,
           growth: user ? remote.growth : normalizeGrowth(s.growth),
+          launchFunnel: user ? remote.launchFunnel : normalizeLaunchFunnel(s.launchFunnel),
         }));
       } catch (err) {
         console.error('Questory Supabase load failed:', err);
         setAdventureSyncError('Could not load adventures from Supabase. Try refreshing the page.');
+        setState((s) => recordLaunchError(s, 'remote_load', err));
       } finally {
         if (!cancelled) setRemoteLoading(false);
       }
@@ -369,6 +389,7 @@ function QuestoryApp() {
       accessibility: s.accessibility,
       firstTimeMetrics: s.firstTimeMetrics,
       growth: s.growth,
+      launchFunnel: s.launchFunnel,
     }).catch((err) => console.error('Profile sync failed:', err));
   }
 
@@ -421,6 +442,7 @@ function QuestoryApp() {
 
   function publishAdventure(adventureId) {
     updateAdventure(adventureId, { status: ADVENTURE_STATUS.PUBLISHED });
+    setState((s) => trackCreatePublished(s));
     if (isSupabaseMode) {
       updateAdventureStatus(adventureId, ADVENTURE_STATUS.PUBLISHED)
         .then(() => refreshAdventuresFromRemote())
@@ -679,6 +701,7 @@ function QuestoryApp() {
             : 3;
       nextState = applyExpansionOnCompletion(nextState, freshAdventure, placement);
       nextState = completeDemoIfNeeded(nextState, freshAdventure.id);
+      if (isDemo) nextState = trackDemoComplete(nextState);
       nextState = applyGrowthOnCompletion(nextState, freshAdventure);
       if (shouldShowFirstCompletionCelebration({ ...s, engagement: completion.engagement })) {
         setShowFirstCelebration(true);
@@ -855,6 +878,19 @@ function QuestoryApp() {
         {adventureSyncError && (
           <div className="dev-mode-banner form-error-inline">{adventureSyncError}</div>
         )}
+        {authLoading && isSupabaseMode && (
+          <AppLoadingOverlay message="Checking sign-in…" />
+        )}
+        {!authLoading && remoteLoading && isSupabaseMode && (
+          <AppLoadingOverlay message="Syncing your adventures…" />
+        )}
+        {adventureSyncError && (
+          <ErrorRecoveryBanner
+            message={adventureSyncError}
+            onRetry={() => window.location.reload()}
+            onDismiss={() => setAdventureSyncError('')}
+          />
+        )}
         {showLogin && (
           <LoginScreen
             initialError={loginError}
@@ -879,6 +915,7 @@ function QuestoryApp() {
             state={state}
             nav={nav}
             auth={auth}
+            setState={setState}
           />
         )}
         {state.screen === 'map' && (
@@ -1064,6 +1101,8 @@ function QuestoryApp() {
             <AdminGate onLogin={() => setShowLogin(true)} />
           ) : (
             <AdminReview
+              state={state}
+              setState={setState}
               adventures={state.adventures}
               adminTab={state.adminTab}
               nav={nav}
@@ -1443,7 +1482,7 @@ function AdventureDetail({
       )}
 
       <RewardStatusPanel adventure={adventure} />
-      {!unlocked && <LockedAdventureNotice adventure={adventure} state={state} />}
+      {!unlocked && <LockedAdventureNotice adventure={adventure} state={state} nav={nav} />}
 
       {(isAdmin || adminPreview) && state && setState && (
         <>
@@ -1486,20 +1525,24 @@ function AdventureDetail({
         />
       )}
 
-      <button
-        disabled={!playable}
-        onClick={() => nav('play', adventure.id, { adminPreview })}
-      >
-        {ended && !progress.claimed
-          ? 'Adventure Ended'
-          : !unlocked
-            ? 'Locked — Discover in World'
+      {!unlocked ? (
+        <button type="button" onClick={() => nav('world')}>
+          <Compass size={18} /> Discover in World to Unlock
+        </button>
+      ) : (
+        <button
+          disabled={!playable}
+          onClick={() => nav('play', adventure.id, { adminPreview })}
+        >
+          {ended && !progress.claimed
+            ? 'Adventure Ended'
             : progress.claimed
-            ? 'Replay Trail'
-            : progress.step > 0
-              ? 'Continue Adventure'
-              : 'Start Adventure'}
-      </button>
+              ? 'Replay Trail'
+              : progress.step > 0
+                ? 'Continue Adventure'
+                : 'Start Adventure'}
+        </button>
+      )}
     </>
   );
 }
@@ -1717,7 +1760,10 @@ function AdventurePlay({
               progress={progress}
               onSelect={(pathId) => setState((s) => selectBranchPath(s, adventure.id, pathId, clueIndex))}
             />
-            <CluePlayContent clue={clue} />
+            <CluePlayContent
+              clue={clue}
+              onAnswer={() => onSolve()}
+            />
             <GhostTrailHint state={state} adventureId={adventure.id} clueIndex={clueIndex} />
             {dynamicHint && <p className="coin-hint">{dynamicHint}</p>}
             {hintText && <p className="coin-hint">{hintText}</p>}
@@ -3166,6 +3212,8 @@ const ADMIN_TAB_STATUS = {
 };
 
 function AdminReview({
+  state,
+  setState,
   adventures,
   adminTab,
   nav,
@@ -3177,16 +3225,17 @@ function AdminReview({
 }) {
   const status = ADMIN_TAB_STATUS[adminTab] || ADVENTURE_STATUS.DRAFT;
   const filtered = adventures.filter((a) => a.status === status);
+  const showAnalytics = adminTab === 'analytics';
 
   return (
     <>
       <div className="section-head">
         <h2>Admin Review</h2>
-        <p>Preview, publish, and manage adventures</p>
+        <p>Preview, publish, analytics, and manage adventures</p>
       </div>
 
       <div className="vault-tabs admin-tabs">
-        {['drafts', 'published', 'archived'].map((tab) => (
+        {['drafts', 'published', 'archived', 'analytics'].map((tab) => (
           <button
             key={tab}
             className={adminTab === tab ? 'active' : ''}
@@ -3197,6 +3246,10 @@ function AdminReview({
         ))}
       </div>
 
+      {showAnalytics ? (
+        <AdminLaunchAnalytics state={state} setState={setState} adventures={adventures} />
+      ) : (
+        <>
       {!filtered.length && (
         <div className="card empty-vault">
           <Archive size={28} />
@@ -3269,6 +3322,8 @@ function AdminReview({
           </div>
         </div>
       ))}
+        </>
+      )}
     </>
   );
 }

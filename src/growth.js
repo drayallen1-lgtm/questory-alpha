@@ -4,6 +4,7 @@ import { CLAIM_METHOD } from './claimSystem';
 import { FINDER_MODES } from './expansion';
 import { END_RULES } from './rewardInventory';
 import { buildQuickCreateAdventure, publishQuickAdventure } from './invitation';
+import { trackCreatePublished } from './stability';
 import { followEntity } from './social';
 import { computeCreatorAnalytics } from './experience';
 import { HIDDEN_DISCOVERIES } from './worldEngine';
@@ -570,7 +571,7 @@ export function createTonightAdventure(state, themeId, options = {}) {
   );
   adventure.questCode = generateQuestCode(adventure);
 
-  const published = publishQuickAdventure(state, adventure, options);
+  const published = trackCreatePublished(publishQuickAdventure(state, adventure, options));
   const growth = normalizeGrowth(published.growth);
 
   return {

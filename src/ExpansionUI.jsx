@@ -248,6 +248,7 @@ export function CreatorStorefrontTab({ state, setState, creatorId }) {
               onClick={() => {
                 const result = purchaseStorefrontProduct(state, product);
                 if (result.ok) setState(result.state);
+                else alert(formatUserErrorMessage(result));
               }}
             >
               ${product.price.toFixed(2)}

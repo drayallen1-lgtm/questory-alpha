@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { formatUserErrorMessage } from './claimSystem';
+import { trackInviteShared, trackCreatePublished, markPersonaTested } from './stability';
 import {
   EMPTY_STATE_COPY,
   JOURNEY_CHOICES,
@@ -170,7 +171,7 @@ export function QuickCreateWizard({ state, setState, onClose, userId, isSupabase
       if (isSupabaseMode && userId) {
         await upsertAdventure(adventure, userId);
       }
-      setState((s) => publishQuickAdventure(s, adventure, { goToInvite: true }));
+      setState((s) => trackCreatePublished(publishQuickAdventure(s, adventure, { goToInvite: true })));
       onPublished?.(adventure);
       onClose?.();
     } catch (err) {
@@ -328,7 +329,7 @@ export function KidModeCreator({ state, setState, onClose, userId, isSupabaseMod
     if (isSupabaseMode && userId) {
       await upsertAdventure(adventure, userId);
     }
-    setState((s) => publishQuickAdventure(s, adventure, { goToInvite: true }));
+    setState((s) => trackCreatePublished(publishQuickAdventure(s, adventure, { goToInvite: true })));
     onClose?.();
   }
 
@@ -376,7 +377,12 @@ export function SponsorExpressPanel({ state, setState, userId, isSupabaseMode })
       if (isSupabaseMode && userId) {
         await upsertAdventure(adventure, userId);
       }
-      setState((s) => publishQuickAdventure(s, adventure, { goToInvite: true }));
+      setState((s) =>
+        markPersonaTested(
+          trackCreatePublished(publishQuickAdventure(s, adventure, { goToInvite: true })),
+          'sponsor'
+        )
+      );
     } catch (err) {
       window.alert(formatUserErrorMessage(err) || 'Could not launch campaign.');
     } finally {
@@ -425,7 +431,7 @@ export function InvitePlayersPanel({ adventure, state, setState, onClose }) {
   const link = buildInviteLink(adventure);
 
   function share(action) {
-    setState((s) => markInviteShared(s));
+    setState((s) => trackInviteShared(markInviteShared(s)));
     if (action === 'copy') copyShareText(message);
     else if (action === 'link') copyShareText(link);
     else if (action === 'text') copyShareText(message);
@@ -515,7 +521,7 @@ export function AccessibilityToggles({ state, setState }) {
         <input
           type="checkbox"
           checked={Boolean(a.grandmaMode)}
-          onChange={() => setState((s) => toggleGrandmaMode(s))}
+          onChange={() => setState((s) => markPersonaTested(toggleGrandmaMode(s), 'grandma'))}
         />
         Grandma Mode — larger text, simpler layout, high contrast
       </label>
@@ -523,7 +529,7 @@ export function AccessibilityToggles({ state, setState }) {
         <input
           type="checkbox"
           checked={Boolean(a.kidMode)}
-          onChange={() => setState((s) => toggleKidMode(s))}
+          onChange={() => setState((s) => markPersonaTested(toggleKidMode(s), 'kid'))}
         />
         Kid Mode — friendly themes and sticker rewards
       </label>

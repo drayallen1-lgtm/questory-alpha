@@ -16,7 +16,7 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
-import { formatUserErrorMessage } from './claimSystem';
+import { formatUserErrorMessage, formatSuccessMessage } from './claimSystem';
 import {
   GROWTH_ACHIEVEMENTS,
   REFERRAL_REWARDS,
@@ -43,6 +43,7 @@ import {
   simulateReferralFriend,
   trackReferralInvite,
 } from './growth';
+import { markPersonaTested } from './stability';
 
 export function GrowthHomeBanner({ state, setState, nav, adventures }) {
   const neighborhood = getNeighborhoodSummary(adventures, state);
@@ -198,7 +199,7 @@ export function ReferralDashboard({ state, setState }) {
   const link = buildReferralLink(code);
 
   function copyLink() {
-    setState(trackReferralInvite(ensureReferralCode(state)));
+    setState((s) => markPersonaTested(trackReferralInvite(ensureReferralCode(s)), 'friend'));
     navigator.clipboard?.writeText(link);
     window.alert('Invite link copied!');
   }
@@ -207,7 +208,7 @@ export function ReferralDashboard({ state, setState }) {
     const result = simulateReferralFriend(state, `Friend ${dashboard.invited + 1}`);
     if (result.ok) {
       setState(result.state);
-      window.alert(result.message);
+      window.alert(formatSuccessMessage(result, `+${result.coins || 0} coins earned!`));
     } else {
       window.alert(formatUserErrorMessage(result));
     }

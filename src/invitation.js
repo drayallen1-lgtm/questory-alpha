@@ -109,6 +109,7 @@ export const DEFAULT_FIRST_TIME_METRICS = {
   quickCreateUsed: false,
   adventurePublished: false,
   inviteShared: false,
+  returnVisit: false,
   secondAdventureCreated: false,
   firstCompletionCelebrated: false,
   adventuresCreatedCount: 0,

@@ -198,13 +198,17 @@ export function validateClaimAttempt(
   return { ok: false, message: 'Unknown claim method.' };
 }
 
+import { safeMessage } from './stability';
+
 export function formatUserErrorMessage(error) {
-  if (!error) return 'Something went wrong.';
-  if (typeof error === 'string') return error;
-  if (typeof error === 'object') {
-    return error.message || error.error || error.reason || 'Something went wrong.';
-  }
-  return String(error) || 'Something went wrong.';
+  return safeMessage(error, 'Something went wrong.');
+}
+
+export function formatSuccessMessage(result, fallback = 'Success!') {
+  if (!result) return fallback;
+  const msg = result.message;
+  if (msg && msg !== 'undefined') return msg;
+  return fallback;
 }
 
 /** Await sync or async claim handlers; show alert only on failure. */

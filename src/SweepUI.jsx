@@ -61,6 +61,7 @@ import { CreatorVerifiedBadge } from './ExperienceUI';
 import { GlobalLoreBanner, WorldEventBadge, CreatorPrestigeBadge } from './WorldEngineUI';
 import { InvitationEmptyState, InvitationHomeBanner } from './InvitationUI';
 import { GrowthHomeBanner, QuestCodeBadge, FollowingFeedSection } from './GrowthUI';
+import { LaunchFunnelCard } from './StabilityUI';
 import { isAdventureUnlocked } from './worldEngine';
 
 export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
@@ -81,6 +82,7 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
       </section>
 
       <GrowthHomeBanner state={state} setState={setState} nav={nav} adventures={adventures} />
+      <LaunchFunnelCard state={state} />
       <InvitationHomeBanner state={state} setState={setState} nav={nav} />
       <GlobalLoreBanner state={state} setState={setState} />
 
@@ -180,12 +182,12 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
   );
 }
 
-export function EnhancedAdventureFeed({ adventures, state, nav, auth }) {
+export function EnhancedAdventureFeed({ adventures, state, nav, auth, setState }) {
   const published = getPublishedAdventures(adventures);
 
   return (
     <>
-      <FollowingFeedSection state={state} nav={nav} setState={() => {}} adventures={adventures} />
+      <FollowingFeedSection state={state} nav={nav} setState={setState} adventures={adventures} />
       <div className="section-head">
         <h2>Explore Feed</h2>
         <p>Collections, badges, and hunts near you</p>

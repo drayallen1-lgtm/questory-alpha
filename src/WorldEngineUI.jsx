@@ -175,6 +175,8 @@ function CityEventsPanel({ state, setState, adventures }) {
                   const badge = claimEventBadge(result.state, event.bonus.badgeId);
                   if (badge.ok) setState(badge.state);
                 }
+              } else {
+                window.alert(formatUserErrorMessage(result));
               }
             }}
           >
@@ -442,12 +444,17 @@ export function CreatorPrestigeBadge({ adventure, adventures }) {
   );
 }
 
-export function LockedAdventureNotice({ adventure, state }) {
+export function LockedAdventureNotice({ adventure, state, nav }) {
   if (isAdventureUnlocked(state, adventure)) return null;
   return (
     <div className="card locked-adventure-notice">
       <Compass size={18} />
       <p>Unlock via a hidden discovery in the World tab.</p>
+      {nav && (
+        <button type="button" className="ghost" onClick={() => nav('world')}>
+          Go to World
+        </button>
+      )}
     </div>
   );
 }
