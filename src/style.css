@@ -1412,11 +1412,12 @@ a.sponsor-name:hover {
 
 .claim-method-card strong {
   font-size: 14px;
+  color: #f8fafc;
 }
 
 .claim-method-card small {
   grid-column: 2;
-  color: var(--muted);
+  color: #cbd5e1;
   font-size: 12px;
   line-height: 1.35;
 }
@@ -4432,4 +4433,75 @@ nav button.active {
 
 .stability-crash-screen {
   padding-top: 24px;
+}
+
+/* Stabilization 2 — selectable option cards (override global button gold/dark text) */
+button.claim-method-card,
+button.marketplace-template,
+.finder-mode-options button.card.mini,
+.experience-template-picker button.template-card {
+  color: #f8fafc;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+button.claim-method-card strong,
+button.marketplace-template b,
+.finder-mode-options button.card.mini b,
+.experience-template-picker button.template-card b {
+  color: #f8fafc;
+}
+
+button.claim-method-card small,
+button.marketplace-template small,
+.finder-mode-options button.card.mini small,
+.experience-template-picker button.template-card small {
+  color: #cbd5e1;
+}
+
+button.claim-method-card .claim-method-icon,
+.finder-mode-options button.card.mini .template-icon {
+  color: inherit;
+}
+
+button.claim-method-card.active,
+.finder-mode-options button.card.mini.active,
+.experience-template-picker button.template-card.active {
+  border-color: rgba(94, 234, 212, 0.55);
+  background: rgba(94, 234, 212, 0.12);
+  color: #f8fafc;
+}
+
+button.claim-method-card.active strong,
+button.claim-method-card.active small,
+.finder-mode-options button.card.mini.active b,
+.finder-mode-options button.card.mini.active small,
+.experience-template-picker button.template-card.active b,
+.experience-template-picker button.template-card.active small,
+button.marketplace-template:hover b,
+button.marketplace-template:hover small {
+  color: #f8fafc;
+}
+
+button.marketplace-template:hover small,
+button.claim-method-card.active small,
+.finder-mode-options button.card.mini.active small,
+.experience-template-picker button.template-card.active small {
+  color: #bfdbfe;
+}
+
+button.marketplace-template {
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 6px;
+}
+
+.finder-mode-options button.card.mini {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 8px;
+  text-align: left;
 }

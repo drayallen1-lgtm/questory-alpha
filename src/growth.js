@@ -139,7 +139,7 @@ export function mergeAdventureGrowth(adventure) {
     remixOf: adventure.remixOf || null,
     remixCredit: adventure.remixCredit || null,
     growthAnalytics: {
-      views: growthAnalytics.views ?? adventure.playersCompleted * 3 + 120,
+      views: growthAnalytics.views ?? (adventure.playersCompleted || 0) * 3 + 120,
       started: growthAnalytics.started ?? Math.max(adventure.playersCompleted || 0, 50),
       completed: growthAnalytics.completed ?? (adventure.playersCompleted || 0),
       shares: growthAnalytics.shares ?? Math.round((adventure.playersCompleted || 0) * 0.4),

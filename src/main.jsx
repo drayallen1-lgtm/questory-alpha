@@ -342,26 +342,33 @@ function QuestoryApp() {
       try {
         const remote = await loadRemoteData(user?.id, isAdmin);
         if (cancelled) return;
-        setState((s) => ({
-          ...s,
-          adventures: remote.adventures,
-          rewards: user ? remote.rewards : s.rewards,
-          claimHistory: user ? remote.claimHistory : s.claimHistory,
-          coins: user ? remote.coins : s.coins,
-          entries: user ? remote.entries : s.entries,
-          progress: user ? remote.progress : s.progress,
-          engagement: user ? remote.engagement : normalizeEngagement(s.engagement),
-          economy: user ? remote.economy : normalizeEconomy(s.economy),
-          social: user ? remote.social : normalizeSocial(s.social),
-          expansion: user ? remote.expansion : normalizeExpansion(s.expansion),
-          experience: user ? remote.experience : normalizeExperience(s.experience),
-          world: user ? remote.world : normalizeWorld(s.world),
-          onboarding: user ? remote.onboarding : s.onboarding,
-          accessibility: user ? remote.accessibility : s.accessibility,
-          firstTimeMetrics: user ? remote.firstTimeMetrics : s.firstTimeMetrics,
-          growth: user ? remote.growth : normalizeGrowth(s.growth),
-          launchFunnel: user ? remote.launchFunnel : normalizeLaunchFunnel(s.launchFunnel),
-        }));
+        setAdventureSyncError('');
+        setState((s) => {
+          let next = {
+            ...s,
+            adventures: remote.adventures,
+            rewards: user ? remote.rewards : s.rewards,
+            claimHistory: user ? remote.claimHistory : s.claimHistory,
+            coins: user ? remote.coins : s.coins,
+            entries: user ? remote.entries : s.entries,
+            progress: user ? remote.progress : s.progress,
+            engagement: user ? remote.engagement : normalizeEngagement(s.engagement),
+            economy: user ? remote.economy : normalizeEconomy(s.economy),
+            social: user ? remote.social : normalizeSocial(s.social),
+            expansion: user ? remote.expansion : normalizeExpansion(s.expansion),
+            experience: user ? remote.experience : normalizeExperience(s.experience),
+            world: user ? remote.world : normalizeWorld(s.world),
+            onboarding: user ? remote.onboarding : s.onboarding,
+            accessibility: user ? remote.accessibility : s.accessibility,
+            firstTimeMetrics: user ? remote.firstTimeMetrics : s.firstTimeMetrics,
+            growth: user ? remote.growth : normalizeGrowth(s.growth),
+            launchFunnel: user ? remote.launchFunnel : normalizeLaunchFunnel(s.launchFunnel),
+          };
+          for (const warning of remote.loadWarnings || []) {
+            next = recordLaunchError(next, `remote_load_${warning.section}`, warning.error);
+          }
+          return next;
+        });
       } catch (err) {
         console.error('Questory Supabase load failed:', err);
         setAdventureSyncError('Could not load adventures from Supabase. Try refreshing the page.');

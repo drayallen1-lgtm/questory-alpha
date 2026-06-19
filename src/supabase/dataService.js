@@ -9,7 +9,7 @@ import {
   rowToClaimHistory,
   claimHistoryToRow,
 } from './mappers';
-import { defaultState } from '../seed';
+import { defaultState, getPublishedAdventures } from '../seed';
 import { normalizeEngagement } from '../engagement';
 import { normalizeEconomy } from '../economy';
 import { normalizeSocial } from '../social';
@@ -142,6 +142,19 @@ function launchFunnelToProfileFields(launchFunnel) {
   return { launch_funnel: normalizeLaunchFunnel(launchFunnel) };
 }
 
+function localPublishedFallback() {
+  return getPublishedAdventures(defaultState.adventures);
+}
+
+function safeRowToAdventure(row, clueMap) {
+  try {
+    return rowToAdventure(row, clueMap[row.id] || []);
+  } catch (err) {
+    console.warn('[Questory] Skipping adventure row', row?.id, err);
+    return null;
+  }
+}
+
 async function fetchCluesForAdventures(adventureIds) {
   if (!adventureIds.length) return {};
   const { data, error } = await supabase
@@ -158,18 +171,31 @@ async function fetchCluesForAdventures(adventureIds) {
 }
 
 export async function fetchAdventures(isAdmin = false) {
-  if (!hasSupabase()) return defaultState.adventures;
+  if (!hasSupabase()) return isAdmin ? defaultState.adventures : localPublishedFallback();
 
-  let query = supabase.from('adventures').select('*').order('created_at', { ascending: false });
-  if (!isAdmin) {
-    query = query.eq('status', 'published');
+  try {
+    let query = supabase.from('adventures').select('*').order('created_at', { ascending: false });
+    if (!isAdmin) {
+      query = query.eq('status', 'published');
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const rows = data || [];
+    let clueMap = {};
+    try {
+      clueMap = await fetchCluesForAdventures(rows.map((r) => r.id));
+    } catch (clueErr) {
+      console.warn('[Questory] Clue fetch failed; loading adventures without clues', clueErr);
+    }
+
+    const adventures = rows.map((row) => safeRowToAdventure(row, clueMap)).filter(Boolean);
+    if (adventures.length) return adventures;
+    return isAdmin ? defaultState.adventures : localPublishedFallback();
+  } catch (err) {
+    console.warn('[Questory] Adventure fetch failed; using local seed adventures', err);
+    return isAdmin ? defaultState.adventures : localPublishedFallback();
   }
-  const { data, error } = await query;
-  if (error) throw error;
-
-  const rows = data || [];
-  const clueMap = await fetchCluesForAdventures(rows.map((r) => r.id));
-  return rows.map((row) => rowToAdventure(row, clueMap[row.id] || []));
 }
 
 export async function fetchPublishedAdventures() {
@@ -214,40 +240,60 @@ export async function fetchClaimHistory(userId) {
 }
 
 export async function loadRemoteData(userId, isAdmin) {
+  const loadWarnings = [];
   const adventures = isAdmin
     ? await fetchAllAdventuresForAdmin()
     : await fetchPublishedAdventures();
 
-  if (!userId) {
-    return {
-      adventures,
-      rewards: [],
-      claimHistory: [],
-      coins: 0,
-      entries: 0,
-      progress: {},
-      engagement: normalizeEngagement(),
-      economy: normalizeEconomy(),
-      social: normalizeSocial(),
-      expansion: normalizeExpansion(),
-      experience: normalizeExperience(),
-      world: normalizeWorld(),
-      onboarding: normalizeOnboarding(),
-      accessibility: normalizeAccessibility(),
-      firstTimeMetrics: normalizeFirstTimeMetrics(),
-      growth: normalizeGrowth(),
-      launchFunnel: normalizeLaunchFunnel(),
-    };
+  const emptyProfileState = {
+    adventures,
+    rewards: [],
+    claimHistory: [],
+    coins: 0,
+    entries: 0,
+    progress: {},
+    engagement: normalizeEngagement(),
+    economy: normalizeEconomy(),
+    social: normalizeSocial(),
+    expansion: normalizeExpansion(),
+    experience: normalizeExperience(),
+    world: normalizeWorld(),
+    onboarding: normalizeOnboarding(),
+    accessibility: normalizeAccessibility(),
+    firstTimeMetrics: normalizeFirstTimeMetrics(),
+    growth: normalizeGrowth(),
+    launchFunnel: normalizeLaunchFunnel(),
+    loadWarnings,
+  };
+
+  if (!userId) return emptyProfileState;
+
+  let profile = null;
+  try {
+    profile = await fetchUserProfile(userId);
+  } catch (err) {
+    console.warn('[Questory] Profile load failed', err);
+    loadWarnings.push({ section: 'profile', error: err });
   }
 
-  const [profile, rewards, claimHistory] = await Promise.all([
-    fetchUserProfile(userId),
-    fetchUserRewards(userId),
-    fetchClaimHistory(userId),
-  ]);
+  let rewards = [];
+  try {
+    rewards = await fetchUserRewards(userId);
+  } catch (err) {
+    console.warn('[Questory] Rewards load failed', err);
+    loadWarnings.push({ section: 'rewards', error: err });
+  }
+
+  let claimHistory = [];
+  try {
+    claimHistory = await fetchClaimHistory(userId);
+  } catch (err) {
+    console.warn('[Questory] Claim history load failed', err);
+    loadWarnings.push({ section: 'claim_history', error: err });
+  }
 
   return {
-    adventures,
+    ...emptyProfileState,
     rewards,
     claimHistory,
     coins: profile?.coins ?? 0,
