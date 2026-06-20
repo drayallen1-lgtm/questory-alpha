@@ -22,6 +22,13 @@ import {
 import { formatDistanceAway, getCurrentPosition } from './geolocation';
 import { usesArFinder } from './expansion';
 import { ARFinderOverlay } from './ExpansionUI';
+import { CinematicAROverlay } from './CinematicAR';
+import {
+  getAdventureArFinale,
+  getArSceneId,
+  markArSceneComplete,
+  shouldPlayArScene,
+} from './arEngine';
 
 function useMedallionGps(adventure, watching = true) {
   const [distance, setDistance] = useState(null);
@@ -234,11 +241,13 @@ function SponsorLine({ adventure }) {
   return <p className="finder-sponsor">Sponsored by {name}</p>;
 }
 
-export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMedallionTap }) {
+export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMedallionTap, setState }) {
   const [watching, setWatching] = useState(true);
   const [devOverride, setDevOverride] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [tapError, setTapError] = useState('');
+  const [finaleArOpen, setFinaleArOpen] = useState(false);
+  const [pendingTapContext, setPendingTapContext] = useState(null);
   const tapLockRef = useRef(false);
 
   const { distance, accuracy, gpsError, searchRadius, medallion } = useMedallionGps(
@@ -264,30 +273,17 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
   const physical = isPhysicalMedallionClaim(adventure);
   const claimMethod = normalizeClaimMethod(adventure.claimMethod);
   const tapDisabled = !inCaptureRange || progress.medallionTapped || capturing;
+  const arFinale = getAdventureArFinale(adventure);
+  const finaleSceneId = getArSceneId(adventure.id, 'finale', 'finale');
 
-  async function handleTap() {
-    if (tapLockRef.current || tapDisabled) return;
-
-    console.log('[Finder] button clicked');
-    console.log('[Finder] within capture range:', inCaptureRange);
-    console.log('[Finder] claim method:', claimMethod);
-
+  async function finishMedallionTap(context) {
     tapLockRef.current = true;
     setCapturing(true);
     setTapError('');
 
     try {
-      const result = await Promise.resolve(
-        onMedallionTap?.({
-          distance: effectiveDistance,
-          accuracy: effectiveAccuracy,
-          inCaptureRange,
-          devOverride,
-        })
-      );
-
+      const result = await Promise.resolve(onMedallionTap?.(context));
       console.log('[Finder] claim result/error:', result);
-
       if (result && !result.ok) {
         setTapError(formatUserErrorMessage(result) || 'Could not capture medallion. Try again.');
       }
@@ -298,6 +294,39 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
       setCapturing(false);
       tapLockRef.current = false;
     }
+  }
+
+  function completeFinaleAr() {
+    setFinaleArOpen(false);
+    if (setState) {
+      setState((s) => markArSceneComplete(s, adventure.id, finaleSceneId));
+    }
+    const ctx = pendingTapContext;
+    setPendingTapContext(null);
+    if (ctx) finishMedallionTap(ctx);
+  }
+
+  async function handleTap() {
+    if (tapLockRef.current || tapDisabled) return;
+
+    console.log('[Finder] button clicked');
+    console.log('[Finder] within capture range:', inCaptureRange);
+    console.log('[Finder] claim method:', claimMethod);
+
+    const context = {
+      distance: effectiveDistance,
+      accuracy: effectiveAccuracy,
+      inCaptureRange,
+      devOverride,
+    };
+
+    if (arFinale.enabled && shouldPlayArScene(arFinale, progress, finaleSceneId)) {
+      setPendingTapContext(context);
+      setFinaleArOpen(true);
+      return;
+    }
+
+    await finishMedallionTap(context);
   }
 
   function handleDevOverride() {
@@ -319,6 +348,13 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
 
   return (
     <>
+      <CinematicAROverlay
+        open={finaleArOpen}
+        scene={arFinale}
+        onComplete={completeFinaleAr}
+        onSkip={completeFinaleAr}
+        useCamera={usesArFinder(adventure)}
+      />
       <button
         type="button"
         className="ghost back"

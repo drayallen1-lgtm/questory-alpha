@@ -42,6 +42,7 @@ import {
 } from './invitation';
 import { DEFAULT_LAUNCH_FUNNEL, normalizeLaunchFunnel } from './stability';
 import { DEFAULT_GROWTH, normalizeGrowth, mergeAdventureGrowth } from './growth';
+import { normalizeArScene } from './arEngine';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -853,6 +854,12 @@ export function normalizeAdventure(adventure) {
     isSponsoredDrop: Boolean(adventure.isSponsoredDrop),
     sponsoredDropId: adventure.sponsoredDropId || null,
     storefrontPrice: adventure.storefrontPrice ?? null,
+    clues: (adventure.clues || []).map((c) => ({
+      ...c,
+      arScene: normalizeArScene(c.arScene || c.ar_scene || {}),
+    })),
+    arFinale: normalizeArScene(adventure.arFinale || adventure.ar_finale || {}),
+    arTheme: adventure.arTheme || adventure.ar_theme || 'none',
   };
   const merged = mergeAdventureWorld(
     mergeAdventureExperience(mergeAdventureInventory(normalized))
@@ -878,15 +885,19 @@ export const REWARD_TYPE_OPTIONS = [
 ];
 
 export function getAdventureProgress(state, adventureId) {
-  return (
+  const base =
     state.progress[adventureId] || {
       step: 0,
       claimed: false,
       bonuses: [],
       medallionTapped: false,
       finderUnlocked: false,
-    }
-  );
+      arScenesCompleted: [],
+    };
+  return {
+    ...base,
+    arScenesCompleted: Array.isArray(base.arScenesCompleted) ? base.arScenesCompleted : [],
+  };
 }
 
 export function rewardTypeLabel(type) {

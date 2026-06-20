@@ -318,7 +318,13 @@ export async function upsertAdventure(adventure, creatorId) {
   if (!creatorId) throw new Error('Sign in to save adventures to the cloud.');
 
   const row = adventureToRow(adventure, creatorId);
-  const { error: advError } = await supabase.from('adventures').upsert(row);
+  let { error: advError } = await supabase.from('adventures').upsert(row);
+  if (advError && (row.ar_finale != null || row.ar_theme != null)) {
+    const fallbackRow = { ...row };
+    delete fallbackRow.ar_finale;
+    delete fallbackRow.ar_theme;
+    ({ error: advError } = await supabase.from('adventures').upsert(fallbackRow));
+  }
   if (advError) throw advError;
 
   const { error: clueDeleteError } = await supabase
@@ -335,7 +341,11 @@ export async function upsertAdventure(adventure, creatorId) {
 
   const clues = cluesToRows(adventure);
   if (clues.length) {
-    const { error } = await supabase.from('clues').insert(clues);
+    let { error } = await supabase.from('clues').insert(clues);
+    if (error && clues.some((c) => c.ar_scene && Object.keys(c.ar_scene).length)) {
+      const fallbackClues = clues.map(({ ar_scene, ...rest }) => rest);
+      ({ error } = await supabase.from('clues').insert(fallbackClues));
+    }
     if (error) throw error;
   }
 

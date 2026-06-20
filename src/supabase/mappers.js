@@ -69,6 +69,7 @@ export function rowToAdventure(row, clues = []) {
       videoUrl: c.video_url || '',
       imageUrl: c.image_url || '',
       branchOptions: c.branch_options || [],
+      arScene: c.ar_scene || {},
     })),
     creatorId: row.creator_id,
     playMode: row.play_mode || 'both',
@@ -99,6 +100,8 @@ export function rowToAdventure(row, clues = []) {
     remixOf: row.remix_of || null,
     remixCredit: row.remix_credit || null,
     growthAnalytics: row.growth_analytics || {},
+    arFinale: row.ar_finale || {},
+    arTheme: row.ar_theme || 'none',
   });
 }
 
@@ -179,6 +182,8 @@ export function adventureToRow(adventure, creatorId) {
     remix_of: adventure.remixOf || null,
     remix_credit: adventure.remixCredit || null,
     growth_analytics: adventure.growthAnalytics || {},
+    ar_finale: adventure.arFinale || {},
+    ar_theme: adventure.arTheme || 'none',
   };
 }
 
@@ -199,6 +204,7 @@ export function cluesToRows(adventure) {
     video_url: clue.videoUrl || null,
     image_url: clue.imageUrl || null,
     branch_options: clue.branchOptions?.length ? clue.branchOptions : [],
+    ar_scene: clue.arScene || {},
   }));
 }
 

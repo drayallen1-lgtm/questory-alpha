@@ -165,6 +165,18 @@ import {
   retryDraftCloudSync,
   saveAdventureDraft,
 } from './draftIntegrity';
+import {
+  applyWhisperingHollowToCreateForm,
+  emptyArScene,
+  getArSceneId,
+  getClueArScene,
+  markArSceneComplete,
+  matchesArTrigger,
+  normalizeArScene,
+  shouldPlayArScene,
+} from './arEngine';
+import { CinematicAROverlay, ARSceneReplayButton } from './CinematicAR';
+import { ArFinaleBuilder, ClueArSceneBuilder, WhisperingHollowQuickButton } from './ARSceneBuilder';
 import { MapScreen, MiniClueMap } from './QuestoryMap';
 import { hasSupabase } from './supabase/client';
 import { AuthProvider, useAuth } from './supabase/AuthContext';
@@ -993,6 +1005,7 @@ function QuestoryApp() {
             progress={progress}
             nav={nav}
             adminPreview={state.adminPreview}
+            setState={setState}
             onMedallionTap={(context) => handleMedallionCapture(selected, context)}
           />
         )}
@@ -1703,6 +1716,39 @@ function AdventurePlay({
   const [dynamicHint, setDynamicHint] = useState('');
   const premiumLocked =
     isPremiumAdventure(adventure) && !canAccessPremiumHunt(state, adventure) && !adminPreview;
+  const [activeAr, setActiveAr] = useState(null);
+
+  function completeArScene() {
+    if (activeAr?.sceneId) {
+      setState((s) => markArSceneComplete(s, adventure.id, activeAr.sceneId));
+    }
+    const after = activeAr?.afterComplete;
+    setActiveAr(null);
+    after?.();
+  }
+
+  function queueArScene(trigger, afterComplete, forceReplay = false) {
+    if (atClaim || !clue) {
+      afterComplete?.();
+      return;
+    }
+    const scene = getClueArScene(clue);
+    if (!matchesArTrigger(scene, trigger)) {
+      afterComplete?.();
+      return;
+    }
+    const sceneId = getArSceneId(adventure.id, clue.id, 'clue');
+    if (!shouldPlayArScene(scene, progress, sceneId, { forceReplay })) {
+      afterComplete?.();
+      return;
+    }
+    setActiveAr({ scene, sceneId, afterComplete });
+  }
+
+  const clueArScene = !atClaim && clue ? getClueArScene(clue) : null;
+  const clueSceneId = clue ? getArSceneId(adventure.id, clue.id, 'clue') : null;
+  const canReplayClueAr =
+    clueArScene?.enabled && clueSceneId && progress.arScenesCompleted?.includes(clueSceneId);
 
   function handleCoinSpend(type) {
     let result;
@@ -1769,6 +1815,13 @@ function AdventurePlay({
       <WeatherOverlay state={state} />
       <HorrorAtmosphereOverlay adventure={adventure} />
       <BackyardPrecisionBanner adventure={adventure} />
+      <CinematicAROverlay
+        open={Boolean(activeAr)}
+        scene={activeAr?.scene}
+        onComplete={completeArScene}
+        onSkip={completeArScene}
+        useCamera={usesArFinder(adventure)}
+      />
       <div className="card">
         <h2>{adventure.title}</h2>
         <p>
@@ -1817,7 +1870,7 @@ function AdventurePlay({
             />
             <CluePlayContent
               clue={clue}
-              onAnswer={() => onSolve()}
+              onAnswer={() => queueArScene('after_answer', onSolve)}
             />
             <GhostTrailHint state={state} adventureId={adventure.id} clueIndex={clueIndex} />
             {dynamicHint && <p className="coin-hint">{dynamicHint}</p>}
@@ -1837,9 +1890,14 @@ function AdventurePlay({
             />
             <GpsCheckIn
               clue={clue}
-              onUnlock={onSolve}
+              onUnlock={() => queueArScene('after_checkin', onSolve)}
               disabled={clue.branchOptions?.length > 0 && !progress.pathId}
             />
+            {canReplayClueAr && (
+              <ARSceneReplayButton
+                onClick={() => queueArScene(clueArScene.trigger, null, true)}
+              />
+            )}
           </>
         )}
 
@@ -2296,6 +2354,7 @@ function emptyClue() {
     audioUrl: '',
     videoUrl: '',
     imageUrl: '',
+    arScene: emptyArScene(),
   };
 }
 
@@ -2337,7 +2396,7 @@ function buildBonusFinds(clues) {
     }));
 }
 
-function ClueEditor({ clue, index, total, onChange, onRemove, onUseLocation, locStatus }) {
+function ClueEditor({ clue, index, total, onChange, onRemove, onUseLocation, locStatus, showArMode }) {
   return (
     <div className="clue-editor card">
       <div className="clue-editor-head">
@@ -2423,6 +2482,12 @@ function ClueEditor({ clue, index, total, onChange, onRemove, onUseLocation, loc
         value={clue.bonusRewardText}
         onChange={(e) => onChange(clue.id, { bonusRewardText: e.target.value })}
         placeholder="e.g. Free coffee coupon at this stop"
+      />
+
+      <ClueArSceneBuilder
+        clue={clue}
+        showArMode={showArMode}
+        onChange={(patch) => onChange(clue.id, patch)}
       />
     </div>
   );
@@ -2626,6 +2691,9 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
   const [saveFeedback, setSaveFeedback] = useState(null);
   const [saving, setSaving] = useState(false);
   const [locStatus, setLocStatus] = useState(null);
+  const [arFinale, setArFinale] = useState(emptyArScene());
+  const [arTheme, setArTheme] = useState('none');
+  const showArMode = meta.finderMode === FINDER_MODES.AR_ENHANCED;
 
   function handleTemplateSelect(templateId) {
     setAdventureTemplate(templateId);
@@ -2653,6 +2721,17 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
       }
     }
     setFormError('');
+    if (templateId === 'horror') {
+      applyWhisperingHollowToCreateForm({
+        setMeta,
+        setClues,
+        setMetaAr: ({ arFinale: finale, arTheme: theme }) => {
+          setArFinale(finale);
+          setArTheme(theme);
+        },
+        clues,
+      });
+    }
   }
 
   function handleScaleChange(scaleId) {
@@ -2798,6 +2877,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
       audioUrl: c.audioUrl?.trim() || '',
       videoUrl: c.videoUrl?.trim() || '',
       imageUrl: c.imageUrl?.trim() || '',
+      arScene: normalizeArScene(c.arScene),
     }));
 
     const enabledRewards = rewards.filter((r) => r.enabled);
@@ -2861,6 +2941,8 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
       playMode: meta.playMode || 'both',
       finderMode: meta.finderMode || FINDER_MODES.FINDER,
       arAssetType: meta.arAssetType || 'ghost_lantern',
+      arFinale: normalizeArScene(arFinale),
+      arTheme: arTheme || 'none',
       heatCategory: 'trending',
       tier: meta.tier || 'standard',
       premiumCoinCost: parseInt(meta.premiumCoinCost, 10) || 250,
@@ -3089,10 +3171,25 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
           onChange={(mode) => setMeta((m) => ({ ...m, finderMode: mode }))}
         />
         {meta.finderMode === FINDER_MODES.AR_ENHANCED && (
-          <ArAssetSelector
-            value={meta.arAssetType}
-            onChange={(arAssetType) => setMeta((m) => ({ ...m, arAssetType }))}
-          />
+          <>
+            <ArAssetSelector
+              value={meta.arAssetType}
+              onChange={(arAssetType) => setMeta((m) => ({ ...m, arAssetType }))}
+            />
+            <WhisperingHollowQuickButton
+              onApply={() =>
+                applyWhisperingHollowToCreateForm({
+                  setMeta,
+                  setClues,
+                  setMetaAr: ({ arFinale: finale, arTheme: theme }) => {
+                    setArFinale(finale);
+                    setArTheme(theme);
+                  },
+                  clues,
+                })
+              }
+            />
+          </>
         )}
         {meta.tier === 'premium' && (
           <>
@@ -3123,6 +3220,13 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
           onChange={(e) => setMeta((m) => ({ ...m, couponExpirationDays: e.target.value }))}
         />
         <AdventureEndRulesFields meta={meta} onChange={(patch) => setMeta((m) => ({ ...m, ...patch }))} />
+        <ArFinaleBuilder
+          showArMode={showArMode}
+          arFinale={arFinale}
+          arTheme={arTheme}
+          onFinaleChange={setArFinale}
+          onThemeChange={setArTheme}
+        />
         <label>Collection Name</label>
         <input
           value={meta.collectionName}
@@ -3272,6 +3376,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
             onRemove={removeClue}
             onUseLocation={useCurrentLocation}
             locStatus={locStatus}
+            showArMode={showArMode}
           />
         ))}
 
