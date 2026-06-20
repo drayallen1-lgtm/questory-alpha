@@ -111,6 +111,29 @@ export function AdminLaunchAnalytics({ state, setState, adventures }) {
         </div>
       </div>
 
+      <div className="card stability-draft-health">
+        <h3>Draft Health</h3>
+        <p className="admin-meta">Local vs cloud draft sync status</p>
+        <div className="stability-stat-grid">
+          <div>
+            <small>Local Draft Count</small>
+            <strong>{analytics.draftHealth.localDraftCount}</strong>
+          </div>
+          <div>
+            <small>Cloud Draft Count</small>
+            <strong>{analytics.draftHealth.cloudDraftCount}</strong>
+          </div>
+          <div>
+            <small>Unsynced Drafts</small>
+            <strong>{analytics.draftHealth.unsyncedDraftCount}</strong>
+          </div>
+          <div>
+            <small>Synced Drafts</small>
+            <strong>{analytics.draftHealth.syncedDraftCount}</strong>
+          </div>
+        </div>
+      </div>
+
       <div className="card">
         <h3>Demo → Create → Invite → Return</h3>
         {analytics.funnel.map((step) => (

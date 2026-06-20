@@ -1,3 +1,5 @@
+import { getDraftHealthStats, loadLocalDrafts } from './draftIntegrity';
+
 export const DEMO_ADVENTURE_ID = 'demo-missing-birthday-gift';
 
 export const REASON_MESSAGES = {
@@ -190,6 +192,7 @@ export function getAdminLaunchAnalytics(state, adventures = []) {
   const funnel = getLaunchFunnelProgress(safeState);
   const lf = normalizeLaunchFunnel(safeState.launchFunnel);
   const published = adventures.filter((a) => a.status === 'published').length;
+  const draftHealth = getDraftHealthStats(adventures, loadLocalDrafts());
   const metrics = safeState.firstTimeMetrics || {};
 
   const completedSteps = funnel.filter((s) => s.completed).length;
@@ -214,6 +217,7 @@ export function getAdminLaunchAnalytics(state, adventures = []) {
       adventuresCompleted: safeState.engagement?.adventuresCompleted || 0,
     },
     recentErrors: lf.errors.slice(0, 5),
+    draftHealth,
   };
 }
 

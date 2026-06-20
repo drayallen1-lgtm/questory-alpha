@@ -2,6 +2,7 @@ import { STORAGE_KEY, loadState, defaultState } from './seed';
 import { hasSupabase } from './supabase/client';
 import { normalizeLaunchFunnel } from './stability';
 import { normalizeGrowth } from './growth';
+import { loadLocalDrafts, mergeAdventuresWithLocalDrafts } from './draftIntegrity';
 
 function normalizeAppState(state) {
   return {
@@ -16,13 +17,14 @@ export function getInitialState() {
   try {
     const local = normalizeAppState(loadState());
     if (hasSupabase()) {
-      return { ...local, adventures: [] };
+      const localDrafts = loadLocalDrafts();
+      return { ...local, adventures: mergeAdventuresWithLocalDrafts([], localDrafts) };
     }
     return local;
   } catch (err) {
     console.error('Questory state init failed:', err);
     const fallback = normalizeAppState(defaultState);
-    return hasSupabase() ? { ...fallback, adventures: [] } : fallback;
+    return hasSupabase() ? { ...fallback, adventures: mergeAdventuresWithLocalDrafts([], loadLocalDrafts()) } : fallback;
   }
 }
 

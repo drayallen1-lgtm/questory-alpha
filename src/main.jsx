@@ -156,6 +156,15 @@ import {
 } from './EconomyUI';
 import './style.css';
 import { getInitialState, persistState } from './persistence';
+import {
+  draftSyncBadgeLabel,
+  getDraftSyncBadge,
+  mergeAdventuresWithLocalDrafts,
+  mergeSavedDraftIntoAdventures,
+  removeLocalDraft,
+  retryDraftCloudSync,
+  saveAdventureDraft,
+} from './draftIntegrity';
 import { MapScreen, MiniClueMap } from './QuestoryMap';
 import { hasSupabase } from './supabase/client';
 import { AuthProvider, useAuth } from './supabase/AuthContext';
@@ -329,7 +338,10 @@ function QuestoryApp() {
   async function refreshAdventuresFromRemote() {
     if (!isSupabaseMode) return;
     const adventures = await fetchAllAdventuresForAdmin();
-    setState((s) => ({ ...s, adventures }));
+    setState((s) => ({
+      ...s,
+      adventures: mergeAdventuresWithLocalDrafts(adventures),
+    }));
   }
 
   useEffect(() => {
@@ -346,7 +358,7 @@ function QuestoryApp() {
         setState((s) => {
           let next = {
             ...s,
-            adventures: remote.adventures,
+            adventures: mergeAdventuresWithLocalDrafts(remote.adventures),
             rewards: user ? remote.rewards : s.rewards,
             claimHistory: user ? remote.claimHistory : s.claimHistory,
             coins: user ? remote.coins : s.coins,
@@ -451,10 +463,16 @@ function QuestoryApp() {
   }
 
   function publishAdventure(adventureId) {
+    const adventure = state.adventures.find((a) => a.id === adventureId);
+    if (!adventure) return;
+
     updateAdventure(adventureId, { status: ADVENTURE_STATUS.PUBLISHED });
+    removeLocalDraft(adventureId);
     setState((s) => trackCreatePublished(s));
-    if (isSupabaseMode) {
-      updateAdventureStatus(adventureId, ADVENTURE_STATUS.PUBLISHED)
+
+    if (isSupabaseMode && user) {
+      const published = { ...adventure, status: ADVENTURE_STATUS.PUBLISHED };
+      upsertAdventure(published, user.id)
         .then(() => refreshAdventuresFromRemote())
         .catch((err) => {
           console.error('Publish sync failed:', err);
@@ -488,6 +506,7 @@ function QuestoryApp() {
   }
 
   function deleteAdventure(adventureId) {
+    removeLocalDraft(adventureId);
     setState((s) => ({
       ...s,
       adventures: s.adventures.filter((a) => a.id !== adventureId),
@@ -1121,6 +1140,32 @@ function QuestoryApp() {
               onRestore={restoreAdventure}
               onDelete={deleteAdventure}
               onTabChange={(tab) => setState((s) => ({ ...s, adminTab: tab }))}
+              onRetryDraftSync={async (adventureId) => {
+                if (!user?.id) {
+                  setAdventureSyncError('Sign in to sync drafts to the cloud.');
+                  return null;
+                }
+                const result = await retryDraftCloudSync({
+                  adventureId,
+                  userId: user.id,
+                  upsertAdventure,
+                });
+                if (result.cloudSaved) {
+                  await refreshAdventuresFromRemote();
+                } else if (result.localSaved) {
+                  setState((s) => ({
+                    ...s,
+                    adventures: mergeAdventuresWithLocalDrafts(
+                      s.adventures.filter(
+                        (a) => a.status !== ADVENTURE_STATUS.DRAFT || a._draftSync?.cloud
+                      )
+                    ),
+                  }));
+                }
+                return result;
+              }}
+              isSupabaseMode={isSupabaseMode}
+              userId={user?.id}
             />
           )
         )}
@@ -2578,6 +2623,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
     emptyReward('physical'),
   ]);
   const [formError, setFormError] = useState('');
+  const [saveFeedback, setSaveFeedback] = useState(null);
   const [saving, setSaving] = useState(false);
   const [locStatus, setLocStatus] = useState(null);
 
@@ -2840,39 +2886,71 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
     };
 
     if (isSupabaseMode) {
-      if (!userId) {
-        setFormError('Sign in as an admin to save drafts to Supabase.');
-        return;
-      }
-
       setSaving(true);
       setFormError('');
-      try {
-        await upsertAdventure(adventure, userId);
-        const adventures = await fetchAllAdventuresForAdmin();
-        setState((s) => ({
-          ...s,
-          adventures,
-          screen: 'admin',
-          adminTab: 'drafts',
-          adminPreview: false,
-        }));
-        onAdventuresSaved?.();
-      } catch (err) {
-        setFormError(formatUserErrorMessage(err) || 'Could not save draft to Supabase.');
-      } finally {
-        setSaving(false);
+      setSaveFeedback(null);
+
+      const result = await saveAdventureDraft({
+        adventure,
+        userId,
+        upsertAdventure,
+      });
+
+      let nextAdventures;
+      if (result.cloudSaved) {
+        const cloud = await fetchAllAdventuresForAdmin();
+        nextAdventures = mergeAdventuresWithLocalDrafts(cloud);
+      } else {
+        const cloudAdventures = state.adventures.filter(
+          (a) => a.status !== ADVENTURE_STATUS.DRAFT || a._draftSync?.cloud
+        );
+        nextAdventures = mergeAdventuresWithLocalDrafts(cloudAdventures);
       }
+
+      setState((s) => ({
+        ...s,
+        adventures: nextAdventures,
+        screen: 'admin',
+        adminTab: 'drafts',
+        adminPreview: false,
+      }));
+
+      if (!result.localSaved) {
+        setFormError(result.message);
+      } else {
+        setSaveFeedback(result);
+      }
+
+      setSaving(false);
+      onAdventuresSaved?.();
+      return;
+    }
+
+    setSaving(true);
+    setFormError('');
+    setSaveFeedback(null);
+
+    const result = await saveAdventureDraft({
+      adventure,
+      userId: null,
+      upsertAdventure: null,
+    });
+
+    if (!result.localSaved) {
+      setFormError(result.message);
+      setSaving(false);
       return;
     }
 
     setState((s) => ({
       ...s,
-      adventures: [adventure, ...s.adventures],
+      adventures: mergeSavedDraftIntoAdventures(s.adventures, result.adventure),
       screen: 'admin',
       adminTab: 'drafts',
       adminPreview: false,
     }));
+    setSaveFeedback(result);
+    setSaving(false);
   }
 
   return (
@@ -3199,6 +3277,41 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
 
         {formError && <p className="form-error">{formError}</p>}
 
+        {saveFeedback?.localSaved && (
+          <div
+            className={`draft-save-feedback ${saveFeedback.cloudSaved ? 'synced' : 'local-only'}`}
+            role="status"
+          >
+            <p>{saveFeedback.message}</p>
+            {!saveFeedback.cloudSaved && isSupabaseMode && userId && (
+              <button
+                type="button"
+                className="ghost"
+                disabled={saving}
+                onClick={async () => {
+                  setSaving(true);
+                  const retry = await saveAdventureDraft({
+                    adventure: saveFeedback.adventure,
+                    userId,
+                    upsertAdventure,
+                  });
+                  if (retry.cloudSaved) {
+                    const cloud = await fetchAllAdventuresForAdmin();
+                    setState((s) => ({
+                      ...s,
+                      adventures: mergeAdventuresWithLocalDrafts(cloud),
+                    }));
+                  }
+                  setSaveFeedback(retry);
+                  setSaving(false);
+                }}
+              >
+                Retry cloud sync
+              </button>
+            )}
+          </div>
+        )}
+
         <button onClick={saveAdventure} disabled={saving}>
           <Plus size={18} /> {saving ? 'Saving…' : 'Save Draft'}
         </button>
@@ -3207,7 +3320,7 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
         </button>
         <p className="admin-meta">
           {isSupabaseMode
-            ? 'Drafts save to Supabase · publish from Admin when ready'
+            ? 'Drafts save locally first · cloud sync when signed in · publish from Admin when ready'
             : 'Drafts save locally · publish from Admin when ready'}
         </p>
       </div>
@@ -3232,10 +3345,24 @@ function AdminReview({
   onRestore,
   onDelete,
   onTabChange,
+  onRetryDraftSync,
+  isSupabaseMode,
+  userId,
 }) {
   const status = ADMIN_TAB_STATUS[adminTab] || ADVENTURE_STATUS.DRAFT;
   const filtered = adventures.filter((a) => a.status === status);
   const showAnalytics = adminTab === 'analytics';
+  const [retryingDraftId, setRetryingDraftId] = useState(null);
+  const [draftSyncMessage, setDraftSyncMessage] = useState('');
+
+  async function handleRetryDraftSync(adventureId) {
+    if (!onRetryDraftSync) return;
+    setRetryingDraftId(adventureId);
+    setDraftSyncMessage('');
+    const result = await onRetryDraftSync(adventureId);
+    setRetryingDraftId(null);
+    if (result?.message) setDraftSyncMessage(result.message);
+  }
 
   return (
     <>
@@ -3260,10 +3387,19 @@ function AdminReview({
         <AdminLaunchAnalytics state={state} setState={setState} adventures={adventures} />
       ) : (
         <>
+      {adminTab === 'drafts' && draftSyncMessage && (
+        <p className="draft-sync-banner" role="status">{draftSyncMessage}</p>
+      )}
+
       {!filtered.length && (
         <div className="card empty-vault">
           <Archive size={28} />
           <p>No {adminTab} adventures.</p>
+          {adminTab === 'drafts' && isSupabaseMode && (
+            <small className="admin-meta">
+              Drafts are saved locally first. Sign in and use Save Draft in Create to sync to the cloud.
+            </small>
+          )}
         </div>
       )}
 
@@ -3273,9 +3409,32 @@ function AdminReview({
             <span className={`badge ${adventure.status}`}>
               {adventureStatusLabel(adventure.status)}
             </span>
+            {adventure.status === ADVENTURE_STATUS.DRAFT && (
+              <span className={`badge draft-sync draft-sync-${getDraftSyncBadge(adventure)}`}>
+                {draftSyncBadgeLabel(getDraftSyncBadge(adventure))}
+              </span>
+            )}
             <small>{adventure.location}</small>
           </div>
           <h3>{adventure.title}</h3>
+          {adventure.status === ADVENTURE_STATUS.DRAFT &&
+            adventure._draftSync?.cloudError &&
+            isSupabaseMode && (
+              <div className="draft-sync-warning" role="alert">
+                <p>Saved locally. Cloud sync failed.</p>
+                <small>{adventure._draftSync.cloudError}</small>
+                {userId && (
+                  <button
+                    type="button"
+                    className="ghost admin-action-btn"
+                    disabled={retryingDraftId === adventure.id}
+                    onClick={() => handleRetryDraftSync(adventure.id)}
+                  >
+                    {retryingDraftId === adventure.id ? 'Retrying…' : 'Retry'}
+                  </button>
+                )}
+              </div>
+            )}
           <AdminClaimCode adventure={adventure} />
           <p className="story-preview">{adventure.story}</p>
           <SponsorBlock sponsor={getSponsorInfo(adventure)} compact />
