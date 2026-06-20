@@ -38,7 +38,7 @@ import {
   getWeekendCalendar,
   joinByQuestCode,
   markNotificationsRead,
-  mergeAdventureGrowth,
+  safeMergeAdventureGrowth,
   remixAdventure,
   simulateReferralFriend,
   trackReferralInvite,
@@ -138,7 +138,8 @@ export function NeighborhoodModeCard({ summary, nav }) {
 }
 
 export function QuestCodeBadge({ adventure }) {
-  const code = mergeAdventureGrowth(adventure).questCode;
+  const safeAdventure = safeMergeAdventureGrowth(adventure);
+  const code = safeAdventure?.questCode;
   if (!code) return null;
   return (
     <span className="badge growth-quest-code">
@@ -285,7 +286,7 @@ export function QuestCodePanel({ state, setState, adventures, nav }) {
       <div className="card">
         <h4>Live Quest Codes</h4>
         {published.map((adv) => {
-          const merged = mergeAdventureGrowth(adv);
+          const merged = safeMergeAdventureGrowth(adv);
           return (
             <div className="growth-quest-row" key={adv.id}>
               <div>

@@ -41,7 +41,7 @@ import {
   ensureDemoAdventure,
 } from './invitation';
 import { DEFAULT_LAUNCH_FUNNEL, normalizeLaunchFunnel } from './stability';
-import { DEFAULT_GROWTH, normalizeGrowth } from './growth';
+import { DEFAULT_GROWTH, normalizeGrowth, mergeAdventureGrowth } from './growth';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -854,9 +854,10 @@ export function normalizeAdventure(adventure) {
     sponsoredDropId: adventure.sponsoredDropId || null,
     storefrontPrice: adventure.storefrontPrice ?? null,
   };
-  return mergeAdventureGrowth(
-    mergeAdventureWorld(mergeAdventureExperience(mergeAdventureInventory(normalized)))
+  const merged = mergeAdventureWorld(
+    mergeAdventureExperience(mergeAdventureInventory(normalized))
   );
+  return mergeAdventureGrowth?.(merged) || merged;
 }
 
 export function getSponsorInfo(adventure) {

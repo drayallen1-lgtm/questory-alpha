@@ -130,23 +130,46 @@ export function generateQuestCode(adventure) {
   return `${part()}-${part()}`;
 }
 
-export function mergeAdventureGrowth(adventure) {
-  const questCode = generateQuestCode(adventure);
-  const growthAnalytics = adventure.growthAnalytics || {};
+export function mergeAdventureGrowth(adventure = {}) {
+  const source = adventure && typeof adventure === 'object' ? adventure : {};
+  const existing = source.growth || source.growthAnalytics || source.growth_analytics || {};
+  const growth = {
+    views: Number(existing.views ?? source.views ?? 0) || 0,
+    started: Number(existing.started ?? source.started ?? 0) || 0,
+    completed:
+      Number(existing.completed ?? source.playersCompleted ?? source.completed ?? 0) || 0,
+    shares: Number(existing.shares ?? source.shares ?? 0) || 0,
+    remixes: Number(existing.remixes ?? source.remixes ?? 0) || 0,
+  };
+
+  let questCode = source.questCode || '';
+  try {
+    questCode = generateQuestCode(source);
+  } catch {
+    questCode = source.questCode || 'QUEST-CODE';
+  }
+
   return {
-    ...adventure,
+    ...source,
     questCode,
-    remixOf: adventure.remixOf || null,
-    remixCredit: adventure.remixCredit || null,
+    remixOf: source.remixOf || null,
+    remixCredit: source.remixCredit || null,
+    growth,
     growthAnalytics: {
-      views: growthAnalytics.views ?? (adventure.playersCompleted || 0) * 3 + 120,
-      started: growthAnalytics.started ?? Math.max(adventure.playersCompleted || 0, 50),
-      completed: growthAnalytics.completed ?? (adventure.playersCompleted || 0),
-      shares: growthAnalytics.shares ?? Math.round((adventure.playersCompleted || 0) * 0.4),
-      mostSharedAsset: growthAnalytics.mostSharedAsset || 'Victory Certificate',
-      dropOffClue: growthAnalytics.dropOffClue ?? adventure.creatorAnalytics?.dropOffClue ?? null,
+      ...growth,
+      mostSharedAsset: existing.mostSharedAsset || 'Victory Certificate',
+      dropOffClue: existing.dropOffClue ?? source.creatorAnalytics?.dropOffClue ?? null,
     },
   };
+}
+
+export function safeMergeAdventureGrowth(adventure) {
+  try {
+    return mergeAdventureGrowth?.(adventure) || (adventure && typeof adventure === 'object' ? adventure : {});
+  } catch (err) {
+    console.warn('[Questory] mergeAdventureGrowth failed', err);
+    return adventure && typeof adventure === 'object' ? adventure : {};
+  }
 }
 
 export function getOrCreateReferralCode(state) {
@@ -273,7 +296,7 @@ export function getReferralDashboard(state) {
 export function lookupAdventureByQuestCode(adventures, code) {
   const normalized = code.trim().toUpperCase().replace(/\s+/g, '');
   return adventures.find((a) => {
-    const merged = mergeAdventureGrowth(a);
+    const merged = safeMergeAdventureGrowth(a);
     return (
       merged.questCode?.toUpperCase().replace(/\s+/g, '') === normalized ||
       merged.claimCode?.toUpperCase().replace(/\s+/g, '') === normalized
@@ -412,7 +435,7 @@ export function checkScoreBeatNotification(state, adventure, completionMinutes) 
 }
 
 export function remixAdventure(state, sourceAdventure, remixTitle) {
-  const source = mergeAdventureGrowth(sourceAdventure);
+  const source = safeMergeAdventureGrowth(sourceAdventure);
   const title = remixTitle?.trim() || `${source.title} Remix`;
   const claimCode = generateClaimCode();
   const id = `remix-${Date.now()}`;
@@ -596,7 +619,7 @@ export function createTonightAdventure(state, themeId, options = {}) {
 
 export function computeGrowthCreatorAnalytics(adventure, state) {
   const base = computeCreatorAnalytics(adventure, state);
-  const ga = mergeAdventureGrowth(adventure).growthAnalytics;
+  const ga = safeMergeAdventureGrowth(adventure).growthAnalytics || {};
   const views = ga.views || Math.round((adventure.playersCompleted || 0) * 2.4 + 100);
   const started = ga.started || Math.max(adventure.playersCompleted || 0, Math.round(views * 0.64));
   const completed = ga.completed || adventure.playersCompleted || 0;
@@ -638,8 +661,8 @@ export function getWeekendCalendar() {
 }
 
 export function buildQuestCodeFlyer(adventure) {
-  const merged = mergeAdventureGrowth(adventure);
-  return `Use code: ${merged.questCode}\n\n${adventure.title}\n${adventure.location || ''}\n\nJoin on Questory!`;
+  const merged = safeMergeAdventureGrowth(adventure);
+  return `Use code: ${merged.questCode || 'QUEST-CODE'}\n\n${adventure.title}\n${adventure.location || ''}\n\nJoin on Questory!`;
 }
 
 export function applyGrowthOnCompletion(state, adventure) {
