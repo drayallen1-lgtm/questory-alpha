@@ -76,6 +76,7 @@ export const defaultState = {
   launchFunnel: { ...DEFAULT_LAUNCH_FUNNEL },
   growthTab: 'referrals',
   pendingInviteAdventureId: null,
+  editingAdventureId: null,
   quickSponsor: false,
   adventures: ensureDemoAdventure([
     {

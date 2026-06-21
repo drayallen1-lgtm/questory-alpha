@@ -207,8 +207,8 @@ export function buildWhisperingHollowPreset(baseLat = 37.34, baseLng = -95.26) {
     clues: [
       mkClue(
         0,
-        'The Gate',
-        'Cross the gate where the path ends. Listen for static on the wind.',
+        'The Swing Set',
+        'The chains creak though no one sits there. Listen for static on the wind.',
         0,
         0,
         {
@@ -224,8 +224,8 @@ export function buildWhisperingHollowPreset(baseLat = 37.34, baseLng = -95.26) {
       ),
       mkClue(
         1,
-        'The Swing',
-        'The chains move though no one sits there.',
+        'The Flower Pot',
+        'Soil scattered. Something passed through here recently.',
         0.0004,
         0.0003,
         {
@@ -242,8 +242,8 @@ export function buildWhisperingHollowPreset(baseLat = 37.34, baseLng = -95.26) {
       ),
       mkClue(
         2,
-        'The Diary',
-        'Pages flutter under the lantern light.',
+        'The Oldest Tree',
+        'Carved initials fade under lantern light. A diary page waits.',
         0.0008,
         0.0006,
         {

@@ -27,6 +27,7 @@ import {
   LogOut,
   Crown,
   Flame,
+  Pencil,
 } from 'lucide-react';
 import {
   STORAGE_KEY,
@@ -177,6 +178,15 @@ import {
 } from './arEngine';
 import { CinematicAROverlay, ARSceneReplayButton } from './CinematicAR';
 import { ArFinaleBuilder, ClueArSceneBuilder, WhisperingHollowQuickButton } from './ARSceneBuilder';
+import {
+  adventureToCreateFormState,
+  canRepairWhisperingHollow,
+  duplicateAdventureAsDraft,
+  mergeAdventurePreserveFields,
+  repairWhisperingHollowClues,
+  replaceAdventureInList,
+  validateAdventureCluesForPublish,
+} from './adventureEditor';
 import { MapScreen, MiniClueMap } from './QuestoryMap';
 import { hasSupabase } from './supabase/client';
 import { AuthProvider, useAuth } from './supabase/AuthContext';
@@ -478,6 +488,13 @@ function QuestoryApp() {
     const adventure = state.adventures.find((a) => a.id === adventureId);
     if (!adventure) return;
 
+    const clueCheck = validateAdventureCluesForPublish(adventure);
+    if (!clueCheck.ok) {
+      setAdventureSyncError(clueCheck.message);
+      alert(clueCheck.message);
+      return;
+    }
+
     updateAdventure(adventureId, { status: ADVENTURE_STATUS.PUBLISHED });
     removeLocalDraft(adventureId);
     setState((s) => trackCreatePublished(s));
@@ -490,6 +507,64 @@ function QuestoryApp() {
           console.error('Publish sync failed:', err);
           setAdventureSyncError(formatUserErrorMessage(err) || 'Could not publish adventure.');
         });
+    }
+  }
+
+  function editAdventure(adventureId) {
+    setState((s) => ({
+      ...s,
+      editingAdventureId: adventureId,
+      screen: 'create',
+      adminPreview: false,
+    }));
+  }
+
+  function duplicateAdventure(adventureId) {
+    const source = state.adventures.find((a) => a.id === adventureId);
+    if (!source) return;
+    const copy = duplicateAdventureAsDraft(source);
+    setState((s) => ({
+      ...s,
+      adventures: [copy, ...s.adventures],
+      adminTab: 'drafts',
+    }));
+    if (isSupabaseMode && user) {
+      upsertAdventure(copy, user.id)
+        .then(() => refreshAdventuresFromRemote())
+        .catch((err) => console.error('Duplicate sync failed:', err));
+    }
+  }
+
+  function unpublishAdventure(adventureId) {
+    const adventure = state.adventures.find((a) => a.id === adventureId);
+    if (!adventure) return;
+    updateAdventure(adventureId, { status: ADVENTURE_STATUS.DRAFT });
+    if (isSupabaseMode && user) {
+      upsertAdventure({ ...adventure, status: ADVENTURE_STATUS.DRAFT }, user.id)
+        .then(() => refreshAdventuresFromRemote())
+        .catch((err) => {
+          console.error('Unpublish sync failed:', err);
+          setAdventureSyncError(formatUserErrorMessage(err) || 'Could not unpublish adventure.');
+        });
+    }
+  }
+
+  async function repairAdventureClues(adventureId) {
+    const adventure = state.adventures.find((a) => a.id === adventureId);
+    if (!adventure || !canRepairWhisperingHollow(adventure)) return;
+    const repaired = repairWhisperingHollowClues(adventure);
+    setState((s) => ({
+      ...s,
+      adventures: replaceAdventureInList(s.adventures, repaired),
+    }));
+    if (isSupabaseMode && user) {
+      try {
+        await upsertAdventure(repaired, user.id);
+        await refreshAdventuresFromRemote();
+      } catch (err) {
+        console.error('Repair sync failed:', err);
+        setAdventureSyncError(formatUserErrorMessage(err) || 'Could not repair adventure clues.');
+      }
     }
   }
 
@@ -1133,8 +1208,10 @@ function QuestoryApp() {
               userId={user?.id}
               isSupabaseMode={isSupabaseMode}
               auth={auth}
+              editingAdventureId={state.editingAdventureId}
               onAdventuresSaved={refreshAdventuresFromRemote}
               onQuickCreate={() => setShowQuickCreate(true)}
+              onPublish={publishAdventure}
             />
           )
         )}
@@ -1152,6 +1229,10 @@ function QuestoryApp() {
               onArchive={archiveAdventure}
               onRestore={restoreAdventure}
               onDelete={deleteAdventure}
+              onEdit={editAdventure}
+              onDuplicate={duplicateAdventure}
+              onUnpublish={unpublishAdventure}
+              onRepairClues={repairAdventureClues}
               onTabChange={(tab) => setState((s) => ({ ...s, adminTab: tab }))}
               onRetryDraftSync={async (adventureId) => {
                 if (!user?.id) {
@@ -2642,7 +2723,18 @@ function rewardsFromTemplates(templates) {
   });
 }
 
-function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth, onAdventuresSaved, onQuickCreate }) {
+function CreateAdventure({
+  state,
+  setState,
+  reset,
+  userId,
+  isSupabaseMode,
+  auth,
+  editingAdventureId,
+  onAdventuresSaved,
+  onQuickCreate,
+  onPublish,
+}) {
   const [meta, setMeta] = useState({
     title: '',
     location: '',
@@ -2694,6 +2786,33 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
   const [arFinale, setArFinale] = useState(emptyArScene());
   const [arTheme, setArTheme] = useState('none');
   const showArMode = meta.finderMode === FINDER_MODES.AR_ENHANCED;
+  const editingAdventure = editingAdventureId
+    ? state.adventures.find((a) => a.id === editingAdventureId)
+    : null;
+  const loadedEditIdRef = useRef(null);
+
+  useEffect(() => {
+    if (!editingAdventureId) {
+      loadedEditIdRef.current = null;
+      return;
+    }
+    if (loadedEditIdRef.current === editingAdventureId) return;
+    const adventure = state.adventures.find((a) => a.id === editingAdventureId);
+    if (!adventure) return;
+    const form = adventureToCreateFormState(adventure);
+    if (!form) return;
+    setMeta(form.meta);
+    setClues(form.clues.length ? form.clues : [emptyClue(), emptyClue(), emptyClue()]);
+    setRewards(form.rewards);
+    setAdventureTemplate(form.adventureTemplate);
+    setAdventureScale(form.adventureScale);
+    setExperienceSettings(form.experienceSettings);
+    setArFinale(form.arFinale);
+    setArTheme(form.arTheme);
+    setFormError('');
+    setSaveFeedback(null);
+    loadedEditIdRef.current = editingAdventureId;
+  }, [editingAdventureId, state.adventures]);
 
   function handleTemplateSelect(templateId) {
     setAdventureTemplate(templateId);
@@ -2902,8 +3021,11 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
     });
 
     const prizeLabels = finalRewards.map((r) => r.valueLabel).filter(Boolean);
-    const adventure = {
-      id: `custom-${Date.now()}`,
+    const existing = editingAdventureId
+      ? state.adventures.find((a) => a.id === editingAdventureId)
+      : null;
+    const adventure = mergeAdventurePreserveFields(existing, {
+      id: existing?.id || `custom-${Date.now()}`,
       title,
       location,
       sponsor: sponsorName,
@@ -2912,9 +3034,9 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
         logoUrl: meta.sponsorLogoUrl.trim(),
         website: meta.sponsorWebsite.trim(),
       },
-      distance: 'New',
+      distance: existing?.distance || 'New',
       prize: prizeLabels.length ? prizeLabels.join(' + ') : 'Custom Rewards',
-      status: ADVENTURE_STATUS.DRAFT,
+      status: existing?.status || ADVENTURE_STATUS.DRAFT,
       difficulty: Math.min(5, Math.max(1, savedClues.length)),
       claimCode: claimFields.claimCode || claimCode,
       claimMethod: claimFields.claimMethod,
@@ -2954,18 +3076,18 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
       state: meta.state.trim() || meta.location.split(',')[1]?.trim() || 'Kansas',
       region: meta.state.trim() || 'Kansas',
       estimatedMinutes: parseInt(meta.estimatedMinutes, 10) || 25,
-      playersCompleted: 0,
-      firstFinderName: '',
+      playersCompleted: existing?.playersCompleted ?? 0,
+      firstFinderName: existing?.firstFinderName || '',
       story,
       clues: savedClues,
       bonusFinds: buildBonusFinds(clues),
       finalRewards,
-      creatorId: userId || null,
+      creatorId: existing?.creatorId || userId || null,
       endRule: meta.endRule || END_RULES.NO_END_DATE,
       endsAt: meta.endsAt || null,
       endsAfterTotalCompletions: meta.endsAfterTotalCompletions ?? null,
-      totalCompletions: 0,
-    };
+      totalCompletions: existing?.totalCompletions ?? 0,
+    });
 
     if (isSupabaseMode) {
       setSaving(true);
@@ -2983,18 +3105,23 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
         const cloud = await fetchAllAdventuresForAdmin();
         nextAdventures = mergeAdventuresWithLocalDrafts(cloud);
       } else {
-        const cloudAdventures = state.adventures.filter(
-          (a) => a.status !== ADVENTURE_STATUS.DRAFT || a._draftSync?.cloud
+        nextAdventures = mergeAdventuresWithLocalDrafts(
+          replaceAdventureInList(
+            state.adventures.filter(
+              (a) => a.status !== ADVENTURE_STATUS.DRAFT || a._draftSync?.cloud
+            ),
+            result.adventure
+          )
         );
-        nextAdventures = mergeAdventuresWithLocalDrafts(cloudAdventures);
       }
 
       setState((s) => ({
         ...s,
         adventures: nextAdventures,
         screen: 'admin',
-        adminTab: 'drafts',
+        adminTab: existing?.status === ADVENTURE_STATUS.PUBLISHED ? 'published' : 'drafts',
         adminPreview: false,
+        editingAdventureId: null,
       }));
 
       if (!result.localSaved) {
@@ -3026,10 +3153,11 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
 
     setState((s) => ({
       ...s,
-      adventures: mergeSavedDraftIntoAdventures(s.adventures, result.adventure),
+      adventures: replaceAdventureInList(s.adventures, result.adventure),
       screen: 'admin',
-      adminTab: 'drafts',
+      adminTab: existing?.status === ADVENTURE_STATUS.PUBLISHED ? 'published' : 'drafts',
       adminPreview: false,
+      editingAdventureId: null,
     }));
     setSaveFeedback(result);
     setSaving(false);
@@ -3038,9 +3166,28 @@ function CreateAdventure({ state, setState, reset, userId, isSupabaseMode, auth,
   return (
     <>
       <div className="section-head">
-        <h2>Create Adventure</h2>
-        <p>Build adventures with sponsors, rewards, and GPS clues</p>
+        <h2>{editingAdventure ? `Edit: ${editingAdventure.title}` : 'Create Adventure'}</h2>
+        <p>
+          {editingAdventure
+            ? 'Update clues, AR scenes, rewards, and claim settings — then save.'
+            : 'Build adventures with sponsors, rewards, and GPS clues'}
+        </p>
       </div>
+      {editingAdventure && (
+        <div className="card edit-adventure-banner">
+          <p>
+            Editing {adventureStatusLabel(editingAdventure.status).toLowerCase()} adventure ·{' '}
+            {editingAdventure.clues?.length || 0} clues
+          </p>
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => setState((s) => ({ ...s, editingAdventureId: null, screen: 'admin' }))}
+          >
+            Cancel edit
+          </button>
+        </div>
+      )}
       <div className="quick-create-row">
         <button type="button" onClick={onQuickCreate}>
           Quick Create — about 60 seconds
@@ -3449,6 +3596,10 @@ function AdminReview({
   onArchive,
   onRestore,
   onDelete,
+  onEdit,
+  onDuplicate,
+  onUnpublish,
+  onRepairClues,
   onTabChange,
   onRetryDraftSync,
   isSupabaseMode,
@@ -3544,10 +3695,27 @@ function AdminReview({
           <p className="story-preview">{adventure.story}</p>
           <SponsorBlock sponsor={getSponsorInfo(adventure)} compact />
           <div className="chips">
-            <span>{adventure.clues.length} clues</span>
+            <span>{adventure.clues?.length || 0} clues</span>
             <span>{adventure.finalRewards?.length || 0} rewards</span>
             <span>{claimMethodLabel(adventure.claimMethod)}</span>
           </div>
+          {(adventure.clues?.length || 0) === 0 && (
+            <p className="admin-clue-warning" role="alert">
+              0 clues — not playable.
+              {canRepairWhisperingHollow(adventure) && onRepairClues && (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    className="ghost admin-action-btn"
+                    onClick={() => onRepairClues(adventure.id)}
+                  >
+                    Repair Missing Clues
+                  </button>
+                </>
+              )}
+            </p>
+          )}
           <div className="admin-actions">
             <button
               className="ghost admin-action-btn"
@@ -3562,8 +3730,15 @@ function AdminReview({
                 <button
                   className="admin-action-btn"
                   onClick={() => onPublish(adventure.id)}
+                  disabled={(adventure.clues?.length || 0) === 0}
                 >
                   <CheckCircle2 size={16} /> Publish
+                </button>
+                <button
+                  className="ghost admin-action-btn"
+                  onClick={() => onEdit?.(adventure.id)}
+                >
+                  <Pencil size={16} /> Edit
                 </button>
                 <button
                   className="ghost admin-action-btn danger"
@@ -3578,12 +3753,32 @@ function AdminReview({
               </>
             )}
             {adventure.status === ADVENTURE_STATUS.PUBLISHED && (
-              <button
-                className="ghost admin-action-btn"
-                onClick={() => onArchive(adventure.id)}
-              >
-                <Archive size={16} /> Archive
-              </button>
+              <>
+                <button
+                  className="ghost admin-action-btn"
+                  onClick={() => onEdit?.(adventure.id)}
+                >
+                  <Pencil size={16} /> Edit
+                </button>
+                <button
+                  className="ghost admin-action-btn"
+                  onClick={() => onDuplicate?.(adventure.id)}
+                >
+                  <Copy size={16} /> Duplicate as Draft
+                </button>
+                <button
+                  className="ghost admin-action-btn"
+                  onClick={() => onUnpublish?.(adventure.id)}
+                >
+                  <RotateCcw size={16} /> Unpublish to Draft
+                </button>
+                <button
+                  className="ghost admin-action-btn"
+                  onClick={() => onArchive(adventure.id)}
+                >
+                  <Archive size={16} /> Archive
+                </button>
+              </>
             )}
             {adventure.status === ADVENTURE_STATUS.ARCHIVED && (
               <button

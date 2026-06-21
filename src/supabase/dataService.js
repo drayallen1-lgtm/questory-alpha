@@ -327,20 +327,14 @@ export async function upsertAdventure(adventure, creatorId) {
   }
   if (advError) throw advError;
 
-  const { error: clueDeleteError } = await supabase
-    .from('clues')
-    .delete()
-    .eq('adventure_id', adventure.id);
-  if (clueDeleteError) throw clueDeleteError;
-
-  const { error: rewardDeleteError } = await supabase
-    .from('rewards')
-    .delete()
-    .eq('adventure_id', adventure.id);
-  if (rewardDeleteError) throw rewardDeleteError;
-
   const clues = cluesToRows(adventure);
-  if (clues.length) {
+  if (clues.length > 0) {
+    const { error: clueDeleteError } = await supabase
+      .from('clues')
+      .delete()
+      .eq('adventure_id', adventure.id);
+    if (clueDeleteError) throw clueDeleteError;
+
     let { error } = await supabase.from('clues').insert(clues);
     if (error && clues.some((c) => c.ar_scene && Object.keys(c.ar_scene).length)) {
       const fallbackClues = clues.map(({ ar_scene, ...rest }) => rest);
@@ -350,7 +344,13 @@ export async function upsertAdventure(adventure, creatorId) {
   }
 
   const rewards = rewardsToRows(adventure);
-  if (rewards.length) {
+  if (rewards.length > 0) {
+    const { error: rewardDeleteError } = await supabase
+      .from('rewards')
+      .delete()
+      .eq('adventure_id', adventure.id);
+    if (rewardDeleteError) throw rewardDeleteError;
+
     const { error } = await supabase.from('rewards').insert(rewards);
     if (error) throw error;
   }

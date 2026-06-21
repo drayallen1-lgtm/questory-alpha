@@ -4793,6 +4793,36 @@ button.marketplace-template {
   margin: 8px 0 12px;
 }
 
+.edit-adventure-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  border-color: rgba(94, 234, 212, 0.35);
+}
+
+.edit-adventure-banner p {
+  margin: 0;
+  color: #cbd5e1;
+}
+
+.admin-clue-warning {
+  color: #fde68a;
+  font-weight: 600;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.admin-clue-warning button {
+  width: auto;
+  display: inline-flex;
+  margin-top: 4px;
+}
+
 @keyframes ar-fog-drift {
   from { opacity: 0.45; transform: translateY(0); }
   to { opacity: 0.75; transform: translateY(-8px); }
