@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Abandoned Swing">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f1520"/>
+      <stop offset="100%" stop-color="#050508"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#sky)"/>
+  <rect x="0" y="280" width="400" height="120" fill="#0a0a0c"/>
+  <path d="M80 280 L80 90 L320 90 L320 280" stroke="#3a3a42" stroke-width="8" fill="none"/>
+  <line x1="80" y1="90" x2="320" y2="90" stroke="#4a4a52" stroke-width="10"/>
+  <line x1="200" y1="90" x2="200" y2="175" stroke="#555" stroke-width="3"/>
+  <rect x="165" y="175" width="70" height="8" rx="2" fill="#5a4a3a"/>
+  <line x1="175" y1="175" x2="175" y2="240" stroke="#666" stroke-width="2"/>
+  <line x1="225" y1="175" x2="225" y2="240" stroke="#666" stroke-width="2"/>
+  <rect x="160" y="240" width="80" height="12" rx="3" fill="#4a3a2a"/>
+  <ellipse cx="200" cy="295" rx="50" ry="8" fill="#000" opacity="0.4"/>
+  <text x="200" y="378" text-anchor="middle" fill="#5a5a6a" font-family="serif" font-size="14">Abandoned Swing</text>
+</svg>

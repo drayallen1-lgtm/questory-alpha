@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Black Lantern">
+  <rect width="400" height="400" fill="#050508"/>
+  <ellipse cx="200" cy="320" rx="60" ry="10" fill="#000" opacity="0.5"/>
+  <defs>
+    <radialGradient id="flame" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffcc66"/>
+      <stop offset="60%" stop-color="#ff6600"/>
+      <stop offset="100%" stop-color="#330000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="200" cy="175" rx="45" ry="55" fill="url(#flame)" opacity="0.85"/>
+  <path d="M200 120 L175 200 L225 200 Z" fill="#1a1a1a"/>
+  <rect x="172" y="198" width="56" height="70" rx="4" fill="#111"/>
+  <rect x="178" y="205" width="44" height="50" fill="#0a0a0a" stroke="#333" stroke-width="2"/>
+  <rect x="185" y="268" width="30" height="12" fill="#222"/>
+  <path d="M185 115 Q200 100 215 115" stroke="#444" stroke-width="4" fill="none"/>
+  <text x="200" y="378" text-anchor="middle" fill="#6a5a4a" font-family="serif" font-size="14">Black Lantern</text>
+</svg>

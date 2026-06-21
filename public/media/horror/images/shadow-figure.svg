@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Shadow Figure">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#12121f"/>
+      <stop offset="100%" stop-color="#020204"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <ellipse cx="200" cy="350" rx="90" ry="14" fill="#000" opacity="0.6"/>
+  <path d="M200 60 C160 60 145 110 150 160 L135 320 L165 320 L175 200 L185 320 L215 320 L225 200 L235 320 L265 320 L250 160 C255 110 240 60 200 60 Z" fill="#0a0a0a" opacity="0.95"/>
+  <ellipse cx="200" cy="78" rx="28" ry="32" fill="#080808"/>
+  <circle cx="188" cy="72" r="5" fill="#c0392b" opacity="0.7"/>
+  <circle cx="212" cy="72" r="5" fill="#c0392b" opacity="0.7"/>
+  <text x="200" y="380" text-anchor="middle" fill="#4a4a5a" font-family="serif" font-size="14">Shadow Figure</text>
+</svg>

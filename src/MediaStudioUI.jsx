@@ -24,16 +24,57 @@ import {
   normalizeMediaManifest,
 } from './mediaStudio';
 import { uploadMediaFile, libraryAssetToMediaAsset } from './supabase/mediaService';
+import { HorrorAnimationPreview } from './horrorAssets/animations';
 
 function isMediaUrl(url) {
-  return typeof url === 'string' && (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:'));
+  return typeof url === 'string' && (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('/'));
+}
+
+function AssetThumbnail({ asset, className = '' }) {
+  const [failed, setFailed] = useState(false);
+  const isAudio = asset.type === 'audio';
+  const isAnimation = asset.type === 'animation' || asset.animated;
+  const thumbUrl = asset.previewUrl || asset.thumbnailUrl || asset.publicUrl || asset.assetUrl;
+
+  if (isAnimation && asset.id) {
+    return (
+      <div className={`media-asset-thumb-wrap animated ${className}`}>
+        <HorrorAnimationPreview assetId={asset.id} className="media-asset-anim-preview" />
+        <span className="media-anim-badge">GIF</span>
+      </div>
+    );
+  }
+
+  if (isAudio) {
+    return (
+      <div className={`media-asset-thumb-wrap audio ${className}`}>
+        <Volume2 size={28} />
+        <span className="media-audio-badge">▶</span>
+      </div>
+    );
+  }
+
+  if (thumbUrl && !failed && (isMediaUrl(thumbUrl) || thumbUrl.startsWith('/'))) {
+    return (
+      <img
+        className={`media-asset-thumb-img ${className}`}
+        src={thumbUrl}
+        alt={asset.title || ''}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+
+  return <span className={`media-asset-icon ${className}`}>{asset.icon || '🎬'}</span>;
 }
 
 function AssetPreviewModal({ asset, onClose, onInsert }) {
   if (!asset) return null;
   const isAudio = asset.type === 'audio';
   const isVideo = asset.type === 'video';
+  const isAnimation = asset.type === 'animation' || asset.animated;
   const previewUrl = asset.previewUrl || asset.thumbnailUrl || asset.publicUrl || asset.assetUrl;
+  const audioSrc = asset.audioUrl || (isAudio ? previewUrl : null);
 
   return (
     <div className="media-preview-modal" role="dialog" aria-modal="true">
@@ -43,21 +84,26 @@ function AssetPreviewModal({ asset, onClose, onInsert }) {
           <X size={18} />
         </button>
         <h4>{asset.title}</h4>
+        {asset.offline && <p className="media-offline-badge">Bundled · works offline</p>}
         <div className="media-preview-body">
-          {isAudio && (
+          {isAnimation && asset.id && (
+            <HorrorAnimationPreview assetId={asset.id} className="media-preview-anim" />
+          )}
+          {isAudio && audioSrc && (
             <div className="media-preview-audio">
               <Volume2 size={48} />
-              <audio controls src={asset.audioUrl || asset.publicUrl} />
+              <audio controls autoPlay src={audioSrc} />
+              <p className="admin-meta">Preview audio before inserting into your scene.</p>
             </div>
           )}
           {isVideo && isMediaUrl(asset.publicUrl) && (
             <video controls playsInline src={asset.publicUrl} className="media-preview-video" />
           )}
-          {!isAudio && !isVideo && previewUrl && isMediaUrl(previewUrl) && (
+          {!isAudio && !isVideo && !isAnimation && previewUrl && (
             <img src={previewUrl} alt={asset.title} className="media-preview-image" />
           )}
-          {!isAudio && !isVideo && !isMediaUrl(previewUrl) && (
-            <div className="media-preview-emoji">{previewUrl || asset.icon || '🎬'}</div>
+          {!isAudio && !isVideo && !isAnimation && !previewUrl && (
+            <div className="media-preview-emoji">{asset.icon || '🎬'}</div>
           )}
         </div>
         <button type="button" className="media-insert-btn" onClick={() => onInsert(asset)}>
@@ -320,13 +366,7 @@ export function MediaStudioPanel({
                 className="media-asset-tile"
                 onClick={() => setPreviewAsset(asset)}
               >
-                {asset.type === 'image' && asset.publicUrl ? (
-                  <img src={asset.publicUrl} alt={asset.title} />
-                ) : (
-                  <span className="media-asset-icon">
-                    {asset.type === 'audio' ? '🔊' : asset.type === 'video' ? '🎥' : '🖼'}
-                  </span>
-                )}
+                <AssetThumbnail asset={asset} />
                 <small>{asset.title}</small>
               </button>
             ))}
@@ -358,11 +398,7 @@ export function MediaStudioPanel({
               className="media-asset-tile library"
               onClick={() => setPreviewAsset(item)}
             >
-              {item.previewUrl ? (
-                <img src={item.previewUrl} alt={item.title} />
-              ) : (
-                <span className="media-asset-icon">{item.icon}</span>
-              )}
+              <AssetThumbnail asset={item} />
               <small>{item.title}</small>
             </button>
           ))}
@@ -404,11 +440,9 @@ export function MediaStudioPanel({
         asset={previewAsset}
         onClose={() => setPreviewAsset(null)}
         onInsert={(asset) => {
-          if (asset.publicUrl || asset.audioUrl || asset.assetUrl || asset.previewUrl) {
-            handleInsert(asset.source ? asset : libraryAssetToMediaAsset(asset));
-          } else {
-            handleInsert(libraryAssetToMediaAsset(asset));
-          }
+          const normalized =
+            asset.source === 'upload' ? asset : libraryAssetToMediaAsset(asset);
+          handleInsert(normalized);
         }}
       />
     </div>

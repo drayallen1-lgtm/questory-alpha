@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Dead Tree">
+  <defs>
+    <radialGradient id="night" cx="50%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#141820"/>
+      <stop offset="100%" stop-color="#030305"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#night)"/>
+  <circle cx="320" cy="70" r="28" fill="#8b0000" opacity="0.35"/>
+  <rect x="0" y="310" width="400" height="90" fill="#0a0a0c"/>
+  <path d="M200 310 L200 140" stroke="#2a2520" stroke-width="16" stroke-linecap="round"/>
+  <path d="M200 200 L120 130 M200 170 L280 100 M200 240 L100 200 M200 220 L300 180 M200 280 L130 260 M200 260 L290 240" stroke="#2a2520" stroke-width="8" stroke-linecap="round"/>
+  <path d="M120 130 L105 115 M280 100 L295 85 M100 200 L85 190" stroke="#2a2520" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="200" cy="318" rx="40" ry="8" fill="#000" opacity="0.45"/>
+  <text x="200" y="378" text-anchor="middle" fill="#5a5a6a" font-family="serif" font-size="14">Dead Tree</text>
+</svg>

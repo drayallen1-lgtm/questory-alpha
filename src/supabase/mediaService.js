@@ -5,6 +5,7 @@ import {
   fileToDataUrl,
   normalizeMediaAsset,
 } from '../mediaStudio';
+import { libraryAssetForInsert } from '../horrorAssets/catalog';
 
 function sanitizeFilename(name = 'file') {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
@@ -139,21 +140,8 @@ export async function fetchMediaAssetsForAdventure(userId, adventureId) {
 }
 
 export function libraryAssetToMediaAsset(libraryItem) {
-  const base = normalizeMediaAsset({
-    id: libraryItem.id,
-    type: libraryItem.type,
-    title: libraryItem.title,
-    category: libraryItem.category,
-    publicUrl: libraryItem.assetUrl || libraryItem.audioUrl || '',
-    thumbnailUrl: libraryItem.previewUrl || libraryItem.icon,
+  return libraryAssetForInsert({
+    ...libraryItem,
     source: 'library',
   });
-  return {
-    ...base,
-    audioUrl: libraryItem.audioUrl,
-    assetUrl: libraryItem.assetUrl,
-    atmosphere: libraryItem.atmosphere,
-    icon: libraryItem.icon,
-    previewUrl: libraryItem.previewUrl,
-  };
 }
