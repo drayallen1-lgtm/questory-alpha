@@ -25,6 +25,8 @@ import {
   formatEstimatedTime,
   getAllCollectionProgress,
   getCollectionDef,
+  getFeaturedCollectionProgress,
+  formatCollectionProgressBar,
   getGreetingName,
   getLeaderboard,
   getNearCompleteCollections,
@@ -303,6 +305,7 @@ export function QuestoryPassport({ state, adventures, onRedeem }) {
   const [tab, setTab] = useState('passport');
   const passport = getPassportData(state, adventures);
   const collections = getAllCollectionProgress(state, adventures);
+  const featuredCollections = getFeaturedCollectionProgress(state, adventures);
   const badges = (state.engagement?.badges || [])
     .map((id) => BADGE_DEFS[id])
     .filter(Boolean);
@@ -334,6 +337,34 @@ export function QuestoryPassport({ state, adventures, onRedeem }) {
       {tab === 'passport' && (
         <>
           <NationalPassportPanel state={state} />
+          {featuredCollections.length > 0 && (
+            <div className="card passport-featured-collections">
+              <h3>Collection Progress</h3>
+              <p className="admin-meta">Complete every hunt in a series to unlock badge, medallion, and bonus coins.</p>
+              {featuredCollections.map((c) => (
+                <div className="passport-series-row" key={c.collectionId}>
+                  <div className="passport-series-head">
+                    <strong>{c.name}</strong>
+                    <span className={c.complete ? 'series-complete' : ''}>
+                      {c.complete ? '🏆 Complete' : `${c.found}/${c.total}`}
+                    </span>
+                  </div>
+                  <div className="passport-series-bar" aria-hidden="true">
+                    {formatCollectionProgressBar(c.found, c.total, 12)}
+                  </div>
+                  <small>
+                    {c.found} of {c.total} completed · {c.pct}%
+                    {!c.complete && c.rewardCoins ? ` · 🪙 ${c.rewardCoins} coins at finish` : ''}
+                  </small>
+                  {c.complete && (
+                    <p className="passport-series-reward">
+                      🏅 {c.badgeLabel} · 🪙 {c.exclusiveMedallion} · +{c.rewardCoins} coins
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
           {passport.map((region) => (
             <div className="card passport-region" key={region.region}>
               <h3>{region.region.toUpperCase()}</h3>

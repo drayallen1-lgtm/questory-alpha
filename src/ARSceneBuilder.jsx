@@ -11,10 +11,11 @@ import {
   normalizeArScene,
 } from './arEngine';
 import { getSceneThumbnail, triggerLabel } from './mediaStudio';
+import { FINALE_THEME_LIST, applyFinaleTheme, detectFinaleThemeId } from './finaleThemes';
 
 function SceneThumbnail({ scene }) {
   const thumb = getSceneThumbnail(scene);
-  const isUrl = typeof thumb === 'string' && (thumb.startsWith('http') || thumb.startsWith('data:'));
+  const isUrl = typeof thumb === 'string' && (thumb.startsWith('http') || thumb.startsWith('data:') || thumb.startsWith('/'));
 
   if (isUrl) {
     return <img className="ar-scene-card-thumb" src={thumb} alt="" />;
@@ -211,7 +212,31 @@ export function ClueArSceneBuilder({ clue, onChange, showArMode }) {
   );
 }
 
-export function ArFinaleBuilder({ arFinale, arTheme, onFinaleChange, onThemeChange, showArMode }) {
+export function FinaleThemePicker({ arFinale, arTheme, onApply }) {
+  const activeId = detectFinaleThemeId(arFinale, arTheme);
+
+  return (
+    <div className="finale-theme-picker">
+      <h4>Finale Themes</h4>
+      <p className="admin-meta">One tap fills visuals, audio, overlay, duration, and camera effects.</p>
+      <div className="finale-theme-grid">
+        {FINALE_THEME_LIST.map((theme) => (
+          <button
+            key={theme.id}
+            type="button"
+            className={`finale-theme-btn ${activeId === theme.id ? 'active' : 'ghost'}`}
+            onClick={() => onApply(applyFinaleTheme(theme.id))}
+          >
+            <strong>{theme.label}</strong>
+            <span>{theme.desc}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function ArFinaleBuilder({ arFinale, arTheme, onFinaleChange, onThemeChange, onFinaleThemeApply, showArMode }) {
   if (!showArMode) return null;
 
   return (
@@ -220,6 +245,15 @@ export function ArFinaleBuilder({ arFinale, arTheme, onFinaleChange, onThemeChan
         <Sparkles size={18} /> AR Finale
       </h3>
       <p className="admin-meta">Plays after medallion capture in AR Enhanced adventures.</p>
+      <FinaleThemePicker
+        arFinale={arFinale}
+        arTheme={arTheme}
+        onApply={({ arFinale: finale, arTheme: theme }) => {
+          onFinaleChange(finale);
+          onThemeChange(theme);
+          onFinaleThemeApply?.(finale, theme);
+        }}
+      />
       <label>AR Theme</label>
       <select value={arTheme || 'none'} onChange={(e) => onThemeChange(e.target.value)}>
         <option value="none">None</option>

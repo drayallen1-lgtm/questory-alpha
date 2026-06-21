@@ -52,6 +52,12 @@ export const BADGE_DEFS = {
     icon: '✨',
     desc: "Complete a Founder's Hunt",
   },
+  'forgotten-souls-survivor': {
+    id: 'forgotten-souls-survivor',
+    label: 'Forgotten Souls Survivor',
+    icon: '🏅',
+    desc: 'Complete the Forgotten Souls horror collection',
+  },
 };
 
 export const COLLECTION_DEFS = {
@@ -110,6 +116,23 @@ export const COLLECTION_DEFS = {
     rewardCoins: 400,
     exclusiveMedallion: 'River Sentinel Medallion',
   },
+  'forgotten-souls': {
+    id: 'forgotten-souls',
+    name: 'Forgotten Souls Collection',
+    city: 'National',
+    state: '',
+    region: 'Horror Series',
+    badgeId: 'forgotten-souls-survivor',
+    badgeLabel: 'Forgotten Souls Survivor Badge',
+    rewardCoins: 1000,
+    exclusiveMedallion: 'Forgotten Souls Medallion',
+    seriesAdventures: [
+      'The Whispering Hollow',
+      'Black Lantern',
+      'Midnight Train',
+      'The Red Barn',
+    ],
+  },
 };
 
 const DEMO_LEADERBOARD = [
@@ -155,8 +178,27 @@ export function getCollectionId(adventure) {
   return adventure?.collectionId || adventure?.collection_id || null;
 }
 
-export function getCollectionDef(collectionId) {
-  return collectionId ? COLLECTION_DEFS[collectionId] || null : null;
+export function getCollectionDef(collectionId, adventures = []) {
+  if (collectionId && COLLECTION_DEFS[collectionId]) {
+    return COLLECTION_DEFS[collectionId];
+  }
+  const members = (adventures || []).filter((a) =>
+    getAdventureCollectionIds(a).includes(collectionId)
+  );
+  const first = members[0];
+  if (!first || !collectionId) return null;
+  return {
+    id: collectionId,
+    name: first.collectionName || collectionId,
+    badgeId: collectionId.replace(/-/g, '_'),
+    badgeLabel: first.collectionBadge || `${first.collectionName || collectionId} Badge`,
+    rewardCoins: first.collectionRewardCoins ?? COIN_REWARDS.COLLECTION_COMPLETE,
+    exclusiveMedallion:
+      first.collectionRewardMedallion || `${first.collectionName || collectionId} Medallion`,
+    city: first.city || 'National',
+    state: first.state || '',
+    region: first.region || first.state || 'National',
+  };
 }
 
 export function getAdventureCollectionIds(adventure) {
@@ -175,7 +217,7 @@ export function isAdventureClaimed(state, adventureId) {
 }
 
 export function getCollectionProgress(state, adventures, collectionId) {
-  const def = getCollectionDef(collectionId);
+  const def = getCollectionDef(collectionId, adventures);
   const members = getAdventuresInCollection(adventures, collectionId).filter(
     (a) => a.status === 'published'
   );
@@ -183,13 +225,17 @@ export function getCollectionProgress(state, adventures, collectionId) {
   const found = members.filter((a) => isAdventureClaimed(state, a.id)).length;
   const pct = total ? Math.round((found / total) * 100) : 0;
   return {
-    ...def,
+    ...(def || {}),
+    name: def?.name || collectionId,
     collectionId,
     total,
     found,
     pct,
     complete: total > 0 && found >= total,
     adventures: members,
+    rewardCoins: def?.rewardCoins ?? COIN_REWARDS.COLLECTION_COMPLETE,
+    badgeLabel: def?.badgeLabel || '',
+    exclusiveMedallion: def?.exclusiveMedallion || '',
   };
 }
 
@@ -299,6 +345,9 @@ export function evaluateBadges(engagement, context = {}) {
   if (context.collectionComplete === 'parsons-legends') {
     next = addBadge(next, 'keeper-of-parsons');
   }
+  if (context.collectionComplete === 'forgotten-souls') {
+    next = addBadge(next, 'forgotten-souls-survivor');
+  }
   if (context.nightCapture) {
     next = addBadge(next, 'night-hunter');
   }
@@ -355,7 +404,7 @@ export function applyAdventureCompletion(state, adventure, adventures) {
       !engagement.collectionsCompleted.includes(collectionId)
     ) {
       newlyCompletedCollections.push(collectionId);
-      const def = getCollectionDef(collectionId);
+      const def = getCollectionDef(collectionId, adventures);
       if (def) {
         collectionRewards.push({
           collectionId,
@@ -383,13 +432,22 @@ export function applyAdventureCompletion(state, adventure, adventures) {
   nextEngagement = evaluateBadges(nextEngagement, {
     adventuresCompleted,
     milesWalked,
-    collectionComplete: newlyCompletedCollections.includes('parsons-legends')
-      ? 'parsons-legends'
-      : null,
+    collectionComplete: null,
     nightCapture: isNightHunt(),
     firstFinder: isFirstFinder,
     founderHuntComplete: isFounder,
   });
+
+  for (const collectionId of newlyCompletedCollections) {
+    nextEngagement = evaluateBadges(nextEngagement, {
+      adventuresCompleted,
+      milesWalked,
+      collectionComplete: collectionId,
+      nightCapture: isNightHunt(),
+      firstFinder: isFirstFinder,
+      founderHuntComplete: isFounder,
+    });
+  }
 
   return {
     coins,
@@ -401,6 +459,21 @@ export function applyAdventureCompletion(state, adventure, adventures) {
   };
 }
 
+export function getFeaturedCollectionProgress(state, adventures) {
+  return getAllCollectionProgress(state, adventures)
+    .filter((c) => c.total > 0)
+    .sort((a, b) => {
+      if (a.complete !== b.complete) return a.complete ? 1 : -1;
+      return b.pct - a.pct;
+    });
+}
+
+export function formatCollectionProgressBar(found, total, width = 5) {
+  if (!total) return '░'.repeat(width);
+  const filled = Math.round((found / total) * width);
+  return `${'█'.repeat(Math.min(width, filled))}${'░'.repeat(Math.max(0, width - filled))}`;
+}
+
 export function getPassportData(state, adventures) {
   const published = adventures.filter((a) => a.status === 'published');
   const regions = {};
@@ -408,7 +481,7 @@ export function getPassportData(state, adventures) {
   for (const adventure of published) {
     const collectionIds = getAdventureCollectionIds(adventure);
     for (const collectionId of collectionIds) {
-      const def = getCollectionDef(collectionId);
+      const def = getCollectionDef(collectionId, adventures);
       if (!def) continue;
       const region = def.region || def.state || 'National';
       const city = def.city || adventure.city || 'Unknown';

@@ -5154,6 +5154,98 @@ button.marketplace-template {
   width: 100%;
 }
 
+.finale-theme-picker {
+  margin: 12px 0;
+}
+
+.finale-theme-picker h4 {
+  color: #f8fafc;
+  margin-bottom: 4px;
+}
+
+.finale-theme-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.finale-theme-btn {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.finale-theme-btn strong {
+  color: #f8fafc;
+}
+
+.finale-theme-btn span {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.finale-theme-btn.active {
+  border-color: rgba(167, 139, 250, 0.55);
+  background: rgba(167, 139, 250, 0.12);
+}
+
+.collection-series-picker {
+  margin: 12px 0;
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.collection-series-picker h4 {
+  color: #fde68a;
+}
+
+.passport-featured-collections {
+  margin-bottom: 12px;
+  border-color: rgba(94, 234, 212, 0.35);
+}
+
+.passport-series-row {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.passport-series-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.passport-series-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.passport-series-head strong {
+  color: #f8fafc;
+}
+
+.passport-series-bar {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 2px;
+  color: #5eead4;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.passport-series-reward {
+  margin: 6px 0 0;
+  color: #fde68a;
+  font-size: 0.85rem;
+}
+
+.series-complete {
+  color: #5eead4;
+  font-weight: 600;
+}
+
 .whispering-hollow-btn {
   width: auto;
   margin: 8px 0 12px;

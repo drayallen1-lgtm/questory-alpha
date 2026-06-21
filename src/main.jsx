@@ -179,6 +179,7 @@ import {
 import { CinematicAROverlay, ARSceneReplayButton } from './CinematicAR';
 import { ArFinaleBuilder, ClueArSceneBuilder, WhisperingHollowQuickButton } from './ARSceneBuilder';
 import { MediaStudioPanel, insertAssetIntoScene } from './MediaStudioUI';
+import { applyCollectionSeriesPreset, COLLECTION_SERIES_PRESETS } from './collectionSeries';
 import {
   adventureToCreateFormState,
   canRepairWhisperingHollow,
@@ -3408,6 +3409,25 @@ function CreateAdventure({
           onFinaleChange={setArFinale}
           onThemeChange={setArTheme}
         />
+        {showArMode && (
+          <div className="collection-series-picker card mini">
+            <h4>Collection Series</h4>
+            <p className="admin-meta">
+              Group hunts into a series — players unlock badge, medallion, and bonus coins when they finish all.
+            </p>
+            {Object.entries(COLLECTION_SERIES_PRESETS).map(([presetKey, series]) => (
+              <button
+                key={series.id}
+                type="button"
+                className={`ghost media-pack-btn ${meta.collectionId === series.meta.collectionId ? 'active' : ''}`}
+                onClick={() => applyCollectionSeriesPreset(presetKey, setMeta)}
+              >
+                <strong>{series.label}</strong>
+                <span>{series.desc}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <label>Collection Name</label>
         <input
           value={meta.collectionName}
