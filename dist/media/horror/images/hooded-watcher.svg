@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Hooded Watcher">
+  <rect width="400" height="400" fill="#070709"/>
+  <ellipse cx="200" cy="355" rx="100" ry="16" fill="#000" opacity="0.55"/>
+  <path d="M200 55 C130 55 95 130 100 200 L85 330 L145 330 L155 210 L165 330 L235 330 L245 210 L255 330 L315 330 L300 200 C305 130 270 55 200 55 Z" fill="#111116"/>
+  <path d="M155 95 Q200 60 245 95 L240 140 Q200 115 160 140 Z" fill="#0a0a0e"/>
+  <ellipse cx="200" cy="125" rx="55" ry="45" fill="#08080c"/>
+  <circle cx="178" cy="118" r="6" fill="#8b0000" opacity="0.85"/>
+  <circle cx="222" cy="118" r="6" fill="#8b0000" opacity="0.85"/>
+  <path d="M170 145 Q200 160 230 145" stroke="#222" stroke-width="3" fill="none"/>
+  <text x="200" y="382" text-anchor="middle" fill="#5a5a6a" font-family="serif" font-size="14">Hooded Watcher</text>
+</svg>
