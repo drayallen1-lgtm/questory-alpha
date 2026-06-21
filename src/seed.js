@@ -43,6 +43,7 @@ import {
 import { DEFAULT_LAUNCH_FUNNEL, normalizeLaunchFunnel } from './stability';
 import { DEFAULT_GROWTH, normalizeGrowth, mergeAdventureGrowth } from './growth';
 import { normalizeArScene } from './arEngine';
+import { normalizeMediaManifest } from './mediaStudio';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -861,6 +862,7 @@ export function normalizeAdventure(adventure) {
     })),
     arFinale: normalizeArScene(adventure.arFinale || adventure.ar_finale || {}),
     arTheme: adventure.arTheme || adventure.ar_theme || 'none',
+    mediaManifest: normalizeMediaManifest(adventure.mediaManifest || adventure.media_manifest || []),
   };
   const merged = mergeAdventureWorld(
     mergeAdventureExperience(mergeAdventureInventory(normalized))

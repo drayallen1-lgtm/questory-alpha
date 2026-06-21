@@ -64,6 +64,9 @@ export const DEFAULT_AR_SCENE = {
   atmosphere: AR_ATMOSPHERES.NONE,
   jumpScare: false,
   revealText: '',
+  thumbnailUrl: '',
+  allowReplay: true,
+  mediaAssetId: null,
 };
 
 export function normalizeArScene(raw = {}) {
@@ -96,6 +99,9 @@ export function normalizeArScene(raw = {}) {
       : DEFAULT_AR_SCENE.atmosphere,
     jumpScare: Boolean(scene.jumpScare || sceneType === AR_SCENE_TYPES.JUMP_SCARE),
     revealText: String(scene.revealText || ''),
+    thumbnailUrl: String(scene.thumbnailUrl || ''),
+    allowReplay: scene.allowReplay !== false,
+    mediaAssetId: scene.mediaAssetId || null,
   };
 }
 

@@ -319,10 +319,11 @@ export async function upsertAdventure(adventure, creatorId) {
 
   const row = adventureToRow(adventure, creatorId);
   let { error: advError } = await supabase.from('adventures').upsert(row);
-  if (advError && (row.ar_finale != null || row.ar_theme != null)) {
+  if (advError && (row.ar_finale != null || row.ar_theme != null || row.media_manifest != null)) {
     const fallbackRow = { ...row };
     delete fallbackRow.ar_finale;
     delete fallbackRow.ar_theme;
+    delete fallbackRow.media_manifest;
     ({ error: advError } = await supabase.from('adventures').upsert(fallbackRow));
   }
   if (advError) throw advError;

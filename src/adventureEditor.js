@@ -1,5 +1,6 @@
 import { ADVENTURE_STATUS, normalizeAdventure } from './seed';
 import { buildWhisperingHollowPreset, normalizeArScene } from './arEngine';
+import { normalizeMediaManifest } from './mediaStudio';
 import { DEFAULT_RADIUS_METERS } from './geolocation';
 
 export const PUBLISH_REQUIRES_CLUES_MESSAGE = 'Add at least one clue before publishing.';
@@ -200,6 +201,7 @@ export function adventureToCreateFormState(adventure) {
     experienceSettings: adventure.experienceSettings || {},
     arFinale: normalizeArScene(adventure.arFinale),
     arTheme: adventure.arTheme || 'none',
+    mediaManifest: normalizeMediaManifest(adventure.mediaManifest || []),
   };
 }
 

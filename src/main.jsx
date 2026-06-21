@@ -178,6 +178,7 @@ import {
 } from './arEngine';
 import { CinematicAROverlay, ARSceneReplayButton } from './CinematicAR';
 import { ArFinaleBuilder, ClueArSceneBuilder, WhisperingHollowQuickButton } from './ARSceneBuilder';
+import { MediaStudioPanel, insertAssetIntoScene } from './MediaStudioUI';
 import {
   adventureToCreateFormState,
   canRepairWhisperingHollow,
@@ -1829,7 +1830,10 @@ function AdventurePlay({
   const clueArScene = !atClaim && clue ? getClueArScene(clue) : null;
   const clueSceneId = clue ? getArSceneId(adventure.id, clue.id, 'clue') : null;
   const canReplayClueAr =
-    clueArScene?.enabled && clueSceneId && progress.arScenesCompleted?.includes(clueSceneId);
+    clueArScene?.enabled &&
+    clueArScene?.allowReplay !== false &&
+    clueSceneId &&
+    progress.arScenesCompleted?.includes(clueSceneId);
 
   function handleCoinSpend(type) {
     let result;
@@ -2785,6 +2789,7 @@ function CreateAdventure({
   const [locStatus, setLocStatus] = useState(null);
   const [arFinale, setArFinale] = useState(emptyArScene());
   const [arTheme, setArTheme] = useState('none');
+  const [mediaManifest, setMediaManifest] = useState([]);
   const showArMode = meta.finderMode === FINDER_MODES.AR_ENHANCED;
   const editingAdventure = editingAdventureId
     ? state.adventures.find((a) => a.id === editingAdventureId)
@@ -2809,6 +2814,7 @@ function CreateAdventure({
     setExperienceSettings(form.experienceSettings);
     setArFinale(form.arFinale);
     setArTheme(form.arTheme);
+    setMediaManifest(form.mediaManifest || []);
     setFormError('');
     setSaveFeedback(null);
     loadedEditIdRef.current = editingAdventureId;
@@ -2900,6 +2906,22 @@ function CreateAdventure({
     );
     setRewards(rewardsFromTemplates(buildTemplateRewards(config.adventureTemplate)));
     setFormError('');
+  }
+
+  function handleInsertMediaAsset(asset, target) {
+    if (target === 'finale') {
+      setArFinale((prev) => insertAssetIntoScene(prev || emptyArScene(), asset));
+      return;
+    }
+    const match = /^clue-(\d+)$/.exec(target || '');
+    const index = match ? parseInt(match[1], 10) : 0;
+    setClues((list) =>
+      list.map((c, i) =>
+        i === index
+          ? { ...c, arScene: insertAssetIntoScene(c.arScene || emptyArScene(), asset) }
+          : c
+      )
+    );
   }
 
   function updateClue(id, patch) {
@@ -3065,6 +3087,7 @@ function CreateAdventure({
       arAssetType: meta.arAssetType || 'ghost_lantern',
       arFinale: normalizeArScene(arFinale),
       arTheme: arTheme || 'none',
+      mediaManifest,
       heatCategory: 'trending',
       tier: meta.tier || 'standard',
       premiumCoinCost: parseInt(meta.premiumCoinCost, 10) || 250,
@@ -3322,6 +3345,17 @@ function CreateAdventure({
             <ArAssetSelector
               value={meta.arAssetType}
               onChange={(arAssetType) => setMeta((m) => ({ ...m, arAssetType }))}
+            />
+            <MediaStudioPanel
+              userId={userId}
+              adventureId={editingAdventureId || null}
+              mediaManifest={mediaManifest}
+              onManifestChange={setMediaManifest}
+              onInsertAsset={handleInsertMediaAsset}
+              clues={clues}
+              setClues={setClues}
+              setArFinale={setArFinale}
+              showArMode={showArMode}
             />
             <WhisperingHollowQuickButton
               onApply={() =>

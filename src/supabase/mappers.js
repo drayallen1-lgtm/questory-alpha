@@ -102,6 +102,7 @@ export function rowToAdventure(row, clues = []) {
     growthAnalytics: row.growth_analytics || {},
     arFinale: row.ar_finale || {},
     arTheme: row.ar_theme || 'none',
+    mediaManifest: row.media_manifest || [],
   });
 }
 
@@ -184,6 +185,7 @@ export function adventureToRow(adventure, creatorId) {
     growth_analytics: adventure.growthAnalytics || {},
     ar_finale: adventure.arFinale || {},
     ar_theme: adventure.arTheme || 'none',
+    media_manifest: adventure.mediaManifest || [],
   };
 }
 
