@@ -2909,6 +2909,22 @@ function CreateAdventure({
     setFormError('');
   }
 
+  function handleGenerateScene(result, target) {
+    if (!result?.ok || !result.scene) return;
+    if (target === 'finale') {
+      setArFinale(result.scene);
+      if (result.suggestions?.finaleTheme?.arTheme) {
+        setArTheme(result.suggestions.finaleTheme.arTheme);
+      }
+      return;
+    }
+    const match = /^clue-(\d+)$/.exec(target || '');
+    const index = match ? parseInt(match[1], 10) : 0;
+    setClues((list) =>
+      list.map((c, i) => (i === index ? { ...c, arScene: result.scene } : c))
+    );
+  }
+
   function handleInsertMediaAsset(asset, target) {
     if (target === 'finale') {
       setArFinale((prev) => insertAssetIntoScene(prev || emptyArScene(), asset));
@@ -3353,6 +3369,7 @@ function CreateAdventure({
               mediaManifest={mediaManifest}
               onManifestChange={setMediaManifest}
               onInsertAsset={handleInsertMediaAsset}
+              onGenerateScene={handleGenerateScene}
               clues={clues}
               setClues={setClues}
               setArFinale={setArFinale}

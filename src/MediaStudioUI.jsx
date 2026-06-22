@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import {
   ACCEPTED_MEDIA,
-  AI_SCENE_GENERATE_SCAFFOLD,
   HORROR_ASSET_LIBRARY,
   HORROR_QUICK_PACKS,
   LIBRARY_CATEGORIES,
@@ -23,6 +22,7 @@ import {
   insertAssetIntoScene,
   normalizeMediaManifest,
 } from './mediaStudio';
+import { AI_SCENE_GENERATOR, generateSceneFromPrompt } from './aiSceneGenerator';
 import { uploadMediaFile, libraryAssetToMediaAsset } from './supabase/mediaService';
 import { HorrorAnimationPreview } from './horrorAssets/animations';
 
@@ -124,12 +124,89 @@ function UploadProgressBar({ progress }) {
   );
 }
 
+function GeneratedSceneSummary({ result }) {
+  const s = result.summary;
+  if (!s) return null;
+  return (
+    <div className="ai-scene-result card mini">
+      <h4>Generated Scene</h4>
+      <dl className="ai-scene-result-grid">
+        <div><dt>Title</dt><dd>{s.title}</dd></div>
+        <div><dt>Scene Type</dt><dd>{s.sceneType}</dd></div>
+        {s.visuals?.length > 0 && (
+          <div><dt>Visuals</dt><dd>{s.visuals.join(' · ')}</dd></div>
+        )}
+        {s.audio?.length > 0 && (
+          <div><dt>Audio</dt><dd>{s.audio.join(' · ')}</dd></div>
+        )}
+        <div><dt>Overlay</dt><dd>&ldquo;{s.overlayText}&rdquo;</dd></div>
+        <div><dt>Trigger</dt><dd>{s.trigger}</dd></div>
+        <div><dt>Duration</dt><dd>{s.durationSeconds} seconds</dd></div>
+        <div><dt>Replay</dt><dd>{s.replay}</dd></div>
+        {s.finaleTheme && (
+          <div><dt>Finale Suggestion</dt><dd>{s.finaleTheme}</dd></div>
+        )}
+      </dl>
+      <p className="admin-meta ai-scene-applied">Scene card inserted into your selected target above.</p>
+    </div>
+  );
+}
+
+function AISceneGeneratorPanel({ insertTarget, onGenerateScene }) {
+  const [prompt, setPrompt] = useState('');
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+
+  function handleGenerate() {
+    setError('');
+    const generated = generateSceneFromPrompt(prompt);
+    if (!generated.ok) {
+      setError(generated.message);
+      setResult(null);
+      return;
+    }
+    setResult(generated);
+    onGenerateScene?.(generated, insertTarget);
+  }
+
+  return (
+    <div className="ai-scene-generator card mini">
+      <h4>
+        <Wand2 size={16} /> {AI_SCENE_GENERATOR.label}
+      </h4>
+      <p className="admin-meta">
+        Tell Questory the story — local AI matches assets, audio, and overlay instantly. No API. No uploads.
+      </p>
+      <textarea
+        className="ai-scene-prompt"
+        rows={4}
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder={AI_SCENE_GENERATOR.placeholder}
+      />
+      <div className="ai-scene-examples">
+        {AI_SCENE_GENERATOR.examples.map((ex) => (
+          <button key={ex} type="button" className="ghost ai-scene-example-btn" onClick={() => setPrompt(ex)}>
+            {ex.length > 72 ? `${ex.slice(0, 72)}…` : ex}
+          </button>
+        ))}
+      </div>
+      <button type="button" className="ai-scene-generate-btn" onClick={handleGenerate} disabled={!prompt.trim()}>
+        <Sparkles size={16} /> {AI_SCENE_GENERATOR.label}
+      </button>
+      {error && <p className="media-upload-error">{error}</p>}
+      {result?.ok && <GeneratedSceneSummary result={result} />}
+    </div>
+  );
+}
+
 export function MediaStudioPanel({
   userId,
   adventureId,
   mediaManifest = [],
   onManifestChange,
   onInsertAsset,
+  onGenerateScene,
   clues = [],
   setClues,
   setArFinale,
@@ -279,6 +356,8 @@ export function MediaStudioPanel({
         ))}
         <option value="finale">AR Finale</option>
       </select>
+
+      <AISceneGeneratorPanel insertTarget={insertTarget} onGenerateScene={onGenerateScene} />
 
       <div
         className={`media-drop-zone ${dragOver ? 'drag-over' : ''}`}
@@ -431,10 +510,6 @@ export function MediaStudioPanel({
           ))}
         </ul>
       </div>
-
-      <button type="button" className="ghost ai-scene-scaffold" disabled title={AI_SCENE_GENERATE_SCAFFOLD.placeholderPrompt}>
-        <Wand2 size={16} /> {AI_SCENE_GENERATE_SCAFFOLD.label}
-      </button>
 
       <AssetPreviewModal
         asset={previewAsset}

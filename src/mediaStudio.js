@@ -271,9 +271,9 @@ export function appendToManifest(manifest, asset) {
   return [normalized, ...list];
 }
 
-/** Phase 2 AI scaffold */
+/** @deprecated use AI_SCENE_GENERATOR from aiSceneGenerator.js */
 export const AI_SCENE_GENERATE_SCAFFOLD = {
-  enabled: false,
-  label: 'Generate Scene (Coming Soon)',
+  enabled: true,
+  label: 'Generate Scene',
   placeholderPrompt: 'A little girl standing beneath a rusted swing at dusk.',
 };
