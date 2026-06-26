@@ -51,6 +51,15 @@ const behind = computeEntityState(
 console.assert(behind.wrapClass.includes('entity-behind'), 'behind player styling');
 console.assert(behind.opacity < 1, 'behind has reduced opacity');
 
+const teleport = computeEntityState(
+  [
+    { time: 0, action: 'appear', position: 'top-left' },
+    { time: 2, action: 'teleport', to: 'bottom-right' },
+  ],
+  2.5
+);
+console.assert(teleport.position === SPATIAL_POSITIONS.BOTTOM_RIGHT, 'teleport snaps position');
+
 console.assert(normalizePosition('top left') === SPATIAL_POSITIONS.TOP_LEFT, 'position alias');
 
 console.log('entityEngine tests passed');

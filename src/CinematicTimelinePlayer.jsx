@@ -1,12 +1,12 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { SkipForward } from 'lucide-react';
 import { normalizeArScene } from './arEngine';
 import { getCameraFxClassList } from './cameraFxEngine';
 import {
   computePlaybackAtTime,
   createTimelineRunner,
-  resolveTimelineAudioUrl,
 } from './timelineEngine';
+import { createAudioTimelineController } from './audioTimelineEngine';
 import { ARCameraFrame, ARAnimatedEntity, ARTimelineBar } from './cinematicComponents';
 
 function useTimelinePlayback(scene, { onComplete, paused = false }) {
@@ -14,39 +14,19 @@ function useTimelinePlayback(scene, { onComplete, paused = false }) {
     computePlaybackAtTime(scene, 0, 0)
   );
   const runnerRef = useRef(null);
-  const audioPoolRef = useRef([]);
-
-  const stopAudio = useCallback(() => {
-    audioPoolRef.current.forEach((a) => {
-      try {
-        a.pause();
-        a.src = '';
-      } catch {
-        /* ignore */
-      }
-    });
-    audioPoolRef.current = [];
-  }, []);
-
-  const playAudioEvent = useCallback((event) => {
-    const url = resolveTimelineAudioUrl(event.asset);
-    if (!url) return;
-    const audio = new Audio(url);
-    audio.volume = event.volume != null ? Math.min(1, Math.max(0, event.volume)) : 0.85;
-    audio.loop = Boolean(event.loop);
-    audio.preload = 'auto';
-    audio.play().catch(() => {});
-    audioPoolRef.current.push(audio);
-  }, []);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     if (paused) return undefined;
 
+    const audioController = createAudioTimelineController();
+    audioRef.current = audioController;
+
     const runner = createTimelineRunner(
       scene,
       (snapshot, prevElapsed) => {
+        audioController.sync(scene.timeline, snapshot.elapsed, prevElapsed);
         setPlayback(snapshot);
-        snapshot.newAudioEvents?.forEach(playAudioEvent);
       },
       () => {
         setPlayback((p) => ({ ...p, phase: 'outro', complete: true }));
@@ -58,9 +38,10 @@ function useTimelinePlayback(scene, { onComplete, paused = false }) {
 
     return () => {
       runner.stop();
-      stopAudio();
+      audioController.stopAll();
+      audioRef.current = null;
     };
-  }, [scene, paused, playAudioEvent, stopAudio]);
+  }, [scene, paused]);
 
   return playback;
 }

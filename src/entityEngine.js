@@ -156,6 +156,10 @@ export function computeEntityState(timeline, elapsed) {
     if (e.action === 'retreat' && elapsed >= e.time + (e.duration ?? 2)) {
       position = normalizePosition(e.to || SPATIAL_POSITIONS.FAR);
     }
+    if (e.action === 'teleport') {
+      position = normalizePosition(e.to || e.position || position);
+      anchorOverride = null;
+    }
   }
 
   for (const e of timeline || []) {

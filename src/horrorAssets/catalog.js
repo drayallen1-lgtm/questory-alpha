@@ -30,6 +30,8 @@ export const HORROR_AUDIO = {
   musicBox: aud('music-box.wav'),
   radioStatic: aud('radio-static.wav'),
   swingCreak: aud('swing-creak.wav'),
+  heartbeat: aud('heartbeat.wav'),
+  scream: aud('scream.wav'),
 };
 
 export function resolveHorrorAssetUrl(asset) {

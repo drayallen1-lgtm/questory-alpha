@@ -1,5 +1,6 @@
 import { HORROR_AUDIO } from './horrorAssets/catalog.js';
 import { computeEntityState } from './entityEngine.js';
+import { resolveChoreographyFx } from './choreographyEngine.js';
 
 /** Timeline action identifiers (Sweep 10.1) */
 export const TIMELINE_ACTIONS = {
@@ -41,6 +42,12 @@ export const TIMELINE_ACTIONS = {
   PULSE: 'pulse',
   FADE_ENTITY_IN: 'fadeEntityIn',
   FADE_ENTITY_OUT: 'fadeEntityOut',
+  // Audio + choreography (Sweep 10.3)
+  AMBIENCE: 'ambience',
+  FADE_AUDIO: 'fadeAudio',
+  SCREAM: 'scream',
+  SHAKE: 'shake',
+  TELEPORT: 'teleport',
 };
 
 export const PERSISTENT_FX = new Set([
@@ -82,6 +89,8 @@ export const TIMELINE_AUDIO_ASSETS = {
   footsteps: HORROR_AUDIO.footsteps,
   musicbox: HORROR_AUDIO.musicBox,
   music: HORROR_AUDIO.musicBox,
+  heartbeat: HORROR_AUDIO.heartbeat,
+  scream: HORROR_AUDIO.scream,
 };
 
 export function resolveTimelineAudioUrl(asset) {
@@ -114,6 +123,11 @@ export function normalizeTimelineEvent(raw = {}) {
     fromScale: raw.fromScale != null ? Number(raw.fromScale) : undefined,
     toScale: raw.toScale != null ? Number(raw.toScale) : undefined,
     scale: raw.scale != null ? Number(raw.scale) : undefined,
+    track: raw.track != null ? String(raw.track) : undefined,
+    id: raw.id != null ? String(raw.id) : undefined,
+    fadeIn: raw.fadeIn != null ? Number(raw.fadeIn) : undefined,
+    fadeOut: raw.fadeOut != null ? Number(raw.fadeOut) : undefined,
+    volumeTo: raw.volumeTo != null ? Number(raw.volumeTo) : undefined,
   };
 }
 
@@ -170,14 +184,10 @@ export function legacySceneToTimeline(scene = {}) {
   }
 
   if (scene.audioUrl) {
-    events.push({
-      time: 2.2,
-      action: TIMELINE_ACTIONS.PLAY_AUDIO,
-      asset: scene.audioUrl,
-      loop: !scene.assetUrl,
-      volume: 0.85,
-    });
+    // custom SFX handled in buildLegacyAudioLayers
   }
+
+  events.push(...buildLegacyAudioLayers(scene, duration));
 
   if (scene.overlayText) {
     events.push({ time: 2.8, action: TIMELINE_ACTIONS.OVERLAY, text: scene.overlayText });
@@ -252,6 +262,7 @@ function getActiveFx(timeline, elapsed) {
       if (elapsed <= e.time + dur) active.add(e.action);
     }
   }
+  resolveChoreographyFx(timeline, elapsed).forEach((fx) => active.add(fx));
   return active;
 }
 
@@ -262,6 +273,76 @@ function getAudioTriggers(timeline, elapsed, prevElapsed) {
     if (e.time > prevElapsed && e.time <= elapsed) triggers.push(e);
   }
   return triggers;
+}
+
+/** Layered audio script for legacy horror scenes (Sweep 10.3). */
+function buildLegacyAudioLayers(scene, duration) {
+  const layers = [];
+  const isGhost = scene.sceneType === 'ghost';
+  const isJump = scene.jumpScare || scene.sceneType === 'jump_scare';
+
+  layers.push({
+    time: 0,
+    action: TIMELINE_ACTIONS.PLAY_AUDIO,
+    asset: 'wind',
+    loop: true,
+    volume: 0.3,
+    fadeIn: 1.4,
+    track: 'amb-wind',
+  });
+
+  if (isGhost || scene.atmosphere === 'fog') {
+    layers.push({
+      time: 2,
+      action: TIMELINE_ACTIONS.PLAY_AUDIO,
+      asset: 'creak',
+      volume: 0.68,
+      track: 'sfx-creak',
+    });
+  }
+
+  if (scene.audioUrl) {
+    layers.push({
+      time: 2.2,
+      action: TIMELINE_ACTIONS.PLAY_AUDIO,
+      asset: scene.audioUrl,
+      loop: false,
+      volume: 0.85,
+      track: 'sfx-custom',
+    });
+  } else if (isGhost) {
+    layers.push({
+      time: 4,
+      action: TIMELINE_ACTIONS.PLAY_AUDIO,
+      asset: 'whisper',
+      volume: 0.72,
+      track: 'sfx-whisper',
+    });
+  }
+
+  if (isJump) {
+    layers.push({
+      time: Math.max(0, duration - 1.4),
+      action: TIMELINE_ACTIONS.PLAY_AUDIO,
+      asset: 'heartbeat',
+      loop: true,
+      volume: 0.48,
+      fadeIn: 0.85,
+      track: 'sfx-heartbeat',
+    });
+    layers.push({
+      time: Math.max(0, duration - 0.55),
+      action: TIMELINE_ACTIONS.SCREAM,
+    });
+    layers.push({
+      time: Math.max(0, duration - 0.2),
+      action: TIMELINE_ACTIONS.STOP_AUDIO,
+      track: 'amb-wind',
+      fadeOut: 0.35,
+    });
+  }
+
+  return layers;
 }
 
 /**

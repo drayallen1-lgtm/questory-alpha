@@ -155,6 +155,47 @@ function swingCreak() {
   return out;
 }
 
+function heartbeat() {
+  let out = [];
+  for (let beat = 0; beat < 8; beat++) {
+    const thump = fade(
+      Array.from({ length: Math.floor(SR * 0.14) }, (_, i) => {
+        const t = i / SR;
+        return Math.sin(2 * Math.PI * 52 * t) * Math.exp(-t * 22) * 0.65;
+      }),
+      0.002,
+      0.06
+    );
+    const thump2 = fade(
+      Array.from({ length: Math.floor(SR * 0.1) }, (_, i) => {
+        const t = i / SR;
+        return Math.sin(2 * Math.PI * 68 * t) * Math.exp(-t * 28) * 0.35;
+      }),
+      0.001,
+      0.04
+    );
+    out = out.concat(mix(thump, thump2));
+    out = out.concat(new Array(Math.floor(SR * (0.52 + beat * 0.02))).fill(0));
+  }
+  return fade(out, 0.05, 0.2);
+}
+
+function scream() {
+  const n = Math.floor(SR * 1.4);
+  return fade(
+    Array.from({ length: n }, (_, i) => {
+      const t = i / SR;
+      const pitch = 420 + t * 380 + Math.sin(i / 40) * 60;
+      const voice = Math.sin((2 * Math.PI * pitch * i) / SR) * 0.35;
+      const noiseLayer = (Math.random() * 2 - 1) * 0.28;
+      const envelope = Math.min(1, t * 8) * Math.max(0, 1 - (t - 0.9) * 4);
+      return (voice + noiseLayer) * envelope;
+    }),
+    0.01,
+    0.25
+  );
+}
+
 const files = {
   'child-laughter.wav': childLaughter(),
   'whispering-voices.wav': whispering(),
@@ -163,6 +204,8 @@ const files = {
   'music-box.wav': musicBox(),
   'radio-static.wav': radioStatic(),
   'swing-creak.wav': swingCreak(),
+  'heartbeat.wav': heartbeat(),
+  'scream.wav': scream(),
 };
 
 mkdirSync(OUT, { recursive: true });
