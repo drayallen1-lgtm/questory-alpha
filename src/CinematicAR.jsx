@@ -138,10 +138,11 @@ export function ARScenePlayer({
   }, [useCamera]);
 
   useEffect(() => {
-    if (scene.audioUrl && audioRef.current) {
-      audioRef.current.play().catch(() => {});
-    }
-  }, [scene.audioUrl]);
+    const audio = audioRef.current;
+    if (!scene.audioUrl || !audio) return;
+    audio.loop = !scene.assetUrl || scene.assetType === 'none';
+    audio.play().catch(() => {});
+  }, [scene.audioUrl, scene.assetUrl, scene.assetType]);
 
   useEffect(() => {
     if (phase !== 'playing') return undefined;
@@ -169,7 +170,10 @@ export function ARScenePlayer({
   }
 
   function handleSkip() {
-    onSkip?.();
+    if (onSkip) {
+      onSkip();
+      return;
+    }
     onComplete?.();
   }
 

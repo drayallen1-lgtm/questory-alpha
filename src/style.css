@@ -4695,7 +4695,9 @@ button.marketplace-template {
   font-size: 18px;
   line-height: 1.45;
   margin: 16px auto 8px;
-  max-width: 32ch;
+  max-width: min(92vw, 42rem);
+  white-space: pre-wrap;
+  word-break: normal;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
 }
 

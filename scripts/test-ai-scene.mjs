@@ -7,6 +7,7 @@ const prompts = [
 
 for (const p of prompts) {
   const r = generateSceneFromPrompt(p);
-  console.log('\n---', p.slice(0, 50), '...');
-  console.log(r.ok ? r.summary : r.message);
+  console.log('\n---');
+  console.log('overlay:', r.ok ? r.overlayText : r.message);
+  console.log('title:', r.ok ? r.title : '');
 }

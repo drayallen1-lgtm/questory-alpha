@@ -899,6 +899,8 @@ export function getAdventureProgress(state, adventureId) {
     };
   return {
     ...base,
+    step: base.step ?? 0,
+    bonuses: Array.isArray(base.bonuses) ? base.bonuses : [],
     arScenesCompleted: Array.isArray(base.arScenesCompleted) ? base.arScenesCompleted : [],
   };
 }

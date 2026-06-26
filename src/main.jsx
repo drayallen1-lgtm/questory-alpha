@@ -614,63 +614,77 @@ function QuestoryApp() {
     }
   }
 
-  function solveClue(adventure) {
-    const p = getAdventureProgress(state, adventure.id);
-    const clueDuration = Date.now() - clueStartRef.current;
-    const nextStep = Math.min(adventure.clues.length, p.step + 1);
-    const bonus = adventure.bonusFinds.find(
-      (b) => b.afterStep === p.step && !p.bonuses.includes(b.id)
+  function advanceClueForAdventure(s, adventure, startRef) {
+    const clues = Array.isArray(adventure?.clues) ? adventure.clues : [];
+    const bonusFinds = Array.isArray(adventure?.bonusFinds) ? adventure.bonusFinds : [];
+    const p = getAdventureProgress(s, adventure.id);
+    const clueDuration = Date.now() - (startRef?.current || Date.now());
+    const total = clues.length;
+    const nextStep = total > 0 ? Math.min(total, p.step + 1) : p.step + 1;
+    const bonus = bonusFinds.find(
+      (b) => b && b.afterStep === p.step && !p.bonuses.includes(b.id)
     );
 
-    setState((s) => {
-      const current = getAdventureProgress(s, adventure.id);
-      const bonuses = bonus ? [...current.bonuses, bonus.id] : current.bonuses;
-      const bonusRewards = bonus
-        ? [
-            createVaultReward({
-              id: `${adventure.id}-${bonus.id}`,
-              type: bonus.type === 'coupon' ? 'coupon' : 'bonus',
-              icon: bonus.icon,
-              title: bonus.title,
-              desc: bonus.couponCode ? `${bonus.desc} Code: ${bonus.couponCode}` : bonus.desc,
-              valueLabel: bonus.type === 'coupon' ? 'Bonus coupon' : 'Trail bonus',
-              redemptionInstructions: bonus.couponCode
-                ? `Use code ${bonus.couponCode} at the sponsor location.`
-                : 'Collect your bonus in the Questory Vault.',
-              expirationDays: bonus.type === 'coupon' ? 30 : 0,
-              adventureId: adventure.id,
-              adventureTitle: adventure.title,
-              sponsorName: getSponsorInfo(adventure).name,
-              sponsorLogoUrl: getSponsorInfo(adventure).logoUrl,
-              sponsorWebsite: getSponsorInfo(adventure).website,
-            }),
-          ]
-        : [];
+    const bonuses = bonus ? [...p.bonuses, bonus.id] : p.bonuses;
+    const bonusRewards = bonus
+      ? [
+          createVaultReward({
+            id: `${adventure.id}-${bonus.id}`,
+            type: bonus.type === 'coupon' ? 'coupon' : 'bonus',
+            icon: bonus.icon,
+            title: bonus.title,
+            desc: bonus.couponCode ? `${bonus.desc} Code: ${bonus.couponCode}` : bonus.desc,
+            valueLabel: bonus.type === 'coupon' ? 'Bonus coupon' : 'Trail bonus',
+            redemptionInstructions: bonus.couponCode
+              ? `Use code ${bonus.couponCode} at the sponsor location.`
+              : 'Collect your bonus in the Questory Vault.',
+            expirationDays: bonus.type === 'coupon' ? 30 : 0,
+            adventureId: adventure.id,
+            adventureTitle: adventure.title,
+            sponsorName: getSponsorInfo(adventure).name,
+            sponsorLogoUrl: getSponsorInfo(adventure).logoUrl,
+            sponsorWebsite: getSponsorInfo(adventure).website,
+          }),
+        ]
+      : [];
 
-      const nextRewards = [...s.rewards, ...bonusRewards];
-      const completedAllClues = nextStep >= adventure.clues.length;
-      const nextState = {
-        ...s,
-        coins: s.coins + (bonus?.coins || 0),
-        progress: {
-          ...s.progress,
-          [adventure.id]: { ...current, step: nextStep, bonuses },
-        },
-        rewards: nextRewards,
-        claimHistory: syncClaimHistory(nextRewards, s.claimHistory),
-        screen: bonus
-          ? 'bonus'
-          : completedAllClues && adventureUsesFinder(adventure) && usesFinderFlow(adventure)
-            ? 'medallion-signal'
-            : s.screen,
-        pendingBonus: bonus || null,
-      };
+    const existingRewards = Array.isArray(s.rewards) ? s.rewards : [];
+    const nextRewards = [...existingRewards, ...bonusRewards];
+    const completedAllClues = total === 0 || nextStep >= total;
+    const claimHistory = Array.isArray(s.claimHistory) ? s.claimHistory : [];
+
+    let nextState = {
+      ...s,
+      coins: s.coins + (bonus?.coins || 0),
+      progress: {
+        ...s.progress,
+        [adventure.id]: { ...p, step: nextStep, bonuses },
+      },
+      rewards: nextRewards,
+      claimHistory: syncClaimHistory(nextRewards, claimHistory),
+      screen: bonus
+        ? 'bonus'
+        : completedAllClues && adventureUsesFinder(adventure) && usesFinderFlow(adventure)
+          ? 'medallion-signal'
+          : s.screen,
+      pendingBonus: bonus || null,
+    };
+
+    if (startRef) startRef.current = Date.now();
+    if (total > 0) {
+      nextState = recordGhostRun(nextState, adventure.id, p.step, clueDuration);
+    }
+    return nextState;
+  }
+
+  function solveClue(adventure) {
+    setState((s) => {
+      const nextState = advanceClueForAdventure(s, adventure, clueStartRef);
       if (isSupabaseMode && user) {
         syncProfile(nextState);
         syncRewardsAndHistory(nextState.rewards, nextState.claimHistory);
       }
-      clueStartRef.current = Date.now();
-      return recordGhostRun(nextState, adventure.id, p.step, clueDuration);
+      return nextState;
     });
   }
 
@@ -1067,6 +1081,13 @@ function QuestoryApp() {
             nav={nav}
             adminPreview={state.adminPreview}
             clueStartRef={clueStartRef}
+            advanceClueForAdventure={advanceClueForAdventure}
+            onClueAdvanced={(nextState) => {
+              if (isSupabaseMode && user) {
+                syncProfile(nextState);
+                syncRewardsAndHistory(nextState.rewards, nextState.claimHistory);
+              }
+            }}
           />
         )}
         {state.screen === 'medallion-signal' && selected && (
@@ -1780,12 +1801,15 @@ function AdventurePlay({
   nav,
   adminPreview,
   clueStartRef,
+  advanceClueForAdventure,
+  onClueAdvanced,
 }) {
-  const total = adventure.clues.length;
-  const atClaim = progress.step >= total;
-  const clueIndex = Math.min(progress.step, total - 1);
-  const clue = adventure.clues[clueIndex];
-  const pct = progress.claimed ? 100 : Math.round((progress.step / total) * 100);
+  const clues = Array.isArray(adventure?.clues) ? adventure.clues : [];
+  const total = clues.length;
+  const atClaim = total === 0 || progress.step >= total;
+  const clueIndex = total > 0 ? Math.min(progress.step, total - 1) : 0;
+  const clue = total > 0 ? clues[clueIndex] : null;
+  const pct = progress.claimed ? 100 : total > 0 ? Math.round((progress.step / total) * 100) : 100;
   const method = adventure.claimMethod || CLAIM_METHOD.SECRET_CODE;
   const finderFlow = adventureUsesFinder(adventure);
   const awaitingFinder = atClaim && finderFlow && !progress.medallionTapped && !progress.claimed;
@@ -1802,30 +1826,48 @@ function AdventurePlay({
   const [activeAr, setActiveAr] = useState(null);
 
   function completeArScene() {
-    if (activeAr?.sceneId) {
-      setState((s) => markArSceneComplete(s, adventure.id, activeAr.sceneId));
-    }
-    const after = activeAr?.afterComplete;
+    const snapshot = activeAr;
     setActiveAr(null);
-    after?.();
+    if (!snapshot) return;
+
+    setState((s) => {
+      let next = s;
+      if (snapshot.sceneId) {
+        next = markArSceneComplete(next, adventure.id, snapshot.sceneId);
+      }
+      if (snapshot.advanceClue && advanceClueForAdventure) {
+        next = advanceClueForAdventure(next, adventure, clueStartRef);
+        onClueAdvanced?.(next);
+      }
+      return next;
+    });
   }
 
-  function queueArScene(trigger, afterComplete, forceReplay = false) {
+  function queueArScene(trigger, { advanceClue = false, forceReplay = false } = {}) {
+    const shouldAdvance = advanceClue && !forceReplay;
+
+    function maybeAdvanceClue(s) {
+      if (!shouldAdvance || !advanceClueForAdventure) return s;
+      const next = advanceClueForAdventure(s, adventure, clueStartRef);
+      onClueAdvanced?.(next);
+      return next;
+    }
+
     if (atClaim || !clue) {
-      afterComplete?.();
+      if (shouldAdvance) setState((s) => maybeAdvanceClue(s));
       return;
     }
     const scene = getClueArScene(clue);
     if (!matchesArTrigger(scene, trigger)) {
-      afterComplete?.();
+      if (shouldAdvance) setState((s) => maybeAdvanceClue(s));
       return;
     }
     const sceneId = getArSceneId(adventure.id, clue.id, 'clue');
     if (!shouldPlayArScene(scene, progress, sceneId, { forceReplay })) {
-      afterComplete?.();
+      if (shouldAdvance) setState((s) => maybeAdvanceClue(s));
       return;
     }
-    setActiveAr({ scene, sceneId, afterComplete });
+    setActiveAr({ scene, sceneId, advanceClue: shouldAdvance });
   }
 
   const clueArScene = !atClaim && clue ? getClueArScene(clue) : null;
@@ -1956,7 +1998,7 @@ function AdventurePlay({
             />
             <CluePlayContent
               clue={clue}
-              onAnswer={() => queueArScene('after_answer', onSolve)}
+              onAnswer={() => queueArScene('after_answer', { advanceClue: true })}
             />
             <GhostTrailHint state={state} adventureId={adventure.id} clueIndex={clueIndex} />
             {dynamicHint && <p className="coin-hint">{dynamicHint}</p>}
@@ -1976,12 +2018,12 @@ function AdventurePlay({
             />
             <GpsCheckIn
               clue={clue}
-              onUnlock={() => queueArScene('after_checkin', onSolve)}
-              disabled={clue.branchOptions?.length > 0 && !progress.pathId}
+              onUnlock={() => queueArScene('after_checkin', { advanceClue: true })}
+              disabled={Array.isArray(clue.branchOptions) && clue.branchOptions.length > 0 && !progress.pathId}
             />
             {canReplayClueAr && (
               <ARSceneReplayButton
-                onClick={() => queueArScene(clueArScene.trigger, null, true)}
+                onClick={() => queueArScene(clueArScene.trigger, { forceReplay: true })}
               />
             )}
           </>
@@ -2009,12 +2051,13 @@ function AdventurePlay({
         )}
       </div>
 
-      {progress.bonuses.length > 0 && (
+      {(progress.bonuses?.length ?? 0) > 0 && (
         <div className="card">
           <h3>Bonus Finds Collected</h3>
           <div className="chips">
             {progress.bonuses.map((id) => {
-              const b = adventure.bonusFinds.find((x) => x.id === id);
+              const bonusFinds = Array.isArray(adventure.bonusFinds) ? adventure.bonusFinds : [];
+              const b = bonusFinds.find((x) => x.id === id);
               return b ? <span key={id}>{b.icon} {b.title}</span> : null;
             })}
           </div>

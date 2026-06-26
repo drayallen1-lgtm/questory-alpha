@@ -65,16 +65,29 @@ function normalizeText(prompt) {
 
 function extractOverlayText(prompt) {
   const raw = String(prompt || '');
-  const quoted = raw.match(/["']([^"']{2,120})["']/);
-  if (quoted?.[1]) return quoted[1].trim();
+
+  // Double-quoted dialogue — apostrophes inside are preserved (e.g. "Don't look back.")
+  const doubleQuoted = raw.match(/"([^"]{2,200})"/);
+  if (doubleQuoted?.[1]) return doubleQuoted[1].trim();
+
+  const singleQuoted = raw.match(/'([^']{2,200})'/);
+  if (singleQuoted?.[1]) return singleQuoted[1].trim();
+
+  const saysQuoted = raw.match(
+    /(?:says?|whispers?|murmurs?|cries?|screams?|speaks?|calls?|utters?)[,:]?\s*"([^"]{2,200})"/i
+  );
+  if (saysQuoted?.[1]) return saysQuoted[1].trim();
 
   const saysMatch = raw.match(
-    /(?:says?|whispers?|murmurs?|cries?|screams?|speaks?|calls?|utters?)[,:]?\s*["']?([^."'\n]{2,120})/i
+    /(?:says?|whispers?|murmurs?|cries?|screams?|speaks?|calls?|utters?)[,:]?\s+(.+?)(?:[.!?]\s*$|[.!?]\s+(?:The|A|An)\s)/i
   );
-  if (saysMatch?.[1]) return saysMatch[1].trim().replace(/["']$/, '');
+  if (saysMatch?.[1]) return saysMatch[1].trim().replace(/^["']|["']$/g, '');
 
-  const radioMatch = raw.match(/(?:radio|static|signal)[^:]*:\s*["']?([^."'\n]{2,120})/i);
-  if (radioMatch?.[1]) return radioMatch[1].trim().replace(/["']$/, '');
+  const radioQuoted = raw.match(/(?:radio|static|signal)[^:]*:\s*"([^"]{2,200})"/i);
+  if (radioQuoted?.[1]) return radioQuoted[1].trim();
+
+  const radioMatch = raw.match(/(?:radio|static|signal)[^:]*:\s*(.+?)(?:[.!?]\s*$)/i);
+  if (radioMatch?.[1]) return radioMatch[1].trim().replace(/^["']|["']$/g, '');
 
   return '';
 }
