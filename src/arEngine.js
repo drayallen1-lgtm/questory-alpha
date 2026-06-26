@@ -1,5 +1,10 @@
 import { HORROR_AUDIO, HORROR_IMAGES } from './horrorAssets/catalog';
 import { normalizeSceneDialogueFields, sanitizeDialogueField } from './dialogueExtract';
+import {
+  getTimelineDuration,
+  normalizeTimeline,
+  resolveSceneTimeline,
+} from './timelineEngine';
 
 export const AR_SCENE_TYPES = {
   GHOST: 'ghost',
@@ -70,6 +75,7 @@ export const DEFAULT_AR_SCENE = {
   thumbnailUrl: '',
   allowReplay: true,
   mediaAssetId: null,
+  timeline: [],
 };
 
 export function normalizeArScene(raw = {}) {
@@ -79,34 +85,45 @@ export function normalizeArScene(raw = {}) {
     ? sceneFields.sceneType
     : DEFAULT_AR_SCENE.sceneType;
   const dialogue = normalizeSceneDialogueFields(sceneFields, _dialoguePrompt);
-  return {
+  const baseScene = {
     ...DEFAULT_AR_SCENE,
     ...sceneFields,
     enabled: Boolean(scene.enabled),
     sceneType,
     title: sanitizeDialogueField(scene.title),
     description: dialogue.description,
-    assetType: Object.values(AR_ASSET_TYPES).includes(scene.assetType)
-      ? scene.assetType
+    assetType: Object.values(AR_ASSET_TYPES).includes(sceneFields.assetType)
+      ? sceneFields.assetType
       : DEFAULT_AR_SCENE.assetType,
-    assetUrl: String(scene.assetUrl || ''),
-    audioUrl: String(scene.audioUrl || scene.assetUrl || ''),
+    assetUrl: String(sceneFields.assetUrl || ''),
+    audioUrl: String(sceneFields.audioUrl || sceneFields.assetUrl || ''),
     overlayText: dialogue.overlayText,
-    durationSeconds: Math.max(3, Number(scene.durationSeconds) || DEFAULT_AR_SCENE.durationSeconds),
-    trigger: Object.values(AR_TRIGGERS).includes(scene.trigger)
-      ? scene.trigger
+    trigger: Object.values(AR_TRIGGERS).includes(sceneFields.trigger)
+      ? sceneFields.trigger
       : DEFAULT_AR_SCENE.trigger,
-    interaction: Object.values(AR_INTERACTIONS).includes(scene.interaction)
-      ? scene.interaction
+    interaction: Object.values(AR_INTERACTIONS).includes(sceneFields.interaction)
+      ? sceneFields.interaction
       : DEFAULT_AR_SCENE.interaction,
-    atmosphere: Object.values(AR_ATMOSPHERES).includes(scene.atmosphere)
-      ? scene.atmosphere
+    atmosphere: Object.values(AR_ATMOSPHERES).includes(sceneFields.atmosphere)
+      ? sceneFields.atmosphere
       : DEFAULT_AR_SCENE.atmosphere,
-    jumpScare: Boolean(scene.jumpScare || sceneType === AR_SCENE_TYPES.JUMP_SCARE),
+    jumpScare: Boolean(sceneFields.jumpScare || sceneType === AR_SCENE_TYPES.JUMP_SCARE),
     revealText: dialogue.revealText,
-    thumbnailUrl: String(scene.thumbnailUrl || ''),
-    allowReplay: scene.allowReplay !== false,
-    mediaAssetId: scene.mediaAssetId || null,
+    thumbnailUrl: String(sceneFields.thumbnailUrl || ''),
+    allowReplay: sceneFields.allowReplay !== false,
+    mediaAssetId: sceneFields.mediaAssetId || null,
+    durationSeconds: Math.max(3, Number(sceneFields.durationSeconds) || DEFAULT_AR_SCENE.durationSeconds),
+  };
+  const customTimeline = normalizeTimeline(sceneFields.timeline);
+  const timeline = customTimeline.length ? customTimeline : resolveSceneTimeline(baseScene);
+  const durationSeconds = getTimelineDuration(
+    timeline,
+    baseScene.durationSeconds
+  );
+  return {
+    ...baseScene,
+    timeline,
+    durationSeconds,
   };
 }
 
