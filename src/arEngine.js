@@ -1,4 +1,5 @@
 import { HORROR_AUDIO, HORROR_IMAGES } from './horrorAssets/catalog';
+import { normalizeSceneDialogueFields, sanitizeDialogueField } from './dialogueExtract';
 
 export const AR_SCENE_TYPES = {
   GHOST: 'ghost',
@@ -73,22 +74,24 @@ export const DEFAULT_AR_SCENE = {
 
 export function normalizeArScene(raw = {}) {
   const scene = raw && typeof raw === 'object' ? raw : {};
-  const sceneType = Object.values(AR_SCENE_TYPES).includes(scene.sceneType)
-    ? scene.sceneType
+  const { _dialoguePrompt, ...sceneFields } = scene;
+  const sceneType = Object.values(AR_SCENE_TYPES).includes(sceneFields.sceneType)
+    ? sceneFields.sceneType
     : DEFAULT_AR_SCENE.sceneType;
+  const dialogue = normalizeSceneDialogueFields(sceneFields, _dialoguePrompt);
   return {
     ...DEFAULT_AR_SCENE,
-    ...scene,
+    ...sceneFields,
     enabled: Boolean(scene.enabled),
     sceneType,
-    title: String(scene.title || ''),
-    description: String(scene.description || ''),
+    title: sanitizeDialogueField(scene.title),
+    description: dialogue.description,
     assetType: Object.values(AR_ASSET_TYPES).includes(scene.assetType)
       ? scene.assetType
       : DEFAULT_AR_SCENE.assetType,
     assetUrl: String(scene.assetUrl || ''),
     audioUrl: String(scene.audioUrl || scene.assetUrl || ''),
-    overlayText: String(scene.overlayText || ''),
+    overlayText: dialogue.overlayText,
     durationSeconds: Math.max(3, Number(scene.durationSeconds) || DEFAULT_AR_SCENE.durationSeconds),
     trigger: Object.values(AR_TRIGGERS).includes(scene.trigger)
       ? scene.trigger
@@ -100,7 +103,7 @@ export function normalizeArScene(raw = {}) {
       ? scene.atmosphere
       : DEFAULT_AR_SCENE.atmosphere,
     jumpScare: Boolean(scene.jumpScare || sceneType === AR_SCENE_TYPES.JUMP_SCARE),
-    revealText: String(scene.revealText || ''),
+    revealText: dialogue.revealText,
     thumbnailUrl: String(scene.thumbnailUrl || ''),
     allowReplay: scene.allowReplay !== false,
     mediaAssetId: scene.mediaAssetId || null,

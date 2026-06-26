@@ -7,6 +7,7 @@ import {
 } from './arEngine';
 import { libraryAssetForInsert } from './horrorAssets/catalog';
 import { getFinaleTheme } from './finaleThemes';
+import { extractQuotedDialogue, sanitizeDialogueField } from './dialogueExtract';
 import { findLibraryAsset, insertAssetIntoScene } from './mediaStudio';
 
 /** Local horror keyword engine — no API, instant matching */
@@ -64,32 +65,7 @@ function normalizeText(prompt) {
 }
 
 function extractOverlayText(prompt) {
-  const raw = String(prompt || '');
-
-  // Double-quoted dialogue — apostrophes inside are preserved (e.g. "Don't look back.")
-  const doubleQuoted = raw.match(/"([^"]{2,200})"/);
-  if (doubleQuoted?.[1]) return doubleQuoted[1].trim();
-
-  const singleQuoted = raw.match(/'([^']{2,200})'/);
-  if (singleQuoted?.[1]) return singleQuoted[1].trim();
-
-  const saysQuoted = raw.match(
-    /(?:says?|whispers?|murmurs?|cries?|screams?|speaks?|calls?|utters?)[,:]?\s*"([^"]{2,200})"/i
-  );
-  if (saysQuoted?.[1]) return saysQuoted[1].trim();
-
-  const saysMatch = raw.match(
-    /(?:says?|whispers?|murmurs?|cries?|screams?|speaks?|calls?|utters?)[,:]?\s+(.+?)(?:[.!?]\s*$|[.!?]\s+(?:The|A|An)\s)/i
-  );
-  if (saysMatch?.[1]) return saysMatch[1].trim().replace(/^["']|["']$/g, '');
-
-  const radioQuoted = raw.match(/(?:radio|static|signal)[^:]*:\s*"([^"]{2,200})"/i);
-  if (radioQuoted?.[1]) return radioQuoted[1].trim();
-
-  const radioMatch = raw.match(/(?:radio|static|signal)[^:]*:\s*(.+?)(?:[.!?]\s*$)/i);
-  if (radioMatch?.[1]) return radioMatch[1].trim().replace(/^["']|["']$/g, '');
-
-  return '';
+  return extractQuotedDialogue(prompt);
 }
 
 function matchBest(text, entries) {
@@ -223,7 +199,7 @@ export function generateSceneFromPrompt(prompt) {
   }
 
   const text = normalizeText(trimmed);
-  const overlayText = extractOverlayText(trimmed);
+  const overlayRaw = extractOverlayText(trimmed);
 
   const characterEntry = matchBest(text, HORROR_DICTIONARY.characters);
   const locationEntry = matchBest(text, HORROR_DICTIONARY.locations);
@@ -236,6 +212,10 @@ export function generateSceneFromPrompt(prompt) {
       message: 'Could not match horror assets. Try words like ghost, swing, tree, whisper, or lantern.',
     };
   }
+
+  const overlayText = sanitizeDialogueField(
+    overlayRaw || (characterEntry ? `${characterEntry.label} appears...` : 'Something is watching.')
+  );
 
   const sceneType = detectSceneType(text, Boolean(characterEntry));
   const trigger = suggestTrigger(text, sceneType);
@@ -263,7 +243,8 @@ export function generateSceneFromPrompt(prompt) {
     enabled: true,
     title,
     description: buildDescription(trimmed, characterEntry, locationEntry, audioEntries),
-    overlayText: overlayText || (characterEntry ? `${characterEntry.label} appears...` : 'Something is watching.'),
+    overlayText,
+    _dialoguePrompt: trimmed,
     sceneType,
     trigger,
     durationSeconds,

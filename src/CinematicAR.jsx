@@ -212,11 +212,11 @@ export function ARScenePlayer({
 
           <ARAssetPreview scene={scene} />
 
-          {scene.overlayText && (
+          {scene.overlayText ? (
             <p className={`cinematic-ar-overlay-text ${phase === 'intro' ? 'flicker' : ''}`}>
               {scene.overlayText}
             </p>
-          )}
+          ) : null}
 
           {revealed && scene.revealText && (
             <p className="cinematic-ar-reveal-text">{scene.revealText}</p>
