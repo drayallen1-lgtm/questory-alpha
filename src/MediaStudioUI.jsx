@@ -5,6 +5,7 @@ import {
   ImagePlus,
   Mic,
   Package,
+  Play,
   Sparkles,
   Upload,
   Volume2,
@@ -23,6 +24,7 @@ import {
   normalizeMediaManifest,
 } from './mediaStudio';
 import { AI_SCENE_GENERATOR, generateSceneFromPrompt } from './aiSceneGenerator';
+import { ScenePreviewOverlay } from './CinematicAR';
 import { uploadMediaFile, libraryAssetToMediaAsset } from './supabase/mediaService';
 import { HorrorAnimationPreview } from './horrorAssets/animations';
 
@@ -124,7 +126,7 @@ function UploadProgressBar({ progress }) {
   );
 }
 
-function GeneratedSceneSummary({ result }) {
+function GeneratedSceneSummary({ result, onPreview }) {
   const s = result.summary;
   if (!s) return null;
   return (
@@ -139,6 +141,9 @@ function GeneratedSceneSummary({ result }) {
         {s.audio?.length > 0 && (
           <div><dt>Audio</dt><dd>{s.audio.join(' · ')}</dd></div>
         )}
+        {s.timeline && (
+          <div><dt>Timeline</dt><dd>{s.timeline}</dd></div>
+        )}
         <div><dt>Overlay</dt><dd>&ldquo;{s.overlayText}&rdquo;</dd></div>
         <div><dt>Trigger</dt><dd>{s.trigger}</dd></div>
         <div><dt>Duration</dt><dd>{s.durationSeconds} seconds</dd></div>
@@ -147,6 +152,13 @@ function GeneratedSceneSummary({ result }) {
           <div><dt>Finale Suggestion</dt><dd>{s.finaleTheme}</dd></div>
         )}
       </dl>
+      <div className="ai-scene-result-actions">
+        {result.scene?.enabled && (
+          <button type="button" className="ghost ar-scene-preview-btn" onClick={() => onPreview?.(result.scene)}>
+            <Play size={16} /> Preview Scene
+          </button>
+        )}
+      </div>
       <p className="admin-meta ai-scene-applied">Scene card inserted into your selected target above.</p>
     </div>
   );
@@ -156,6 +168,7 @@ function AISceneGeneratorPanel({ insertTarget, onGenerateScene }) {
   const [prompt, setPrompt] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [previewScene, setPreviewScene] = useState(null);
 
   function handleGenerate() {
     setError('');
@@ -195,7 +208,14 @@ function AISceneGeneratorPanel({ insertTarget, onGenerateScene }) {
         <Sparkles size={16} /> {AI_SCENE_GENERATOR.label}
       </button>
       {error && <p className="media-upload-error">{error}</p>}
-      {result?.ok && <GeneratedSceneSummary result={result} />}
+      {result?.ok && (
+        <GeneratedSceneSummary result={result} onPreview={setPreviewScene} />
+      )}
+      <ScenePreviewOverlay
+        scene={previewScene}
+        open={Boolean(previewScene?.enabled)}
+        onClose={() => setPreviewScene(null)}
+      />
     </div>
   );
 }

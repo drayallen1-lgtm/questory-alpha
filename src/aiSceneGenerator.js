@@ -9,6 +9,7 @@ import { libraryAssetForInsert } from './horrorAssets/catalog';
 import { getFinaleTheme } from './finaleThemes';
 import { extractQuotedDialogue, sanitizeDialogueField } from './dialogueExtract';
 import { findLibraryAsset, insertAssetIntoScene } from './mediaStudio';
+import { buildCinematicTimeline, summarizeTimeline } from './aiTimelineGenerator';
 
 /** Local horror keyword engine — no API, instant matching */
 export const HORROR_DICTIONARY = {
@@ -266,6 +267,25 @@ export function generateSceneFromPrompt(prompt) {
     scene = normalizeArScene({ ...scene, audioUrl });
   }
 
+  const { timeline, durationSeconds: timelineDuration } = buildCinematicTimeline({
+    sceneType,
+    characterEntry,
+    locationEntry,
+    audioEntries,
+    overlayText: scene.overlayText,
+    durationSeconds,
+    atmosphere,
+    jumpScare,
+  });
+
+  scene = normalizeArScene({
+    ...scene,
+    timeline,
+    durationSeconds: timelineDuration,
+  });
+
+  const timelineSummary = summarizeTimeline(scene.timeline);
+
   const finaleTheme = finaleHint ? getFinaleTheme(finaleHint.themeId) : null;
 
   return {
@@ -276,7 +296,7 @@ export function generateSceneFromPrompt(prompt) {
     sceneType,
     overlayText: scene.overlayText,
     trigger,
-    durationSeconds,
+    durationSeconds: scene.durationSeconds,
     allowReplay: true,
     matched: {
       character: characterEntry,
@@ -296,8 +316,9 @@ export function generateSceneFromPrompt(prompt) {
       audioEntries,
       overlayText: scene.overlayText,
       trigger,
-      durationSeconds,
+      durationSeconds: scene.durationSeconds,
       finaleTheme,
+      timelineSummary,
     }),
   };
 }
@@ -311,6 +332,7 @@ function buildGenerationSummary({
   trigger,
   durationSeconds,
   finaleTheme,
+  timelineSummary,
 }) {
   const sceneTypeLabels = {
     ghost: 'Ghost Appearance',
@@ -338,6 +360,9 @@ function buildGenerationSummary({
     durationSeconds,
     replay: 'Enabled',
     finaleTheme: finaleTheme?.label || null,
+    timeline: timelineSummary?.eventCount
+      ? `${timelineSummary.eventCount} events · ${timelineSummary.audioLayers} audio · ${timelineSummary.choreographySteps} choreography`
+      : null,
   };
 }
 

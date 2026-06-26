@@ -5114,9 +5114,25 @@ button.marketplace-template {
   margin-top: 8px;
 }
 
-.ar-scene-save-hint {
+.ar-scene-save-hint,
+.ar-scene-preview-btn {
   width: auto;
   margin-top: 8px;
+}
+
+.ar-scene-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-color: rgba(94, 234, 212, 0.45);
+  color: #99f6e4;
+}
+
+.ai-scene-result-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
 .media-studio-panel {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronUp, Play, Sparkles } from 'lucide-react';
 import {
   AR_ASSET_TYPES,
   AR_ATMOSPHERES,
@@ -12,6 +12,7 @@ import {
 } from './arEngine';
 import { getSceneThumbnail, triggerLabel } from './mediaStudio';
 import { FINALE_THEME_LIST, applyFinaleTheme, detectFinaleThemeId } from './finaleThemes';
+import { ScenePreviewOverlay } from './CinematicAR';
 
 function SceneThumbnail({ scene }) {
   const thumb = getSceneThumbnail(scene);
@@ -26,6 +27,7 @@ function SceneThumbnail({ scene }) {
 function VisualSceneCard({ scene, onChange, compact = false }) {
   const s = normalizeArScene(scene);
   const [expanded, setExpanded] = useState(!s.enabled);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   function patch(fields) {
     onChange(normalizeArScene({ ...s, ...fields }));
@@ -182,6 +184,14 @@ function VisualSceneCard({ scene, onChange, compact = false }) {
 
               <button
                 type="button"
+                className="ghost ar-scene-preview-btn"
+                onClick={() => setPreviewOpen(true)}
+              >
+                <Play size={16} /> Preview Scene
+              </button>
+
+              <button
+                type="button"
                 className="ghost ar-scene-save-hint"
                 onClick={() => setExpanded(false)}
               >
@@ -191,6 +201,12 @@ function VisualSceneCard({ scene, onChange, compact = false }) {
           )}
         </div>
       )}
+
+      <ScenePreviewOverlay
+        scene={s}
+        open={previewOpen && s.enabled}
+        onClose={() => setPreviewOpen(false)}
+      />
     </div>
   );
 }
