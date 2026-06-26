@@ -7,7 +7,7 @@ import {
   createTimelineRunner,
   resolveTimelineAudioUrl,
 } from './timelineEngine';
-import { ARCameraFrame, ARAssetPreview, ARTimelineBar } from './cinematicComponents';
+import { ARCameraFrame, ARAnimatedEntity, ARTimelineBar } from './cinematicComponents';
 
 function useTimelinePlayback(scene, { onComplete, paused = false }) {
   const [playback, setPlayback] = useState(() =>
@@ -173,16 +173,14 @@ export function CinematicTimelinePlayer({
           <div className="fx-layer fx-chromatic-layer" />
         </div>
 
+        <div className="cinematic-ar-entity-layer" aria-hidden={!playback.entity?.visible}>
+          <ARAnimatedEntity scene={scene} entity={playback.entity} />
+        </div>
+
         <div className="cinematic-ar-content">
           {scene.title && playback.elapsed > 0.3 && (
             <h2 className="cinematic-ar-title">{scene.title}</h2>
           )}
-
-          <div
-            className={`cinematic-ar-entity ${playback.showAsset ? 'visible' : 'hidden'}`}
-          >
-            <ARAssetPreview scene={scene} />
-          </div>
 
           {playback.showOverlay && playback.overlayText ? (
             <p className="cinematic-ar-overlay-text">{playback.overlayText}</p>

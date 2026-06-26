@@ -76,6 +76,22 @@ export function ARAssetPreview({ scene }) {
   return <div className="cinematic-ar-asset icon-asset">{icon}</div>;
 }
 
+export function ARAnimatedEntity({ scene, entity }) {
+  if (!entity) return null;
+
+  return (
+    <div
+      className={`cinematic-ar-entity-wrap ${entity.wrapClass || ''}`}
+      style={entity.style}
+      aria-hidden={!entity.visible}
+    >
+      <div className={`cinematic-ar-entity-inner ${entity.innerClass || ''}`}>
+        <ARAssetPreview scene={scene} />
+      </div>
+    </div>
+  );
+}
+
 export function ARTimelineBar({ durationSeconds, elapsed, className = '' }) {
   const pct = durationSeconds > 0 ? Math.min(100, (elapsed / durationSeconds) * 100) : 0;
   return (

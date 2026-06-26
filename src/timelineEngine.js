@@ -1,4 +1,5 @@
 import { HORROR_AUDIO } from './horrorAssets/catalog.js';
+import { computeEntityState } from './entityEngine.js';
 
 /** Timeline action identifiers (Sweep 10.1) */
 export const TIMELINE_ACTIONS = {
@@ -24,6 +25,22 @@ export const TIMELINE_ACTIONS = {
   RED_FLASH: 'redFlash',
   WHITE_FLASH: 'whiteFlash',
   WAIT: 'wait',
+  // Entity choreography (Sweep 10.2)
+  APPEAR: 'appear',
+  DISAPPEAR: 'disappear',
+  FLOAT: 'float',
+  DRIFT: 'drift',
+  BREATHE: 'breathe',
+  BLINK: 'blink',
+  SCALE: 'scale',
+  ROTATE: 'rotate',
+  MOVE: 'move',
+  APPROACH: 'approach',
+  RETREAT: 'retreat',
+  LOOK_AT_PLAYER: 'lookAtPlayer',
+  PULSE: 'pulse',
+  FADE_ENTITY_IN: 'fadeEntityIn',
+  FADE_ENTITY_OUT: 'fadeEntityOut',
 };
 
 export const PERSISTENT_FX = new Set([
@@ -91,6 +108,12 @@ export function normalizeTimelineEvent(raw = {}) {
     volume: raw.volume != null ? Number(raw.volume) : undefined,
     loop: raw.loop != null ? Boolean(raw.loop) : undefined,
     position: raw.position != null ? String(raw.position) : undefined,
+    from: raw.from != null ? String(raw.from) : undefined,
+    to: raw.to != null ? String(raw.to) : undefined,
+    depth: raw.depth != null ? String(raw.depth) : undefined,
+    fromScale: raw.fromScale != null ? Number(raw.fromScale) : undefined,
+    toScale: raw.toScale != null ? Number(raw.toScale) : undefined,
+    scale: raw.scale != null ? Number(raw.scale) : undefined,
   };
 }
 
@@ -131,9 +154,19 @@ export function legacySceneToTimeline(scene = {}) {
   if (scene.assetUrl && scene.assetType !== 'none') {
     const showAction =
       scene.sceneType === 'ghost' ? TIMELINE_ACTIONS.SHOW_GHOST : TIMELINE_ACTIONS.SHOW_ASSET;
-    events.push({ time: 1.8, action: showAction, position: 'center' });
+    const ghostPos = scene.sceneType === 'ghost' ? 'bottom-left' : 'center';
+    events.push({ time: 1.8, action: showAction, position: ghostPos });
+    if (scene.sceneType === 'ghost') {
+      events.push({ time: 1.9, action: TIMELINE_ACTIONS.FADE_ENTITY_IN, duration: 1.1 });
+      events.push({ time: 2, action: TIMELINE_ACTIONS.FLOAT });
+      events.push({ time: 3.2, action: TIMELINE_ACTIONS.APPROACH, duration: 2.8, to: 'close' });
+      events.push({ time: 2.2, action: TIMELINE_ACTIONS.BREATHE });
+    }
   } else if (scene.sceneType === 'ghost') {
-    events.push({ time: 1.8, action: TIMELINE_ACTIONS.SHOW_GHOST, position: 'center' });
+    events.push({ time: 1.8, action: TIMELINE_ACTIONS.SHOW_GHOST, position: 'bottom-left' });
+    events.push({ time: 1.9, action: TIMELINE_ACTIONS.FADE_ENTITY_IN, duration: 1.1 });
+    events.push({ time: 2, action: TIMELINE_ACTIONS.FLOAT });
+    events.push({ time: 3.2, action: TIMELINE_ACTIONS.APPROACH, duration: 2.8, to: 'close' });
   }
 
   if (scene.audioUrl) {
@@ -157,6 +190,7 @@ export function legacySceneToTimeline(scene = {}) {
   if (scene.jumpScare || scene.sceneType === 'jump_scare') {
     events.push({ time: Math.max(0, duration - 1.4), action: TIMELINE_ACTIONS.HEARTBEAT });
     events.push({ time: Math.max(0, duration - 1.1), action: TIMELINE_ACTIONS.CAMERA_SHAKE });
+    events.push({ time: Math.max(0, duration - 0.9), action: TIMELINE_ACTIONS.FADE_ENTITY_OUT, duration: 0.35 });
     events.push({ time: Math.max(0, duration - 0.45), action: TIMELINE_ACTIONS.WHITE_FLASH });
   }
 
@@ -237,7 +271,8 @@ export function computePlaybackAtTime(scene, elapsed, prevElapsed = 0) {
   const timeline = Array.isArray(scene.timeline) ? scene.timeline : [];
   const duration = scene.durationSeconds || getTimelineDuration(timeline);
   const opacity = computeSceneOpacity(timeline, elapsed, duration);
-  const showAsset = isAssetVisible(timeline, elapsed);
+  const entity = computeEntityState(timeline, elapsed);
+  const showAsset = entity.visible || isAssetVisible(timeline, elapsed);
   const overlayText = latestTextEvent(timeline, elapsed, TIMELINE_ACTIONS.OVERLAY);
   const revealText = latestTextEvent(timeline, elapsed, TIMELINE_ACTIONS.REVEAL);
   const activeFx = getActiveFx(timeline, elapsed);
@@ -252,6 +287,7 @@ export function computePlaybackAtTime(scene, elapsed, prevElapsed = 0) {
     duration,
     opacity,
     showAsset,
+    entity,
     showOverlay: Boolean(overlayText),
     overlayText,
     revealText,
