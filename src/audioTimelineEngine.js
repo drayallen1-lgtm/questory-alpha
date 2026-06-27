@@ -74,10 +74,11 @@ function computeVolume(track, elapsed) {
 /**
  * Runtime controller — sync each animation frame with timeline elapsed time.
  */
-export function createAudioTimelineController() {
+export function createAudioTimelineController(options = {}) {
   /** @type {Map<string, object>} */
   const tracks = new Map();
   const triggered = new Set();
+  let autoplayBlocked = false;
 
   function startTrack(key, event, elapsed) {
     const asset = event.action === 'scream' ? 'scream' : event.asset;
@@ -101,7 +102,10 @@ export function createAudioTimelineController() {
       stopped: false,
     };
 
-    audio.play().catch(() => {});
+    audio.play().catch(() => {
+      autoplayBlocked = true;
+      options.onAutoplayBlocked?.();
+    });
     tracks.set(key, track);
     audio.volume = computeVolume(track, elapsed);
   }
@@ -196,6 +200,19 @@ export function createAudioTimelineController() {
       tracks.clear();
       triggered.clear();
     },
+
+    unlockAll() {
+      autoplayBlocked = false;
+      tracks.forEach((track) => {
+        if (track.stopped) return;
+        track.audio.play().catch(() => {
+          autoplayBlocked = true;
+          options.onAutoplayBlocked?.();
+        });
+      });
+    },
+
+    isBlocked: () => autoplayBlocked,
   };
 }
 

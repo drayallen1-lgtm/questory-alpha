@@ -174,16 +174,17 @@ function generateTitle(text, characterEntry, locationEntry) {
   return `The ${noun}`;
 }
 
-function buildDescription(prompt, characterEntry, locationEntry, audioEntries) {
-  const extras = [];
+function buildShortDescription(characterEntry, locationEntry) {
   if (characterEntry && locationEntry) {
-    extras.push(`${characterEntry.label} near the ${locationEntry.label.toLowerCase()}.`);
+    return `A presence gathers near the ${locationEntry.label.toLowerCase()}.`;
   }
-  if (audioEntries.length) {
-    extras.push(`Audio: ${audioEntries.map((a) => a.label).join(', ')}.`);
+  if (characterEntry) {
+    return `Something unseen draws closer.`;
   }
-  if (!extras.length) return prompt.trim();
-  return `${prompt.trim()} ${extras.join(' ')}`;
+  if (locationEntry) {
+    return `The ${locationEntry.label.toLowerCase()} waits in silence.`;
+  }
+  return 'The air grows still.';
 }
 
 function libraryAssetByDictEntry(entry) {
@@ -243,7 +244,7 @@ export function generateSceneFromPrompt(prompt) {
   let scene = normalizeArScene({
     enabled: true,
     title,
-    description: buildDescription(trimmed, characterEntry, locationEntry, audioEntries),
+    description: buildShortDescription(characterEntry, locationEntry),
     overlayText,
     _dialoguePrompt: trimmed,
     sceneType,
@@ -256,6 +257,8 @@ export function generateSceneFromPrompt(prompt) {
         : AR_INTERACTIONS.WATCH,
     jumpScare,
     allowReplay: true,
+    silhouette:
+      characterEntry?.assetId === 'ghost-shadow' || characterEntry?.assetId === 'ghost-hooded',
   });
 
   if (primaryVisual) {
@@ -355,7 +358,9 @@ function buildGenerationSummary({
     sceneType: sceneTypeLabels[sceneType] || sceneType,
     visuals: visualAssets.filter(Boolean).map((a) => a.title),
     audio: audioEntries.map((a) => a.label),
+    dialogue: overlayText,
     overlayText,
+    fx: timelineSummary?.fxSummary || null,
     trigger: triggerLabels[trigger] || trigger,
     durationSeconds,
     replay: 'Enabled',

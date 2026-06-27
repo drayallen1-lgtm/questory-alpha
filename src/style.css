@@ -4692,13 +4692,112 @@ button.marketplace-template {
 
 .cinematic-ar-overlay-text {
   color: #f8fafc;
-  font-size: 18px;
-  line-height: 1.45;
+  font-size: clamp(16px, 4.2vw, 20px);
+  line-height: 1.5;
   margin: 16px auto 8px;
-  max-width: min(92vw, 42rem);
+  max-width: 85%;
   white-space: pre-wrap;
   word-break: normal;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.92), 0 0 24px rgba(0, 0, 0, 0.45);
+  transition: opacity 0.45s ease;
+  letter-spacing: 0.02em;
+}
+
+.cinematic-ar-desc {
+  color: #cbd5e1;
+  font-size: 14px;
+  max-width: 85%;
+  margin: 0 auto 12px;
+  opacity: 0.88;
+}
+
+.cinematic-ar-outro {
+  margin-top: 12px;
+}
+
+.cinematic-ar-complete-label {
+  color: #94a3b8;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+
+.cinematic-audio-unlock {
+  width: auto;
+  margin: 12px auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  border-color: rgba(148, 163, 184, 0.45);
+}
+
+.cinematic-skip-btn {
+  min-height: 40px;
+  min-width: 40px;
+}
+
+.scene-preview-badge {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fcd34d;
+  background: rgba(120, 53, 15, 0.45);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.scene-preview-bar {
+  gap: 10px;
+}
+
+.cinematic-ar-entity-wrap.entity-horror .cinematic-ar-entity-inner {
+  position: relative;
+}
+
+.cinematic-ar-entity-glow {
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(148, 163, 184, 0.22), transparent 68%);
+  filter: blur(8px);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.cinematic-ar-entity-shadow {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -8%;
+  height: 14%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.55), transparent 70%);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+.cinematic-ar-entity-wrap.entity-silhouette .playback-asset,
+.cinematic-ar-entity-wrap.entity-silhouette .cinematic-ar-asset.image {
+  filter: brightness(0.18) contrast(1.35) blur(0.4px);
+  opacity: 0.92;
+}
+
+.cinematic-ar-entity-wrap.entity-horror .playback-asset,
+.cinematic-ar-entity-wrap.entity-horror .cinematic-ar-asset.image {
+  filter: brightness(0.72) contrast(1.08) saturate(0.75);
+  -webkit-mask-image: radial-gradient(ellipse 88% 92% at 50% 48%, #000 52%, transparent 100%);
+  mask-image: radial-gradient(ellipse 88% 92% at 50% 48%, #000 52%, transparent 100%);
+}
+
+.cinematic-ar-entity-wrap.entity-ghost-little-girl .cinematic-ar-entity-glow {
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.18), transparent 70%);
+}
+
+.cinematic-ar-entity-wrap.entity-ghost-shadow .cinematic-ar-entity-glow,
+.cinematic-ar-entity-wrap.entity-ghost-hooded .cinematic-ar-entity-glow {
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.55), transparent 72%);
 }
 
 .cinematic-ar-overlay-text.flicker {
@@ -4904,30 +5003,30 @@ button.marketplace-template {
 
 .cinematic-ar-player.fx-vignette .fx-vignette-layer {
   opacity: 1;
-  background: radial-gradient(circle at center, transparent 35%, rgba(0, 0, 0, 0.72) 100%);
+  background: radial-gradient(circle at center, transparent 42%, rgba(0, 0, 0, 0.62) 100%);
 }
 
 .cinematic-ar-player.fx-darkness .fx-darkness-layer {
   opacity: 1;
-  background: radial-gradient(circle at center, transparent 15%, rgba(0, 0, 0, 0.88) 100%);
+  background: radial-gradient(circle at center, transparent 22%, rgba(0, 0, 0, 0.78) 100%);
 }
 
 .cinematic-ar-player.fx-fog .fx-fog-layer {
   opacity: 1;
-  background: radial-gradient(circle at 50% 85%, rgba(148, 163, 184, 0.42), transparent 68%);
-  animation: ar-fog-drift 8s ease-in-out infinite alternate;
+  background: radial-gradient(circle at 50% 85%, rgba(148, 163, 184, 0.22), transparent 72%);
+  animation: ar-fog-drift 10s ease-in-out infinite alternate;
 }
 
 .cinematic-ar-player.fx-static .fx-static-layer {
-  opacity: 1;
+  opacity: 0.55;
   background: repeating-linear-gradient(
     0deg,
-    rgba(255, 255, 255, 0.04) 0,
-    rgba(255, 255, 255, 0.04) 1px,
+    rgba(255, 255, 255, 0.025) 0,
+    rgba(255, 255, 255, 0.025) 1px,
     transparent 2px,
-    transparent 4px
+    transparent 5px
   );
-  animation: ar-static-flicker 0.12s steps(2) infinite;
+  animation: ar-static-flicker 0.18s steps(2) infinite;
 }
 
 .cinematic-ar-player.fx-flicker .fx-darkness-layer {
@@ -4959,18 +5058,18 @@ button.marketplace-template {
 .cinematic-ar-player.fx-flash .fx-flash-layer,
 .cinematic-ar-player.fx-white-flash .fx-white-flash-layer {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.92);
-  animation: ar-flash 0.35s ease-out;
+  background: rgba(255, 255, 255, 0.88);
+  animation: ar-flash 0.28s ease-out;
 }
 
 .cinematic-ar-player.fx-red-flash .fx-red-flash-layer {
   opacity: 1;
-  background: rgba(220, 38, 38, 0.78);
-  animation: ar-flash 0.4s ease-out;
+  background: rgba(220, 38, 38, 0.72);
+  animation: ar-flash 0.28s ease-out;
 }
 
 .cinematic-ar-player.fx-shake .cinematic-ar-stage {
-  animation: cinematic-shake 0.55s ease-in-out;
+  animation: cinematic-shake 0.42s ease-in-out;
 }
 
 .cinematic-ar-player.timeline-driven {

@@ -29,7 +29,7 @@ export function ARCameraFrame({ stream, fallback = false, className = '' }) {
   );
 }
 
-export function ARAssetPreview({ scene }) {
+export function ARAssetPreview({ scene, playback = false }) {
   if (!scene) return null;
   const { assetType, assetUrl } = scene;
 
@@ -47,7 +47,13 @@ export function ARAssetPreview({ scene }) {
   }
 
   if (assetType === 'image' && assetUrl) {
-    return <img className="cinematic-ar-asset image" src={assetUrl} alt={scene.title || 'AR scene'} />;
+    return (
+      <img
+        className={`cinematic-ar-asset image ${playback ? 'playback-asset' : ''}`}
+        src={assetUrl}
+        alt={scene.title || 'AR scene'}
+      />
+    );
   }
 
   if (assetType === 'model' && assetUrl) {
@@ -79,14 +85,21 @@ export function ARAssetPreview({ scene }) {
 export function ARAnimatedEntity({ scene, entity }) {
   if (!entity) return null;
 
+  const assetId = scene?.mediaAssetId || '';
+  const ghostIds = ['ghost-little-girl', 'ghost-shadow', 'ghost-woman-white', 'ghost-hooded'];
+  const isGhost = scene?.sceneType === 'ghost' || ghostIds.includes(assetId);
+  const ghostKind = ghostIds.find((id) => assetId === id) || (isGhost ? 'ghost' : '');
+
   return (
     <div
-      className={`cinematic-ar-entity-wrap ${entity.wrapClass || ''}`}
+      className={`cinematic-ar-entity-wrap ${entity.wrapClass || ''} ${isGhost ? 'entity-horror' : ''} ${ghostKind ? `entity-${ghostKind}` : ''} ${scene?.silhouette ? 'entity-silhouette' : ''}`}
       style={entity.style}
       aria-hidden={!entity.visible}
     >
       <div className={`cinematic-ar-entity-inner ${entity.innerClass || ''}`}>
-        <ARAssetPreview scene={scene} />
+        <div className="cinematic-ar-entity-glow" aria-hidden="true" />
+        <div className="cinematic-ar-entity-shadow" aria-hidden="true" />
+        <ARAssetPreview scene={scene} playback />
       </div>
     </div>
   );

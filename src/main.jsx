@@ -1947,7 +1947,6 @@ function AdventurePlay({
         open={Boolean(activeAr)}
         scene={activeAr?.scene}
         onComplete={completeArScene}
-        onSkip={completeArScene}
         useCamera={usesArFinder(adventure)}
       />
       <div className="card">

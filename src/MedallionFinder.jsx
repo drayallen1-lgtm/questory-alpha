@@ -352,7 +352,6 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
         open={finaleArOpen}
         scene={arFinale}
         onComplete={completeFinaleAr}
-        onSkip={completeFinaleAr}
         useCamera={usesArFinder(adventure)}
       />
       <button

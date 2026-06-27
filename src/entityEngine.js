@@ -166,12 +166,13 @@ export function computeEntityState(timeline, elapsed) {
     const dur = e.duration ?? 0.8;
 
     if (e.action === 'fadeEntityIn' || e.action === 'fadeInEntity') {
+      const target = e.targetOpacity != null ? clamp01(e.targetOpacity) : 1;
       if (elapsed >= e.time && elapsed < e.time + dur) {
         visible = true;
-        opacity = clamp01((elapsed - e.time) / dur);
+        opacity = clamp01((elapsed - e.time) / dur) * target;
       } else if (elapsed >= e.time + dur) {
         visible = true;
-        opacity = 1;
+        opacity = target;
       }
     }
 

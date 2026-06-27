@@ -141,10 +141,18 @@ function GeneratedSceneSummary({ result, onPreview }) {
         {s.audio?.length > 0 && (
           <div><dt>Audio</dt><dd>{s.audio.join(' · ')}</dd></div>
         )}
+        {s.dialogue && (
+          <div><dt>Dialogue</dt><dd>&ldquo;{s.dialogue}&rdquo;</dd></div>
+        )}
+        {s.fx && (
+          <div><dt>FX</dt><dd>{s.fx}</dd></div>
+        )}
         {s.timeline && (
           <div><dt>Timeline</dt><dd>{s.timeline}</dd></div>
         )}
-        <div><dt>Overlay</dt><dd>&ldquo;{s.overlayText}&rdquo;</dd></div>
+        {!s.dialogue && s.overlayText && (
+          <div><dt>Overlay</dt><dd>&ldquo;{s.overlayText}&rdquo;</dd></div>
+        )}
         <div><dt>Trigger</dt><dd>{s.trigger}</dd></div>
         <div><dt>Duration</dt><dd>{s.durationSeconds} seconds</dd></div>
         <div><dt>Replay</dt><dd>{s.replay}</dd></div>

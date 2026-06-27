@@ -7,6 +7,7 @@ import {
   normalizeArScene,
 } from './arEngine';
 import { HORROR_AUDIO, HORROR_IMAGES, libraryAssetForInsert } from './horrorAssets/catalog';
+import { buildPackSceneTimeline } from './horrorTimelineDefaults.js';
 
 export const MEDIA_BUCKET = 'questory-media';
 
@@ -69,31 +70,129 @@ export const HORROR_QUICK_PACKS = {
   whispering_hollow: {
     id: 'whispering_hollow',
     label: 'Whispering Hollow Pack',
-    desc: 'Swing Set ghost · Diary page · Tree finale',
+    desc: 'Porch Scare · Diary Page · Hollow Finale',
     scenes: [
-      { title: 'The Girl Appears', overlayText: "You shouldn't have come here.", description: 'Whispers from the swing...', sceneType: AR_SCENE_TYPES.GHOST, atmosphere: AR_ATMOSPHERES.STATIC, trigger: AR_TRIGGERS.AFTER_CHECKIN, assetId: 'obj-swing', audioId: 'aud-whisper' },
-      { title: 'Diary Page', overlayText: 'A torn page appears...', revealText: "They told me they'd come back.", sceneType: AR_SCENE_TYPES.DIARY, atmosphere: AR_ATMOSPHERES.LANTERN, trigger: AR_TRIGGERS.AFTER_ANSWER, assetId: 'obj-diary' },
-      { title: 'Tree Finale', overlayText: 'Thank you for finding me...', revealText: '...but you were not alone.', sceneType: AR_SCENE_TYPES.JUMP_SCARE, atmosphere: AR_ATMOSPHERES.DARKNESS, trigger: AR_TRIGGERS.FINDER_CAPTURE, assetId: 'obj-dead-tree', audioId: 'aud-laugh', jumpScare: true, isFinale: true },
+      {
+        title: 'Porch Scare',
+        description: 'A presence gathers near the swing.',
+        overlayText: "Don't look back.",
+        sceneType: AR_SCENE_TYPES.GHOST,
+        atmosphere: AR_ATMOSPHERES.FOG,
+        trigger: AR_TRIGGERS.AFTER_CHECKIN,
+        assetId: 'ghost-little-girl',
+        audioId: 'aud-swing',
+        durationSeconds: 8,
+      },
+      {
+        title: 'Diary Page',
+        description: 'Paper glows in the lantern light.',
+        overlayText: "They told me they'd come back.",
+        revealText: 'The ink is still wet.',
+        sceneType: AR_SCENE_TYPES.DIARY,
+        atmosphere: AR_ATMOSPHERES.LANTERN,
+        trigger: AR_TRIGGERS.AFTER_ANSWER,
+        assetId: 'obj-diary',
+        durationSeconds: 8,
+      },
+      {
+        title: 'Hollow Finale',
+        description: 'Branches stir above the oldest tree.',
+        overlayText: 'Thank you for finding me...',
+        revealText: '...but you were not alone.',
+        sceneType: AR_SCENE_TYPES.JUMP_SCARE,
+        atmosphere: AR_ATMOSPHERES.DARKNESS,
+        trigger: AR_TRIGGERS.FINDER_CAPTURE,
+        assetId: 'obj-dead-tree',
+        audioId: 'aud-laugh',
+        jumpScare: true,
+        isFinale: true,
+        durationSeconds: 10,
+      },
     ],
   },
   black_lantern: {
     id: 'black_lantern',
     label: 'Black Lantern Pack',
-    desc: 'Lantern flicker · Hooded figure · Burning finale',
+    desc: 'Lantern flicker · Hooded watcher · Burning finale',
     scenes: [
-      { title: 'Lantern Flicker', overlayText: 'The flame dances without wind.', sceneType: AR_SCENE_TYPES.OBJECT, atmosphere: AR_ATMOSPHERES.LANTERN, trigger: AR_TRIGGERS.AFTER_CHECKIN, assetId: 'obj-lantern', audioId: 'aud-wind' },
-      { title: 'Hooded Figure', overlayText: 'It has been watching.', sceneType: AR_SCENE_TYPES.GHOST, atmosphere: AR_ATMOSPHERES.DARKNESS, trigger: AR_TRIGGERS.AFTER_ANSWER, assetId: 'ghost-hooded', audioId: 'aud-breath' },
-      { title: 'Burning Finale', overlayText: 'The lantern explodes in light.', revealText: 'Run.', sceneType: AR_SCENE_TYPES.JUMP_SCARE, atmosphere: AR_ATMOSPHERES.FLASH, trigger: AR_TRIGGERS.FINDER_CAPTURE, jumpScare: true, isFinale: true, assetId: 'atm-flicker' },
+      {
+        title: 'Lantern Flicker',
+        description: 'The flame dances without wind.',
+        overlayText: 'The flame dances without wind.',
+        sceneType: AR_SCENE_TYPES.OBJECT,
+        atmosphere: AR_ATMOSPHERES.LANTERN,
+        trigger: AR_TRIGGERS.AFTER_CHECKIN,
+        assetId: 'obj-lantern',
+        audioId: 'aud-wind',
+        durationSeconds: 8,
+      },
+      {
+        title: 'Hooded Watcher',
+        description: 'A figure waits in the dark.',
+        overlayText: 'It has been watching.',
+        sceneType: AR_SCENE_TYPES.GHOST,
+        atmosphere: AR_ATMOSPHERES.DARKNESS,
+        trigger: AR_TRIGGERS.AFTER_ANSWER,
+        assetId: 'ghost-hooded',
+        audioId: 'aud-breath',
+        silhouette: true,
+        durationSeconds: 9,
+      },
+      {
+        title: 'Burning Finale',
+        description: 'Light erupts without mercy.',
+        overlayText: 'Run.',
+        sceneType: AR_SCENE_TYPES.JUMP_SCARE,
+        atmosphere: AR_ATMOSPHERES.FLASH,
+        trigger: AR_TRIGGERS.FINDER_CAPTURE,
+        jumpScare: true,
+        isFinale: true,
+        assetId: 'obj-lantern',
+        durationSeconds: 9,
+      },
     ],
   },
   midnight_train: {
     id: 'midnight_train',
     label: 'Midnight Train Pack',
-    desc: 'Conductor · Station whispers · Ghost passenger',
+    desc: 'Conductor · Station static · Ghost passenger',
     scenes: [
-      { title: 'The Conductor', overlayText: 'Tickets, please.', sceneType: AR_SCENE_TYPES.GHOST, atmosphere: AR_ATMOSPHERES.FOG, trigger: AR_TRIGGERS.AFTER_CHECKIN, assetId: 'ghost-hooded', audioId: 'aud-footsteps' },
-      { title: 'Station Whispers', overlayText: 'The platform is empty.', sceneType: AR_SCENE_TYPES.MEMORY, atmosphere: AR_ATMOSPHERES.STATIC, trigger: AR_TRIGGERS.AFTER_ANSWER, assetId: 'atm-static', audioId: 'aud-whisper' },
-      { title: 'Ghost Passenger', overlayText: 'Mind the gap.', revealText: 'You are not on the manifest.', sceneType: AR_SCENE_TYPES.JUMP_SCARE, atmosphere: AR_ATMOSPHERES.DARKNESS, trigger: AR_TRIGGERS.FINDER_CAPTURE, assetId: 'ghost-woman-white', jumpScare: true, isFinale: true },
+      {
+        title: 'The Conductor',
+        description: 'Footsteps echo on an empty platform.',
+        overlayText: 'Tickets, please.',
+        sceneType: AR_SCENE_TYPES.GHOST,
+        atmosphere: AR_ATMOSPHERES.FOG,
+        trigger: AR_TRIGGERS.AFTER_CHECKIN,
+        assetId: 'ghost-hooded',
+        audioId: 'aud-footsteps',
+        silhouette: true,
+        durationSeconds: 8,
+      },
+      {
+        title: 'Station Whispers',
+        description: 'Static crawls across the air.',
+        overlayText: 'The platform is empty.',
+        sceneType: AR_SCENE_TYPES.MEMORY,
+        atmosphere: AR_ATMOSPHERES.STATIC,
+        trigger: AR_TRIGGERS.AFTER_ANSWER,
+        assetId: 'atm-static',
+        audioId: 'aud-whisper',
+        durationSeconds: 8,
+      },
+      {
+        title: 'Ghost Passenger',
+        description: 'Something boards without a ticket.',
+        overlayText: 'Mind the gap.',
+        revealText: 'You are not on the manifest.',
+        sceneType: AR_SCENE_TYPES.JUMP_SCARE,
+        atmosphere: AR_ATMOSPHERES.DARKNESS,
+        trigger: AR_TRIGGERS.FINDER_CAPTURE,
+        assetId: 'ghost-woman-white',
+        jumpScare: true,
+        isFinale: true,
+        durationSeconds: 9,
+      },
     ],
   },
 };
@@ -173,7 +272,7 @@ export function insertAssetIntoScene(scene, asset) {
   return normalizeArScene(next);
 }
 
-export function sceneFromPackDefinition(def, libraryAsset, audioAsset) {
+export function sceneFromPackDefinition(def, libraryAsset, audioAsset, packMeta = {}) {
   let scene = normalizeArScene({
     enabled: true,
     title: def.title,
@@ -184,12 +283,18 @@ export function sceneFromPackDefinition(def, libraryAsset, audioAsset) {
     atmosphere: def.atmosphere || AR_ATMOSPHERES.FOG,
     trigger: def.trigger || AR_TRIGGERS.AFTER_CHECKIN,
     interaction: def.interaction || AR_INTERACTIONS.WATCH,
-    durationSeconds: def.durationSeconds || 10,
+    durationSeconds: def.durationSeconds || 8,
     jumpScare: Boolean(def.jumpScare),
+    silhouette: Boolean(def.silhouette),
   });
   if (libraryAsset) scene = insertAssetIntoScene(scene, libraryAssetForInsert(libraryAsset));
   if (audioAsset?.audioUrl) scene = { ...scene, audioUrl: audioAsset.audioUrl };
-  return scene;
+
+  const { timeline, durationSeconds } = buildPackSceneTimeline(
+    { ...def, ...packMeta },
+    { visual: libraryAsset, audio: audioAsset }
+  );
+  return normalizeArScene({ ...scene, timeline, durationSeconds });
 }
 
 export function applyHorrorPack(packId, { clues, setClues, setArFinale, clueIndex = 0 }) {
@@ -217,7 +322,11 @@ export function applyHorrorPack(packId, { clues, setClues, setArFinale, clueInde
   clueScenes.forEach((def, i) => {
     const asset = def.assetId ? findLibraryAsset(def.assetId) : null;
     const audio = def.audioId ? findLibraryAsset(def.audioId) : null;
-    const arScene = sceneFromPackDefinition(def, asset, audio);
+    const arScene = sceneFromPackDefinition(def, asset, audio, {
+      packId,
+      packIndex: i,
+      isFinale: false,
+    });
     nextClues[i] = {
       ...nextClues[i],
       title: nextClues[i].title || def.title,
@@ -231,7 +340,13 @@ export function applyHorrorPack(packId, { clues, setClues, setArFinale, clueInde
   if (finaleDef && setArFinale) {
     const asset = finaleDef.assetId ? findLibraryAsset(finaleDef.assetId) : null;
     const audio = finaleDef.audioId ? findLibraryAsset(finaleDef.audioId) : null;
-    setArFinale(sceneFromPackDefinition(finaleDef, asset, audio));
+    setArFinale(
+      sceneFromPackDefinition(finaleDef, asset, audio, {
+        packId,
+        packIndex: clueScenes.length,
+        isFinale: true,
+      })
+    );
   }
 
   return { ok: true, message: `${pack.label} inserted.` };

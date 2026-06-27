@@ -5,6 +5,7 @@ import {
   normalizeTimeline,
   resolveSceneTimeline,
 } from './timelineEngine';
+import { buildDefaultHorrorTimeline } from './horrorTimelineDefaults.js';
 
 export const AR_SCENE_TYPES = {
   GHOST: 'ghost',
@@ -76,6 +77,7 @@ export const DEFAULT_AR_SCENE = {
   allowReplay: true,
   mediaAssetId: null,
   timeline: [],
+  silhouette: false,
 };
 
 export function normalizeArScene(raw = {}) {
@@ -112,6 +114,7 @@ export function normalizeArScene(raw = {}) {
     thumbnailUrl: String(sceneFields.thumbnailUrl || ''),
     allowReplay: sceneFields.allowReplay !== false,
     mediaAssetId: sceneFields.mediaAssetId || null,
+    silhouette: Boolean(sceneFields.silhouette),
     durationSeconds: Math.max(3, Number(sceneFields.durationSeconds) || DEFAULT_AR_SCENE.durationSeconds),
   };
   const customTimeline = normalizeTimeline(sceneFields.timeline);
@@ -190,6 +193,27 @@ export function hasCinematicAr(adventure) {
   return (adventure?.clues || []).some((c) => getClueArScene(c).enabled);
 }
 
+/** Attach default cinematic timeline when none provided */
+function withHorrorTimeline(fields) {
+  const base = { enabled: true, ...fields };
+  if (base.timeline?.length) return normalizeArScene(base);
+  const { timeline, durationSeconds } = buildDefaultHorrorTimeline({
+    durationSeconds: base.durationSeconds || 8,
+    overlayText: base.overlayText,
+    revealText: base.revealText,
+    sceneType: base.sceneType,
+    atmosphere: base.atmosphere,
+    jumpScare: base.jumpScare,
+    isGhost: base.sceneType === AR_SCENE_TYPES.GHOST,
+    hasAsset: Boolean(base.assetUrl),
+    silhouette: base.silhouette,
+    position: fields.position,
+    extraAmbience: fields.extraAmbience,
+    audioLayers: fields.audioLayers || [],
+  });
+  return normalizeArScene({ ...base, timeline, durationSeconds });
+}
+
 /** Ready-made horror AR preset — "The Whispering Hollow" */
 export function buildWhisperingHollowPreset(baseLat = 37.34, baseLng = -95.26) {
   const mkClue = (index, title, text, latOff, lngOff, arScene) => ({
@@ -205,7 +229,79 @@ export function buildWhisperingHollowPreset(baseLat = 37.34, baseLng = -95.26) {
     audioUrl: arScene.audioUrl || '',
     videoUrl: '',
     imageUrl: arScene.assetUrl || '',
-    arScene: normalizeArScene({ enabled: true, ...arScene }),
+    arScene,
+  });
+
+  const porchScene = withHorrorTimeline({
+    sceneType: AR_SCENE_TYPES.GHOST,
+    title: 'Porch Scare',
+    description: 'A presence gathers near the swing.',
+    atmosphere: AR_ATMOSPHERES.FOG,
+    overlayText: "Don't look back.",
+    audioUrl: HORROR_AUDIO.swingCreak,
+    assetType: AR_ASSET_TYPES.IMAGE,
+    assetUrl: HORROR_IMAGES.littleGirl,
+    thumbnailUrl: HORROR_IMAGES.littleGirl,
+    mediaAssetId: 'ghost-little-girl',
+    trigger: AR_TRIGGERS.AFTER_CHECKIN,
+    interaction: AR_INTERACTIONS.WATCH,
+    durationSeconds: 8,
+    extraAmbience: { asset: 'creak', time: 2, volume: 0.58, track: 'sfx-creak' },
+  });
+
+  const diaryScene = withHorrorTimeline({
+    sceneType: AR_SCENE_TYPES.DIARY,
+    title: 'Diary Page',
+    description: 'Paper glows in the lantern light.',
+    atmosphere: AR_ATMOSPHERES.LANTERN,
+    overlayText: "They told me they'd come back.",
+    revealText: 'The ink is still wet.',
+    assetType: AR_ASSET_TYPES.IMAGE,
+    assetUrl: HORROR_IMAGES.diaryPage,
+    thumbnailUrl: HORROR_IMAGES.diaryPage,
+    mediaAssetId: 'obj-diary',
+    trigger: AR_TRIGGERS.AFTER_ANSWER,
+    interaction: AR_INTERACTIONS.TAP_REVEAL,
+    durationSeconds: 8,
+    isGhost: false,
+    extraAmbience: { asset: 'musicbox', time: 1.2, volume: 0.32, track: 'sfx-music' },
+  });
+
+  const treeScene = withHorrorTimeline({
+    sceneType: AR_SCENE_TYPES.OBJECT,
+    title: 'The Oldest Tree',
+    description: 'Branches stir against the sky.',
+    atmosphere: AR_ATMOSPHERES.STATIC,
+    overlayText: 'Something moves above you.',
+    assetType: AR_ASSET_TYPES.IMAGE,
+    assetUrl: HORROR_IMAGES.deadTree,
+    thumbnailUrl: HORROR_IMAGES.deadTree,
+    mediaAssetId: 'obj-dead-tree',
+    trigger: AR_TRIGGERS.AFTER_ANSWER,
+    interaction: AR_INTERACTIONS.WATCH,
+    durationSeconds: 8,
+    position: 'far',
+    extraAmbience: { asset: 'static', time: 0.8, volume: 0.38, track: 'sfx-static' },
+    audioLayers: [{ asset: 'wind', time: 0, volume: 0.22, track: 'amb-wind-2', loop: true }],
+  });
+
+  const finaleScene = withHorrorTimeline({
+    sceneType: AR_SCENE_TYPES.JUMP_SCARE,
+    title: 'The Hollow Finale',
+    description: 'A final whisper in the dark.',
+    assetType: AR_ASSET_TYPES.IMAGE,
+    assetUrl: HORROR_IMAGES.deadTree,
+    thumbnailUrl: HORROR_IMAGES.deadTree,
+    audioUrl: HORROR_AUDIO.childLaughter,
+    overlayText: 'Thank you for finding me...',
+    revealText: '...but you were not alone.',
+    durationSeconds: 10,
+    trigger: AR_TRIGGERS.FINDER_CAPTURE,
+    interaction: AR_INTERACTIONS.TAP_REVEAL,
+    atmosphere: AR_ATMOSPHERES.DARKNESS,
+    jumpScare: true,
+    extraAmbience: { asset: 'static', time: 0.8, volume: 0.4, track: 'sfx-static' },
+    audioLayers: [{ asset: 'laugh', time: 7, volume: 0.5, track: 'sfx-laugh' }],
   });
 
   return {
@@ -217,80 +313,11 @@ export function buildWhisperingHollowPreset(baseLat = 37.34, baseLng = -95.26) {
       arAssetType: 'ghost_lantern',
     },
     arTheme: 'horror',
-    arFinale: normalizeArScene({
-      enabled: true,
-      sceneType: AR_SCENE_TYPES.JUMP_SCARE,
-      title: 'The Hollow Finale',
-      description: 'A final whisper in the dark.',
-      assetType: AR_ASSET_TYPES.IMAGE,
-      assetUrl: HORROR_IMAGES.deadTree,
-      thumbnailUrl: HORROR_IMAGES.deadTree,
-      audioUrl: HORROR_AUDIO.childLaughter,
-      overlayText: 'Thank you for finding me...',
-      revealText: '...but you were not alone.',
-      durationSeconds: 10,
-      trigger: AR_TRIGGERS.FINDER_CAPTURE,
-      interaction: AR_INTERACTIONS.TAP_REVEAL,
-      atmosphere: AR_ATMOSPHERES.DARKNESS,
-      jumpScare: true,
-    }),
+    arFinale: finaleScene,
     clues: [
-      mkClue(
-        0,
-        'The Swing Set',
-        'The chains creak though no one sits there. Listen for static on the wind.',
-        0,
-        0,
-        {
-          sceneType: AR_SCENE_TYPES.GHOST,
-          title: 'Ghost Appearance',
-          atmosphere: AR_ATMOSPHERES.STATIC,
-          overlayText: "You shouldn't have come here.",
-          audioUrl: HORROR_AUDIO.whisperingVoices,
-          assetType: AR_ASSET_TYPES.IMAGE,
-          assetUrl: HORROR_IMAGES.abandonedSwing,
-          thumbnailUrl: HORROR_IMAGES.abandonedSwing,
-          trigger: AR_TRIGGERS.AFTER_CHECKIN,
-          interaction: AR_INTERACTIONS.WATCH,
-          durationSeconds: 9,
-        }
-      ),
-      mkClue(
-        1,
-        'The Flower Pot',
-        'Soil scattered. Something passed through here recently.',
-        0.0004,
-        0.0003,
-        {
-          sceneType: AR_SCENE_TYPES.MEMORY,
-          title: 'Memory Flashback',
-          atmosphere: AR_ATMOSPHERES.FOG,
-          overlayText: 'The swing moved by itself.',
-          assetType: AR_ASSET_TYPES.IMAGE,
-          assetUrl: HORROR_IMAGES.abandonedSwing,
-          thumbnailUrl: HORROR_IMAGES.abandonedSwing,
-          trigger: AR_TRIGGERS.AFTER_CHECKIN,
-          interaction: AR_INTERACTIONS.WATCH,
-          durationSeconds: 10,
-        }
-      ),
-      mkClue(
-        2,
-        'The Oldest Tree',
-        'Carved initials fade under lantern light. A diary page waits.',
-        0.0008,
-        0.0006,
-        {
-          sceneType: AR_SCENE_TYPES.DIARY,
-          title: 'Diary Page',
-          atmosphere: AR_ATMOSPHERES.LANTERN,
-          overlayText: 'A torn page appears...',
-          revealText: "They told me they'd come back.",
-          trigger: AR_TRIGGERS.AFTER_ANSWER,
-          interaction: AR_INTERACTIONS.TAP_REVEAL,
-          durationSeconds: 12,
-        }
-      ),
+      mkClue(0, 'The Swing Set', 'The chains creak though no one sits there.', 0, 0, porchScene),
+      mkClue(1, 'The Flower Pot', 'Soil scattered. Something passed through here.', 0.0004, 0.0003, diaryScene),
+      mkClue(2, 'The Oldest Tree', 'Carved initials fade under lantern light.', 0.0008, 0.0006, treeScene),
     ],
   };
 }

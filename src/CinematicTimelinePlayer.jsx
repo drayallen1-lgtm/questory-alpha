@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { SkipForward } from 'lucide-react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { SkipForward, Volume2 } from 'lucide-react';
 import { normalizeArScene } from './arEngine';
 import { getCameraFxClassList } from './cameraFxEngine';
 import {
@@ -9,7 +9,7 @@ import {
 import { createAudioTimelineController } from './audioTimelineEngine';
 import { ARCameraFrame, ARAnimatedEntity, ARTimelineBar } from './cinematicComponents';
 
-function useTimelinePlayback(scene, { onComplete, paused = false }) {
+function useTimelinePlayback(scene, { paused = false, onAutoplayBlocked }) {
   const [playback, setPlayback] = useState(() =>
     computePlaybackAtTime(scene, 0, 0)
   );
@@ -19,7 +19,9 @@ function useTimelinePlayback(scene, { onComplete, paused = false }) {
   useEffect(() => {
     if (paused) return undefined;
 
-    const audioController = createAudioTimelineController();
+    const audioController = createAudioTimelineController({
+      onAutoplayBlocked,
+    });
     audioRef.current = audioController;
 
     const runner = createTimelineRunner(
@@ -41,9 +43,13 @@ function useTimelinePlayback(scene, { onComplete, paused = false }) {
       audioController.stopAll();
       audioRef.current = null;
     };
-  }, [scene, paused]);
+  }, [scene, paused, onAutoplayBlocked]);
 
-  return playback;
+  const unlockAudio = useCallback(() => {
+    audioRef.current?.unlockAll?.();
+  }, []);
+
+  return { playback, unlockAudio };
 }
 
 export function CinematicTimelinePlayer({
@@ -57,6 +63,7 @@ export function CinematicTimelinePlayer({
     rawScene?.enabled,
     rawScene?.sceneType,
     rawScene?.title,
+    rawScene?.description,
     rawScene?.assetUrl,
     rawScene?.assetType,
     rawScene?.audioUrl,
@@ -64,24 +71,38 @@ export function CinematicTimelinePlayer({
     rawScene?.revealText,
     rawScene?.atmosphere,
     rawScene?.jumpScare,
+    rawScene?.silhouette,
+    rawScene?.mediaAssetId,
     rawScene?.durationSeconds,
     JSON.stringify(rawScene?.timeline || []),
   ]);
   const [cameraStream, setCameraStream] = useState(null);
-  const [cameraFallback, setCameraFallback] = useState(!useCamera || preview);
+  const [cameraFallback, setCameraFallback] = useState(!useCamera);
   const [finished, setFinished] = useState(false);
-  const playback = useTimelinePlayback(scene, {
-    onComplete: () => {},
+  const [skipped, setSkipped] = useState(false);
+  const [audioBlocked, setAudioBlocked] = useState(false);
+  const onAutoplayBlocked = useCallback(() => setAudioBlocked(true), []);
+
+  const { playback, unlockAudio } = useTimelinePlayback(scene, {
     paused: finished,
+    onAutoplayBlocked,
   });
 
   useEffect(() => {
-    if (preview || !useCamera) {
-      setCameraFallback(true);
-      return undefined;
-    }
+    setFinished(false);
+    setSkipped(false);
+    setAudioBlocked(false);
+  }, [scene]);
+
+  useEffect(() => {
     let stream;
     let cancelled = false;
+
+    if (!useCamera) {
+      setCameraFallback(true);
+      setCameraStream(null);
+      return undefined;
+    }
 
     async function startCamera() {
       try {
@@ -109,33 +130,41 @@ export function CinematicTimelinePlayer({
       cancelled = true;
       stream?.getTracks().forEach((t) => t.stop());
     };
-  }, [useCamera, preview]);
+  }, [useCamera, scene]);
 
   useEffect(() => {
-    if (playback.complete && !finished) {
+    if (playback.complete && !finished && !skipped) {
       setFinished(true);
     }
-  }, [playback.complete, finished]);
+  }, [playback.complete, finished, skipped]);
 
   function handleContinue() {
     onComplete?.();
   }
 
   function handleSkip() {
+    setSkipped(true);
     setFinished(true);
-    if (onSkip) {
-      onSkip();
-      return;
-    }
-    onComplete?.();
+  }
+
+  function handleEnableSound() {
+    unlockAudio();
+    setAudioBlocked(false);
   }
 
   const fxClasses = getCameraFxClassList(playback.activeFx).join(' ');
-  const showOutro = finished || playback.phase === 'outro';
+  const showOutro = finished && (skipped || playback.complete);
+  const shortDesc =
+    scene.description &&
+    scene.description !== scene.overlayText &&
+    scene.description !== scene.title &&
+    scene.description.length < 80
+      ? scene.description
+      : null;
 
   return (
     <div
-      className={`cinematic-ar-player timeline-driven scene-${scene.sceneType} ${fxClasses}`}
+      className={`cinematic-ar-player timeline-driven scene-${scene.sceneType} ${fxClasses} ${preview ? 'is-preview' : ''}`}
       style={{ opacity: playback.opacity }}
       role="dialog"
       aria-modal="true"
@@ -159,22 +188,36 @@ export function CinematicTimelinePlayer({
         </div>
 
         <div className="cinematic-ar-content">
-          {scene.title && playback.elapsed > 0.3 && (
-            <h2 className="cinematic-ar-title">{scene.title}</h2>
-          )}
+          {shortDesc && playback.elapsed > 0.4 && playback.elapsed < 2.8 ? (
+            <p className="cinematic-ar-desc">{shortDesc}</p>
+          ) : null}
 
           {playback.showOverlay && playback.overlayText ? (
-            <p className="cinematic-ar-overlay-text">{playback.overlayText}</p>
+            <p
+              className="cinematic-ar-overlay-text"
+              style={{ opacity: playback.overlayOpacity ?? 1 }}
+            >
+              {playback.overlayText}
+            </p>
           ) : null}
 
           {playback.revealText ? (
             <p className="cinematic-ar-reveal-text">{playback.revealText}</p>
           ) : null}
 
-          {showOutro && (
-            <button type="button" className="cinematic-ar-continue" onClick={handleContinue}>
-              Continue
+          {audioBlocked && (
+            <button type="button" className="cinematic-audio-unlock" onClick={handleEnableSound}>
+              <Volume2 size={16} /> Tap to enable sound
             </button>
+          )}
+
+          {showOutro && (
+            <div className="cinematic-ar-outro">
+              <p className="cinematic-ar-complete-label">Scene complete</p>
+              <button type="button" className="cinematic-ar-continue" onClick={handleContinue}>
+                Continue
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -182,7 +225,7 @@ export function CinematicTimelinePlayer({
       <ARTimelineBar durationSeconds={scene.durationSeconds} elapsed={playback.elapsed} />
 
       <div className="cinematic-ar-controls">
-        <button type="button" className="ghost" onClick={handleSkip}>
+        <button type="button" className="ghost cinematic-skip-btn" onClick={handleSkip}>
           <SkipForward size={16} /> Skip scene
         </button>
       </div>
@@ -197,6 +240,7 @@ export function ScenePreviewOverlay({ scene, open, onClose }) {
     <div className="cinematic-ar-overlay-root scene-preview-overlay">
       <div className="scene-preview-bar">
         <strong>Scene Preview</strong>
+        <span className="scene-preview-badge">Preview only</span>
         <button type="button" className="ghost" onClick={onClose}>
           Close
         </button>
@@ -204,8 +248,7 @@ export function ScenePreviewOverlay({ scene, open, onClose }) {
       <CinematicTimelinePlayer
         scene={scene}
         onComplete={onClose}
-        onSkip={onClose}
-        useCamera={false}
+        useCamera
         preview
       />
     </div>

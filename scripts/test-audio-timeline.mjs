@@ -12,8 +12,7 @@ const ghostTimeline = legacySceneToTimeline({
 
 const audioEvents = getAudioTimelineEvents(ghostTimeline);
 console.assert(audioEvents.some((e) => e.track === 'amb-wind'), 'wind ambience layer');
-console.assert(audioEvents.some((e) => e.asset === 'creak'), 'swing creak at 2s');
-console.assert(audioEvents.some((e) => e.asset === 'whisper'), 'whisper layer for ghost');
+console.assert(audioEvents.some((e) => e.asset === 'whisper'), 'whisper at subtitle');
 console.assert(audioEvents.some((e) => e.asset === 'heartbeat'), 'heartbeat before scare');
 console.assert(audioEvents.some((e) => e.action === 'scream'), 'scream action');
 

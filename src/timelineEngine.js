@@ -1,6 +1,7 @@
 import { HORROR_AUDIO } from './horrorAssets/catalog.js';
 import { computeEntityState } from './entityEngine.js';
 import { resolveChoreographyFx } from './choreographyEngine.js';
+import { buildDefaultHorrorTimeline } from './horrorTimelineDefaults.js';
 
 /** Timeline action identifiers (Sweep 10.1) */
 export const TIMELINE_ACTIONS = {
@@ -69,10 +70,10 @@ export const MOMENTARY_FX = new Set([
 ]);
 
 export const FX_DURATION_SEC = {
-  [TIMELINE_ACTIONS.CAMERA_SHAKE]: 0.55,
-  [TIMELINE_ACTIONS.FLASH]: 0.35,
-  [TIMELINE_ACTIONS.RED_FLASH]: 0.4,
-  [TIMELINE_ACTIONS.WHITE_FLASH]: 0.45,
+  [TIMELINE_ACTIONS.CAMERA_SHAKE]: 0.42,
+  [TIMELINE_ACTIONS.FLASH]: 0.28,
+  [TIMELINE_ACTIONS.RED_FLASH]: 0.28,
+  [TIMELINE_ACTIONS.WHITE_FLASH]: 0.28,
 };
 
 /** Bundled audio aliases for timeline playAudio events */
@@ -128,6 +129,7 @@ export function normalizeTimelineEvent(raw = {}) {
     fadeIn: raw.fadeIn != null ? Number(raw.fadeIn) : undefined,
     fadeOut: raw.fadeOut != null ? Number(raw.fadeOut) : undefined,
     volumeTo: raw.volumeTo != null ? Number(raw.volumeTo) : undefined,
+    targetOpacity: raw.targetOpacity != null ? Number(raw.targetOpacity) : undefined,
   };
 }
 
@@ -146,67 +148,44 @@ export function getTimelineDuration(timeline, fallback = 8) {
   return Math.max(fallback, hasFadeOut ? maxTime : maxTime + 0.5);
 }
 
-function atmosphereToFx(atmosphere) {
-  if (atmosphere === 'fog') return TIMELINE_ACTIONS.FOG;
-  if (atmosphere === 'static') return TIMELINE_ACTIONS.STATIC;
-  if (atmosphere === 'darkness') return TIMELINE_ACTIONS.DARKNESS;
-  if (atmosphere === 'lantern') return TIMELINE_ACTIONS.FLICKER;
-  if (atmosphere === 'flash') return TIMELINE_ACTIONS.FLASH;
-  return null;
+function computeOverlayOpacity(timeline, elapsed, duration, hasText) {
+  if (!hasText) return 0;
+  let overlayTime = null;
+  for (const e of timeline) {
+    if (e.action === TIMELINE_ACTIONS.OVERLAY) overlayTime = e.time;
+  }
+  if (overlayTime == null) return 1;
+  const fadeIn = 0.55;
+  const fadeOutStart = Math.max(overlayTime + 1.2, duration - 1.1);
+  const fadeOutDur = 0.5;
+  if (elapsed < overlayTime) return 0;
+  if (elapsed < overlayTime + fadeIn) return (elapsed - overlayTime) / fadeIn;
+  if (elapsed >= fadeOutStart + fadeOutDur) return 0;
+  if (elapsed >= fadeOutStart) return 1 - (elapsed - fadeOutStart) / fadeOutDur;
+  return 1;
 }
 
 /**
  * Convert legacy duration-based scenes to a cinematic timeline (backwards compatible).
  */
 export function legacySceneToTimeline(scene = {}) {
-  const duration = Math.max(3, Number(scene.durationSeconds) || 8);
-  const events = [{ time: 0, action: TIMELINE_ACTIONS.FADE_IN }];
-
-  const atmFx = atmosphereToFx(scene.atmosphere);
-  if (atmFx) events.push({ time: 1, action: atmFx });
-
-  if (scene.assetUrl && scene.assetType !== 'none') {
-    const showAction =
-      scene.sceneType === 'ghost' ? TIMELINE_ACTIONS.SHOW_GHOST : TIMELINE_ACTIONS.SHOW_ASSET;
-    const ghostPos = scene.sceneType === 'ghost' ? 'bottom-left' : 'center';
-    events.push({ time: 1.8, action: showAction, position: ghostPos });
-    if (scene.sceneType === 'ghost') {
-      events.push({ time: 1.9, action: TIMELINE_ACTIONS.FADE_ENTITY_IN, duration: 1.1 });
-      events.push({ time: 2, action: TIMELINE_ACTIONS.FLOAT });
-      events.push({ time: 3.2, action: TIMELINE_ACTIONS.APPROACH, duration: 2.8, to: 'close' });
-      events.push({ time: 2.2, action: TIMELINE_ACTIONS.BREATHE });
-    }
-  } else if (scene.sceneType === 'ghost') {
-    events.push({ time: 1.8, action: TIMELINE_ACTIONS.SHOW_GHOST, position: 'bottom-left' });
-    events.push({ time: 1.9, action: TIMELINE_ACTIONS.FADE_ENTITY_IN, duration: 1.1 });
-    events.push({ time: 2, action: TIMELINE_ACTIONS.FLOAT });
-    events.push({ time: 3.2, action: TIMELINE_ACTIONS.APPROACH, duration: 2.8, to: 'close' });
+  const duration = Math.max(6, Number(scene.durationSeconds) || 8);
+  const audioLayers = [];
+  if (scene.atmosphere === 'static') {
+    audioLayers.push({ asset: 'static', time: 1, volume: 0.35, track: 'sfx-static' });
   }
-
-  if (scene.audioUrl) {
-    // custom SFX handled in buildLegacyAudioLayers
-  }
-
-  events.push(...buildLegacyAudioLayers(scene, duration));
-
-  if (scene.overlayText) {
-    events.push({ time: 2.8, action: TIMELINE_ACTIONS.OVERLAY, text: scene.overlayText });
-  }
-
-  if (scene.revealText) {
-    events.push({ time: duration * 0.65, action: TIMELINE_ACTIONS.REVEAL, text: scene.revealText });
-  }
-
-  if (scene.jumpScare || scene.sceneType === 'jump_scare') {
-    events.push({ time: Math.max(0, duration - 1.4), action: TIMELINE_ACTIONS.HEARTBEAT });
-    events.push({ time: Math.max(0, duration - 1.1), action: TIMELINE_ACTIONS.CAMERA_SHAKE });
-    events.push({ time: Math.max(0, duration - 0.9), action: TIMELINE_ACTIONS.FADE_ENTITY_OUT, duration: 0.35 });
-    events.push({ time: Math.max(0, duration - 0.45), action: TIMELINE_ACTIONS.WHITE_FLASH });
-  }
-
-  events.push({ time: duration, action: TIMELINE_ACTIONS.FADE_OUT });
-
-  return normalizeTimeline(events);
+  return buildDefaultHorrorTimeline({
+    durationSeconds: duration,
+    overlayText: scene.overlayText,
+    revealText: scene.revealText,
+    sceneType: scene.sceneType,
+    atmosphere: scene.atmosphere,
+    jumpScare: scene.jumpScare || scene.sceneType === 'jump_scare',
+    hasAsset: Boolean(scene.assetUrl && scene.assetType !== 'none') || scene.sceneType === 'ghost',
+    isGhost: scene.sceneType === 'ghost',
+    audioUrl: scene.audioUrl,
+    audioLayers,
+  }).timeline;
 }
 
 export function resolveSceneTimeline(scene = {}) {
@@ -266,87 +245,8 @@ function getActiveFx(timeline, elapsed) {
   return active;
 }
 
-function getAudioTriggers(timeline, elapsed, prevElapsed) {
-  const triggers = [];
-  for (const e of timeline) {
-    if (e.action !== TIMELINE_ACTIONS.PLAY_AUDIO) continue;
-    if (e.time > prevElapsed && e.time <= elapsed) triggers.push(e);
-  }
-  return triggers;
-}
-
-/** Layered audio script for legacy horror scenes (Sweep 10.3). */
-function buildLegacyAudioLayers(scene, duration) {
-  const layers = [];
-  const isGhost = scene.sceneType === 'ghost';
-  const isJump = scene.jumpScare || scene.sceneType === 'jump_scare';
-
-  layers.push({
-    time: 0,
-    action: TIMELINE_ACTIONS.PLAY_AUDIO,
-    asset: 'wind',
-    loop: true,
-    volume: 0.3,
-    fadeIn: 1.4,
-    track: 'amb-wind',
-  });
-
-  if (isGhost || scene.atmosphere === 'fog') {
-    layers.push({
-      time: 2,
-      action: TIMELINE_ACTIONS.PLAY_AUDIO,
-      asset: 'creak',
-      volume: 0.68,
-      track: 'sfx-creak',
-    });
-  }
-
-  if (scene.audioUrl) {
-    layers.push({
-      time: 2.2,
-      action: TIMELINE_ACTIONS.PLAY_AUDIO,
-      asset: scene.audioUrl,
-      loop: false,
-      volume: 0.85,
-      track: 'sfx-custom',
-    });
-  } else if (isGhost) {
-    layers.push({
-      time: 4,
-      action: TIMELINE_ACTIONS.PLAY_AUDIO,
-      asset: 'whisper',
-      volume: 0.72,
-      track: 'sfx-whisper',
-    });
-  }
-
-  if (isJump) {
-    layers.push({
-      time: Math.max(0, duration - 1.4),
-      action: TIMELINE_ACTIONS.PLAY_AUDIO,
-      asset: 'heartbeat',
-      loop: true,
-      volume: 0.48,
-      fadeIn: 0.85,
-      track: 'sfx-heartbeat',
-    });
-    layers.push({
-      time: Math.max(0, duration - 0.55),
-      action: TIMELINE_ACTIONS.SCREAM,
-    });
-    layers.push({
-      time: Math.max(0, duration - 0.2),
-      action: TIMELINE_ACTIONS.STOP_AUDIO,
-      track: 'amb-wind',
-      fadeOut: 0.35,
-    });
-  }
-
-  return layers;
-}
-
 /**
- * Compute full playback snapshot at a given elapsed time (seconds).
+ * Convert legacy duration-based scenes to a cinematic timeline (backwards compatible).
  */
 export function computePlaybackAtTime(scene, elapsed, prevElapsed = 0) {
   const timeline = Array.isArray(scene.timeline) ? scene.timeline : [];
@@ -356,8 +256,8 @@ export function computePlaybackAtTime(scene, elapsed, prevElapsed = 0) {
   const showAsset = entity.visible || isAssetVisible(timeline, elapsed);
   const overlayText = latestTextEvent(timeline, elapsed, TIMELINE_ACTIONS.OVERLAY);
   const revealText = latestTextEvent(timeline, elapsed, TIMELINE_ACTIONS.REVEAL);
+  const overlayOpacity = computeOverlayOpacity(timeline, elapsed, duration, Boolean(overlayText));
   const activeFx = getActiveFx(timeline, elapsed);
-  const newAudio = getAudioTriggers(timeline, elapsed, prevElapsed);
 
   let phase = 'playing';
   if (elapsed <= 0) phase = 'intro';
@@ -369,11 +269,12 @@ export function computePlaybackAtTime(scene, elapsed, prevElapsed = 0) {
     opacity,
     showAsset,
     entity,
-    showOverlay: Boolean(overlayText),
+    showOverlay: Boolean(overlayText) && overlayOpacity > 0.02,
     overlayText,
+    overlayOpacity,
     revealText,
     activeFx,
-    newAudioEvents: newAudio,
+    newAudioEvents: [],
     phase,
     complete: elapsed >= duration,
   };

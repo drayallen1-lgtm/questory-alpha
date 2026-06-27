@@ -29,9 +29,9 @@ console.assert(
 console.assert(duration >= 8, 'duration respects fadeOut time');
 
 const scene = { timeline, durationSeconds: duration };
-const mid = computePlaybackAtTime(scene, 3, 2.9);
+const mid = computePlaybackAtTime(scene, 4.5, 4.4);
 console.assert(mid.showAsset === true, 'asset visible mid-scene');
-console.assert(mid.overlayText === "Don't look back.", 'overlay text at mid');
+console.assert(mid.overlayText === "Don't look back.", 'overlay text after subtitle beat');
 console.assert(mid.activeFx.has(TIMELINE_ACTIONS.FOG), 'fog active');
 
 const end = computePlaybackAtTime(scene, duration, duration - 0.1);
