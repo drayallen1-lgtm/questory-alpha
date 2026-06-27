@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   MapPin,
@@ -51,9 +51,7 @@ import {
 import {
   CLAIM_METHOD,
   CLAIM_METHOD_OPTIONS,
-  autoClaimsOnTap,
   normalizeClaimMethod,
-  validateClaimAttempt,
   claimMethodLabel,
   validateAdventureClaimFields,
   buildAdventureClaimFields,
@@ -78,16 +76,22 @@ import {
   isWithinRadius,
 } from './geolocation';
 import {
-  createCompletionCertificate,
   copyShareText,
   downloadProofCard,
   formatProofDate,
 } from './share';
-import { applyAdventureCompletion, applyDailyLogin, normalizeEngagement } from './engagement';
+import { runClaimTreasure, runMedallionCapture } from './claimFlow';
+import { advanceClueForAdventure, continueAfterBonus, applyPlayNavigation } from './progressionEngine';
+import { useArSceneFlow } from './arFlow';
 import {
-  applySeasonalProgress,
+  createSyncHelpers,
+  mergeRemoteDataIntoState,
+  refreshAdventuresFromRemote as fetchMergedAdventures,
+  syncDailyLoginIfNeeded,
+} from './supabase/syncHelpers';
+import { applyDailyLogin } from './engagement';
+import {
   canCreateAdventure,
-  enrichCouponReward,
   hasPremiumUnlock,
   isPremiumAdventure,
   normalizeEconomy,
@@ -103,12 +107,10 @@ import {
 } from './economy';
 import {
   addPhotoMemory,
-  addSeasonPoints,
   computeAdventureHeat,
   getHeatCategory,
   getHeatLabel,
   normalizeSocial,
-  recordGhostRun,
 } from './social';
 import {
   SocialHub,
@@ -121,12 +123,9 @@ import {
 } from './SocialUI';
 import { getMyTeam } from './social';
 import {
-  applyExpansionOnCompletion,
   canAccessPremiumHunt,
   normalizeExpansion,
-  recordArCapture,
   usesArFinder,
-  usesFinderFlow,
   FINDER_MODES,
 } from './expansion';
 import {
@@ -170,11 +169,7 @@ import {
   applyWhisperingHollowToCreateForm,
   emptyArScene,
   getArSceneId,
-  getClueArScene,
-  markArSceneComplete,
-  matchesArTrigger,
   normalizeArScene,
-  shouldPlayArScene,
 } from './arEngine';
 import { CinematicAROverlay, ARSceneReplayButton } from './CinematicAR';
 import { ArFinaleBuilder, ClueArSceneBuilder, WhisperingHollowQuickButton } from './ARSceneBuilder';
@@ -201,14 +196,9 @@ import {
   upsertAdventure,
   updateAdventureStatus,
   deleteAdventureRemote,
-  saveUserProfileState,
-  upsertUserRewards,
-  upsertClaimHistory,
   claimLimitedRewardRemote,
 } from './supabase/dataService';
 import {
-  resolveClaimRewards,
-  resolveClaimRewardsAsync,
   isAdventureEnded,
   normalizeFinalRewards,
   END_RULES,
@@ -224,7 +214,6 @@ import {
 } from './RewardInventoryUI';
 import { normalizeExperience } from './experience';
 import {
-  applyEndingRewards,
   isAdventureUnlocked,
   normalizeWorld,
   selectBranchPath,
@@ -265,12 +254,9 @@ import {
   shouldShowJourney,
   shouldShowPlayerGuide,
   getAccessibilityClassName,
-  completeDemoIfNeeded,
-  shouldShowFirstCompletionCelebration,
   DEMO_ADVENTURE_ID,
 } from './invitation';
 import {
-  applyGrowthOnCompletion,
   normalizeGrowth,
   recordAdventureStart,
   recordAdventureView,
@@ -300,10 +286,8 @@ import {
 import {
   normalizeLaunchFunnel,
   recordSessionStart,
-  trackDemoComplete,
-  trackCreatePublished,
-  trackInviteShared,
   recordLaunchError,
+  trackCreatePublished,
 } from './stability';
 
 function App() {
@@ -328,20 +312,18 @@ function QuestoryApp() {
   const [showQuickCreate, setShowQuickCreate] = useState(false);
   const dailyLoginApplied = useRef(false);
   const clueStartRef = useRef(Date.now());
+  const { syncProfile, syncRewardsAndHistory, syncProgressionState } = useMemo(
+    () => createSyncHelpers({ user, isSupabaseMode }),
+    [user, isSupabaseMode]
+  );
 
   useEffect(() => {
     if (dailyLoginApplied.current) return;
     dailyLoginApplied.current = true;
     setState((s) => {
       const result = applyDailyLogin(s);
-      if (result.coinsEarned > 0 && isSupabaseMode && user) {
-        saveUserProfileState(user.id, {
-          coins: result.state.coins,
-          entries: result.state.entries,
-          progress: result.state.progress,
-          engagement: result.state.engagement,
-          economy: result.state.economy,
-        }).catch((err) => console.error('Daily login sync failed:', err));
+      if (result.coinsEarned > 0) {
+        syncDailyLoginIfNeeded({ user, isSupabaseMode, state: result.state });
       }
       return result.state;
     });
@@ -365,11 +347,8 @@ function QuestoryApp() {
 
   async function refreshAdventuresFromRemote() {
     if (!isSupabaseMode) return;
-    const adventures = await fetchAllAdventuresForAdmin();
-    setState((s) => ({
-      ...s,
-      adventures: mergeAdventuresWithLocalDrafts(adventures),
-    }));
+    const adventures = await fetchMergedAdventures();
+    setState((s) => ({ ...s, adventures }));
   }
 
   useEffect(() => {
@@ -383,32 +362,7 @@ function QuestoryApp() {
         const remote = await loadRemoteData(user?.id, isAdmin);
         if (cancelled) return;
         setAdventureSyncError('');
-        setState((s) => {
-          let next = {
-            ...s,
-            adventures: mergeAdventuresWithLocalDrafts(remote.adventures),
-            rewards: user ? remote.rewards : s.rewards,
-            claimHistory: user ? remote.claimHistory : s.claimHistory,
-            coins: user ? remote.coins : s.coins,
-            entries: user ? remote.entries : s.entries,
-            progress: user ? remote.progress : s.progress,
-            engagement: user ? remote.engagement : normalizeEngagement(s.engagement),
-            economy: user ? remote.economy : normalizeEconomy(s.economy),
-            social: user ? remote.social : normalizeSocial(s.social),
-            expansion: user ? remote.expansion : normalizeExpansion(s.expansion),
-            experience: user ? remote.experience : normalizeExperience(s.experience),
-            world: user ? remote.world : normalizeWorld(s.world),
-            onboarding: user ? remote.onboarding : s.onboarding,
-            accessibility: user ? remote.accessibility : s.accessibility,
-            firstTimeMetrics: user ? remote.firstTimeMetrics : s.firstTimeMetrics,
-            growth: user ? remote.growth : normalizeGrowth(s.growth),
-            launchFunnel: user ? remote.launchFunnel : normalizeLaunchFunnel(s.launchFunnel),
-          };
-          for (const warning of remote.loadWarnings || []) {
-            next = recordLaunchError(next, `remote_load_${warning.section}`, warning.error);
-          }
-          return next;
-        });
+        setState((s) => mergeRemoteDataIntoState(s, remote, user));
       } catch (err) {
         console.error('Questory Supabase load failed:', err);
         setAdventureSyncError('Could not load adventures from Supabase. Try refreshing the page.');
@@ -422,36 +376,6 @@ function QuestoryApp() {
       cancelled = true;
     };
   }, [user?.id, isAdmin, authLoading, isSupabaseMode]);
-
-  function syncProfile(s) {
-    if (!isSupabaseMode || !user) return;
-    saveUserProfileState(user.id, {
-      coins: s.coins,
-      entries: s.entries,
-      progress: s.progress,
-      engagement: s.engagement,
-      economy: s.economy,
-      social: s.social,
-      expansion: s.expansion,
-      experience: s.experience,
-      world: s.world,
-      onboarding: s.onboarding,
-      accessibility: s.accessibility,
-      firstTimeMetrics: s.firstTimeMetrics,
-      growth: s.growth,
-      launchFunnel: s.launchFunnel,
-    }).catch((err) => console.error('Profile sync failed:', err));
-  }
-
-  function syncRewardsAndHistory(rewards, claimHistory) {
-    if (!isSupabaseMode || !user) return;
-    upsertUserRewards(user.id, rewards).catch((err) =>
-      console.error('Rewards sync failed:', err)
-    );
-    upsertClaimHistory(user.id, claimHistory).catch((err) =>
-      console.error('Claim history sync failed:', err)
-    );
-  }
 
   const selected = state.adventures.find((a) => a.id === state.selectedAdventureId);
   const inviteAdventure =
@@ -476,19 +400,7 @@ function QuestoryApp() {
       }
       if (screen === 'play' && adventureId) {
         next = recordAdventureStart(next, adventureId);
-        const playProgress = getAdventureProgress(next, adventureId);
-        if (!playProgress.startedAt && playProgress.step === 0 && !playProgress.claimed) {
-          next = {
-            ...next,
-            progress: {
-              ...next.progress,
-              [adventureId]: {
-                ...playProgress,
-                startedAt: new Date().toISOString(),
-              },
-            },
-          };
-        }
+        next = applyPlayNavigation(next, adventureId);
       }
       return next;
     });
@@ -631,257 +543,40 @@ function QuestoryApp() {
     }
   }
 
-  function advanceClueForAdventure(s, adventure, startRef) {
-    const clues = Array.isArray(adventure?.clues) ? adventure.clues : [];
-    const bonusFinds = Array.isArray(adventure?.bonusFinds) ? adventure.bonusFinds : [];
-    const p = getAdventureProgress(s, adventure.id);
-    const clueDuration = Date.now() - (startRef?.current || Date.now());
-    const total = clues.length;
-    const nextStep = total > 0 ? Math.min(total, p.step + 1) : p.step + 1;
-    const bonus = bonusFinds.find(
-      (b) => b && b.afterStep === p.step && !p.bonuses.includes(b.id)
-    );
-
-    const bonuses = bonus ? [...p.bonuses, bonus.id] : p.bonuses;
-    const bonusRewards = bonus
-      ? [
-          createVaultReward({
-            id: `${adventure.id}-${bonus.id}`,
-            type: bonus.type === 'coupon' ? 'coupon' : 'bonus',
-            icon: bonus.icon,
-            title: bonus.title,
-            desc: bonus.couponCode ? `${bonus.desc} Code: ${bonus.couponCode}` : bonus.desc,
-            valueLabel: bonus.type === 'coupon' ? 'Bonus coupon' : 'Trail bonus',
-            redemptionInstructions: bonus.couponCode
-              ? `Use code ${bonus.couponCode} at the sponsor location.`
-              : 'Collect your bonus in the Questory Vault.',
-            expirationDays: bonus.type === 'coupon' ? 30 : 0,
-            adventureId: adventure.id,
-            adventureTitle: adventure.title,
-            sponsorName: getSponsorInfo(adventure).name,
-            sponsorLogoUrl: getSponsorInfo(adventure).logoUrl,
-            sponsorWebsite: getSponsorInfo(adventure).website,
-          }),
-        ]
-      : [];
-
-    const existingRewards = Array.isArray(s.rewards) ? s.rewards : [];
-    const nextRewards = [...existingRewards, ...bonusRewards];
-    const completedAllClues = total === 0 || nextStep >= total;
-    const claimHistory = Array.isArray(s.claimHistory) ? s.claimHistory : [];
-
-    let nextState = {
-      ...s,
-      coins: s.coins + (bonus?.coins || 0),
-      progress: {
-        ...s.progress,
-        [adventure.id]: { ...p, step: nextStep, bonuses },
-      },
-      rewards: nextRewards,
-      claimHistory: syncClaimHistory(nextRewards, claimHistory),
-      screen: bonus
-        ? 'bonus'
-        : completedAllClues && adventureUsesFinder(adventure) && usesFinderFlow(adventure)
-          ? 'medallion-signal'
-          : s.screen,
-      pendingBonus: bonus || null,
-    };
-
-    if (startRef) startRef.current = Date.now();
-    if (total > 0) {
-      nextState = recordGhostRun(nextState, adventure.id, p.step, clueDuration);
-    }
-    return nextState;
-  }
-
   function solveClue(adventure) {
     setState((s) => {
       const nextState = advanceClueForAdventure(s, adventure, clueStartRef);
-      if (isSupabaseMode && user) {
-        syncProfile(nextState);
-        syncRewardsAndHistory(nextState.rewards, nextState.claimHistory);
-      }
+      if (isSupabaseMode && user) syncProgressionState(nextState);
       return nextState;
     });
   }
 
   async function claimTreasure(adventure, code, options = {}) {
-    const p = getAdventureProgress(state, adventure.id);
-    const method = normalizeClaimMethod(adventure.claimMethod);
-    const isDemo =
-      adventure.isDemoAdventure || adventure.id === DEMO_ADVENTURE_ID;
-    const medallionAutoClaim =
-      Boolean(options.medallionTapped) && method === CLAIM_METHOD.TAP_MEDALLION;
-
-    if (isSupabaseMode && !user && !medallionAutoClaim && !isDemo) {
-      return {
-        ok: false,
-        success: false,
-        message: 'Sign in to claim and save your rewards.',
-        requiresLogin: true,
-      };
-    }
-    if (p.claimed) {
-      return { ok: false, success: false, message: 'You already claimed this adventure.' };
-    }
-    if (p.step < adventure.clues.length) {
-      return { ok: false, success: false, message: 'Complete all clues first.' };
-    }
-
-    const validation = validateClaimAttempt(adventure, p, { code, ...options });
-    if (!validation.ok) {
-      return { ...validation, success: false };
-    }
-
-    const freshAdventure = applyEndingRewards(
-      state.adventures.find((a) => a.id === adventure.id) || adventure,
-      p
-    );
-    if (isAdventureEnded(freshAdventure)) {
-      return {
-        ok: false,
-        success: false,
-        message: 'This adventure has ended. Rewards are no longer available.',
-      };
-    }
-
-    const userId = user?.id || 'local-user';
-    const resolved =
-      isSupabaseMode && user && !isDemo
-        ? await resolveClaimRewardsAsync(state, freshAdventure, userId, {
-            claimRemote: claimLimitedRewardRemote,
-          })
-        : resolveClaimRewards(state, freshAdventure, userId);
-
-    if (!resolved.ok) {
-      return {
-        ok: false,
-        success: false,
-        message: resolved.message || 'Could not claim rewards.',
-        ended: resolved.ended,
-      };
-    }
-
-    const claimedAt = new Date().toISOString();
-    const sponsorInfo = getSponsorInfo(freshAdventure);
-    const vaultRewards = resolved.vaultTemplates.map((r, i) =>
-      enrichCouponReward(
-        createVaultReward({
-          ...r,
-          expirationDays:
-            r.type === 'coupon'
-              ? freshAdventure.couponExpirationDays ?? r.expirationDays
-              : r.expirationDays,
-          id: r.id || `${freshAdventure.id}-final-${i}`,
-          adventureId: freshAdventure.id,
-          adventureTitle: freshAdventure.title,
-          claimedAt,
-          sponsorName: sponsorInfo.name,
-          sponsorLogoUrl: sponsorInfo.logoUrl,
-          sponsorWebsite: sponsorInfo.website,
-        }),
-        freshAdventure
-      )
-    );
-
-    const primaryReward =
-      vaultRewards.find((r) => r.type === 'medallion') || vaultRewards[0];
-    const medallionTitles = vaultRewards
-      .filter((r) => r.type === 'medallion')
-      .map((r) => r.title);
-    const certificate = createCompletionCertificate({
-      adventureId: freshAdventure.id,
-      adventureName: freshAdventure.title,
-      rewardName: primaryReward?.title || 'Trail Complete',
-      completedAt: claimedAt,
-      sponsorInfo,
-      collectionName: freshAdventure.collectionName || '',
-      adventure: freshAdventure,
-      startedAt: p.startedAt || null,
-      medallions: medallionTitles,
+    const result = await runClaimTreasure({
+      state,
+      adventure,
+      code,
+      options,
+      user,
+      isSupabaseMode,
+      claimLimitedRewardRemote,
     });
 
-    const completion = applyAdventureCompletion(
-      resolved.state,
-      freshAdventure,
-      resolved.state.adventures
-    );
+    if (result.showLogin) setShowLogin(true);
+    if (!result.applyToState) return result.response;
 
     setState((s) => {
-      const collectionMedallionRewards = completion.collectionRewards.map((cr, i) =>
-        createVaultReward({
-          type: 'medallion',
-          icon: '🏆',
-          title: cr.medallion,
-          desc: `Collection complete: ${cr.collectionId}`,
-          valueLabel: 'Exclusive Collection Medallion',
-          redemptionInstructions: 'Saved in your Questory Passport.',
-          expirationDays: 0,
-          id: `${freshAdventure.id}-collection-${i}`,
-          adventureId: freshAdventure.id,
-          adventureTitle: freshAdventure.title,
-          claimedAt,
-          sponsorName: sponsorInfo.name,
-          sponsorLogoUrl: sponsorInfo.logoUrl,
-          sponsorWebsite: sponsorInfo.website,
-        })
-      );
-      const nextRewards = [...s.rewards, ...vaultRewards, ...collectionMedallionRewards];
-      const baseHistory = syncClaimHistory(nextRewards, s.claimHistory);
-      let nextState = {
-        ...resolved.state,
-        coins: s.coins + completion.coins + (resolved.coinsBonus || 0),
-        entries: s.entries + freshAdventure.potEntries,
-        engagement: completion.engagement,
-        screen: 'victory',
-        victoryCertificate: certificate,
-        victoryEngagement: {
-          ...completion,
-          coinsEarned: completion.coins + (resolved.coinsBonus || 0),
-          seasonXp: 100,
-        },
-        pendingRating: isDemo ? null : freshAdventure.id,
-        claimMessage: resolved.message || null,
-        progress: {
-          ...s.progress,
-          [freshAdventure.id]: { ...p, claimed: true, claimedAt, medallionTapped: true },
-        },
-        rewards: nextRewards,
-        claimHistory: upsertCertificate(baseHistory, certificate),
-      };
-      nextState = applySeasonalProgress(nextState, freshAdventure);
-      nextState = addSeasonPoints(nextState, 100);
-      nextState.pendingPhotoMemory = isDemo ? null : freshAdventure.id;
-      const placement =
-        (freshAdventure.playersCompleted || 0) <= 1
-          ? 1
-          : (freshAdventure.playersCompleted || 0) <= 5
-            ? 2
-            : 3;
-      nextState = applyExpansionOnCompletion(nextState, freshAdventure, placement);
-      nextState = completeDemoIfNeeded(nextState, freshAdventure.id);
-      if (isDemo) nextState = trackDemoComplete(nextState);
-      nextState = applyGrowthOnCompletion(nextState, freshAdventure);
-      if (shouldShowFirstCompletionCelebration({ ...s, engagement: completion.engagement })) {
+      const nextState = result.applyToState(s);
+      if (result.showFirstCelebration?.(s)) {
         setShowFirstCelebration(true);
       }
-      if (isSupabaseMode && user) {
-        syncProfile(nextState);
-        syncRewardsAndHistory(nextState.rewards, nextState.claimHistory);
+      if (result.syncAfterClaim && isSupabaseMode && user) {
+        syncProgressionState(nextState);
       }
       return nextState;
     });
 
-    return {
-      ok: true,
-      success: true,
-      message: resolved.message || 'Treasure claimed!',
-      reward: primaryReward,
-      victoryData: {
-        certificate,
-        engagement: completion,
-      },
-    };
+    return result.response;
   }
 
   function redeemReward(rewardId) {
@@ -908,75 +603,22 @@ function QuestoryApp() {
   }
 
   async function handleMedallionCapture(adventure, context = {}) {
-    const method = normalizeClaimMethod(adventure.claimMethod);
-    const inRange = Boolean(context.inCaptureRange || context.devOverride);
-
-    console.log('[Questory] Tap Medallion clicked', {
-      claimMethod: method,
-      inCaptureRange: inRange,
-      devOverride: Boolean(context.devOverride),
-      distance: context.distance,
-      accuracy: context.accuracy,
+    const result = await runMedallionCapture({
+      adventure,
+      context,
+      state,
+      claimTreasure,
+      setState,
+      syncProfile,
     });
-
-    if (!inRange) {
-      const result = {
-        ok: false,
-        message: 'Move within capture range to tap the medallion.',
-      };
-      console.log('[Questory] medallion capture blocked', result);
-      return result;
+    if (!result.ok && result.requiresLogin) {
+      setShowLogin(true);
     }
-
-    if (autoClaimsOnTap(adventure)) {
-      const result = await claimTreasure(adventure, adventure.claimCode, {
-        medallionTapped: true,
-      });
-      console.log('[Questory] medallion auto-claim result', result);
-      if (!result.ok && result.requiresLogin) {
-        setShowLogin(true);
-      }
-      return result;
-    }
-
-    setState((s) => {
-      const nextProgress = {
-        ...s.progress,
-        [adventure.id]: {
-          ...getAdventureProgress(s, adventure.id),
-          medallionTapped: true,
-          finderUnlocked: true,
-        },
-      };
-      let nextState = { ...s, screen: 'play', progress: nextProgress };
-      if (usesArFinder(adventure)) {
-        nextState = recordArCapture(nextState, adventure.id);
-      }
-      if (isSupabaseMode && user) {
-        syncProfile(nextState);
-      }
-      return nextState;
-    });
-
-    const result = { ok: true, nextScreen: 'play' };
-    console.log('[Questory] medallion tap advanced', result);
     return result;
   }
 
-  function continueAfterBonus() {
-    setState((s) => {
-      const adventure = s.adventures.find((a) => a.id === s.selectedAdventureId);
-      const p = adventure ? getAdventureProgress(s, adventure.id) : null;
-      const allDone = p && adventure && p.step >= adventure.clues.length;
-      return {
-        ...s,
-        screen:
-          allDone && adventure && adventureUsesFinder(adventure) && usesFinderFlow(adventure)
-            ? 'medallion-signal'
-            : 'play',
-        pendingBonus: null,
-      };
-    });
+  function continueAfterBonusFlow() {
+    setState((s) => continueAfterBonus(s));
   }
 
   function resetPrototype() {
@@ -1113,10 +755,7 @@ function QuestoryApp() {
             clueStartRef={clueStartRef}
             advanceClueForAdventure={advanceClueForAdventure}
             onClueAdvanced={(nextState) => {
-              if (isSupabaseMode && user) {
-                syncProfile(nextState);
-                syncRewardsAndHistory(nextState.rewards, nextState.claimHistory);
-              }
+              if (isSupabaseMode && user) syncProgressionState(nextState);
             }}
           />
         )}
@@ -1140,7 +779,7 @@ function QuestoryApp() {
         {state.screen === 'bonus' && state.pendingBonus && selected && (
           <BonusFindModal
             bonus={state.pendingBonus}
-            onContinue={continueAfterBonus}
+            onContinue={continueAfterBonusFlow}
           />
         )}
         {state.screen === 'vault' && (
@@ -1882,60 +1521,18 @@ function AdventurePlay({
   const [dynamicHint, setDynamicHint] = useState('');
   const premiumLocked =
     isPremiumAdventure(adventure) && !canAccessPremiumHunt(state, adventure) && !adminPreview;
-  const [activeAr, setActiveAr] = useState(null);
 
-  function completeArScene() {
-    const snapshot = activeAr;
-    setActiveAr(null);
-    if (!snapshot) return;
-
-    setState((s) => {
-      let next = s;
-      if (snapshot.sceneId) {
-        next = markArSceneComplete(next, adventure.id, snapshot.sceneId);
-      }
-      if (snapshot.advanceClue && advanceClueForAdventure) {
-        next = advanceClueForAdventure(next, adventure, clueStartRef);
-        onClueAdvanced?.(next);
-      }
-      return next;
+  const { activeAr, completeArScene, queueArScene, canReplayClueAr, clueArScene } =
+    useArSceneFlow({
+      adventure,
+      progress,
+      clue,
+      atClaim,
+      setState,
+      advanceClueForAdventure,
+      clueStartRef,
+      onClueAdvanced,
     });
-  }
-
-  function queueArScene(trigger, { advanceClue = false, forceReplay = false } = {}) {
-    const shouldAdvance = advanceClue && !forceReplay;
-
-    function maybeAdvanceClue(s) {
-      if (!shouldAdvance || !advanceClueForAdventure) return s;
-      const next = advanceClueForAdventure(s, adventure, clueStartRef);
-      onClueAdvanced?.(next);
-      return next;
-    }
-
-    if (atClaim || !clue) {
-      if (shouldAdvance) setState((s) => maybeAdvanceClue(s));
-      return;
-    }
-    const scene = getClueArScene(clue);
-    if (!matchesArTrigger(scene, trigger)) {
-      if (shouldAdvance) setState((s) => maybeAdvanceClue(s));
-      return;
-    }
-    const sceneId = getArSceneId(adventure.id, clue.id, 'clue');
-    if (!shouldPlayArScene(scene, progress, sceneId, { forceReplay })) {
-      if (shouldAdvance) setState((s) => maybeAdvanceClue(s));
-      return;
-    }
-    setActiveAr({ scene, sceneId, advanceClue: shouldAdvance });
-  }
-
-  const clueArScene = !atClaim && clue ? getClueArScene(clue) : null;
-  const clueSceneId = clue ? getArSceneId(adventure.id, clue.id, 'clue') : null;
-  const canReplayClueAr =
-    clueArScene?.enabled &&
-    clueArScene?.allowReplay !== false &&
-    clueSceneId &&
-    progress.arScenesCompleted?.includes(clueSceneId);
 
   function handleCoinSpend(type) {
     let result;
