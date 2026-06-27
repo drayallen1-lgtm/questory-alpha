@@ -84,12 +84,22 @@ function useMedallionGps(adventure, watching = true) {
   };
 }
 
-function FinderSignalPreview({ distance, accuracy, signal, searchRadius }) {
+function getFinderExcitement(distance, inCaptureRange, inSearchArea) {
+  if (inCaptureRange) return { label: 'Capture range!', className: 'hot' };
+  if (!inSearchArea || distance == null) return { label: 'Searching…', className: '' };
+  if (distance <= 30) return { label: 'Almost there!', className: 'warm' };
+  if (distance <= 80) return { label: 'Signal building…', className: 'warm' };
+  return { label: 'Follow the signal', className: '' };
+}
+
+function FinderSignalPreview({ distance, accuracy, signal, searchRadius, inCaptureRange, inSearchArea }) {
+  const excitement = getFinderExcitement(distance, inCaptureRange, inSearchArea);
   return (
     <div className="finder-signal-preview">
+      <p className={`finder-excitement ${excitement.className}`}>{excitement.label}</p>
       <div className="finder-stat">
         <small>Signal strength</small>
-        <div className="signal-meter" aria-label={`Signal ${signal}%`}>
+        <div className={`signal-meter ${signal > 50 ? 'strong' : ''}`} aria-label={`Signal ${signal}%`}>
           <i style={{ width: `${signal}%` }} />
         </div>
         <strong>{signal}%</strong>
@@ -164,6 +174,8 @@ export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
             accuracy={accuracy}
             signal={signal}
             searchRadius={searchRadius}
+            inCaptureRange={false}
+            inSearchArea={inSearchArea}
           />
         )}
         <button
@@ -371,9 +383,15 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
       </div>
 
       <div className="card finder-stats">
+        {(() => {
+          const excitement = getFinderExcitement(effectiveDistance, inCaptureRange, inSearchArea);
+          return (
+            <p className={`finder-excitement ${excitement.className}`}>{excitement.label}</p>
+          );
+        })()}
         <div className="finder-stat">
           <small>Signal strength</small>
-          <div className="signal-meter" aria-label={`Signal ${signal}%`}>
+          <div className={`signal-meter ${inSearchArea && signal > 50 ? 'strong' : ''} ${inCaptureRange ? 'capture-ready' : ''}`} aria-label={`Signal ${signal}%`}>
             <i style={{ width: `${inSearchArea ? signal : 0}%` }} />
           </div>
           <strong>{inSearchArea ? `${signal}%` : '—'}</strong>
@@ -421,7 +439,7 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
           {tapError && <p className="form-error finder-tap-error">{tapError}</p>}
         </div>
       ) : (
-        <div className={`card finder-medallion-card ${inCaptureRange ? 'ready' : ''}`}>
+        <div className={`card finder-medallion-card ${inCaptureRange ? 'ready capture-pulse' : inSearchArea ? 'signal-active' : ''}`}>
           <div className="finder-medallion-visual" aria-hidden="true">
             <span className="finder-chest">{physical ? '📍' : '🧭'}</span>
             <span className="finder-medallion">🥇</span>
@@ -473,102 +491,175 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
   );
 }
 
+function getClaimGuide(method, adventure) {
+  const hint = adventure.claimHint || adventure.hintAfterTap;
+  switch (method) {
+    case CLAIM_METHOD.QR_CODE:
+      return {
+        title: 'Scan Sponsor QR',
+        why: 'Your trail is complete. Scan the sponsor QR code to verify your visit and unlock rewards.',
+        where: hint || 'Look for the Questory QR poster at the finish line or sponsor location.',
+        after: 'Rewards appear in your Passport. Share your certificate when you are done.',
+        steps: ['Find the sponsor QR code', 'Scan or enter the code below', 'Tap Verify & Claim'],
+      };
+    case CLAIM_METHOD.PHYSICAL_MEDALLION:
+      return {
+        title: 'Physical Medallion Code',
+        why: 'You found the signal zone. The hidden physical medallion holds your final unlock code.',
+        where: hint || adventure.hintAfterTap || 'Search the area shown on the map — check landmarks and hiding spots.',
+        after: 'Enter the engraved code to claim coins, badges, and vault rewards.',
+        steps: ['Search for the physical medallion', 'Read the engraved code', 'Enter it below to claim'],
+      };
+    case CLAIM_METHOD.HYBRID:
+      return {
+        title: 'Final Claim Code',
+        why: 'Virtual medallion secured. Enter the final claim code to complete your treasure.',
+        where: hint || 'Check your invite, sponsor card, or adventure details for the secret code.',
+        after: 'Full rewards unlock and your celebration screen appears.',
+        steps: ['Virtual medallion captured ✓', 'Enter the final claim code', 'Tap Claim Treasure'],
+      };
+    case CLAIM_METHOD.TAP_MEDALLION:
+      return {
+        title: 'Virtual Treasure',
+        why: 'Tap the virtual medallion in Finder Mode to auto-claim your rewards.',
+        where: 'Follow the signal in Finder Mode until capture range.',
+        after: 'Rewards land in your Passport instantly.',
+        steps: ['Enter Finder Mode', 'Follow the signal', 'Tap the medallion to claim'],
+      };
+    default:
+      return {
+        title: 'Secret Claim Code',
+        why: 'Your trail is complete. Enter the secret code to unlock coins, badges, and vault rewards.',
+        where: hint || 'Check your adventure invite, final clue, or sponsor card for the code.',
+        after: 'Rewards appear in your Passport. Share your certificate when you are done.',
+        steps: ['Enter the claim code below', 'Tap Claim Treasure', 'Celebrate your victory'],
+      };
+  }
+}
+
+function ClaimGuidePanel({ guide }) {
+  return (
+    <div className="claim-guide">
+      <h4>{guide.title}</h4>
+      <div className="claim-guide-section">
+        <small>Why enter a code?</small>
+        <p>{guide.why}</p>
+      </div>
+      <div className="claim-guide-section">
+        <small>Where to find it</small>
+        <p>{guide.where}</p>
+      </div>
+      <div className="claim-guide-section">
+        <small>What happens next</small>
+        <p>{guide.after}</p>
+      </div>
+      <ol className="claim-steps">
+        {guide.steps.map((step) => (
+          <li key={step}>{step}</li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 export function TreasureClaimPanel({ adventure, progress, onClaim }) {
   const method = normalizeClaimMethod(adventure.claimMethod);
   const [qrInput, setQrInput] = useState('');
   const [physicalInput, setPhysicalInput] = useState('');
+  const [codeInput, setCodeInput] = useState('');
+  const [claiming, setClaiming] = useState(false);
+  const guide = getClaimGuide(method, adventure);
 
-  async function handleCodeClaim() {
-    const code = document.getElementById('claim-code')?.value?.trim().toUpperCase();
-    await handleClaimResponse(onClaim, code);
-  }
-
-  async function handleQrClaim() {
-    await handleClaimResponse(onClaim, qrInput.trim().toUpperCase());
-  }
-
-  async function handlePhysicalClaim() {
-    await handleClaimResponse(onClaim, physicalInput.trim().toUpperCase());
+  async function submitClaim(code) {
+    setClaiming(true);
+    try {
+      await handleClaimResponse(onClaim, code);
+    } finally {
+      setClaiming(false);
+    }
   }
 
   if (progress.claimed) {
-    return <p>Treasure claimed. Open your Reward Vault to see everything you earned.</p>;
-  }
-
-  if (claimMethodUsesFinder(adventure) && !progress.medallionTapped) {
     return (
-      <p>
-        Enter Finder Mode and tap the medallion signal to unlock the final treasure claim.
-      </p>
-    );
-  }
-
-  if (method === CLAIM_METHOD.QR_CODE) {
-    return (
-      <>
-        <p>Find the sponsor QR code and scan it to claim your rewards.</p>
-        <input
-          value={qrInput}
-          onChange={(e) => setQrInput(e.target.value.toUpperCase())}
-          placeholder="QR payload"
-        />
-        <button type="button" onClick={handleQrClaim}>
-          <QrCode size={18} /> Verify QR & Claim
-        </button>
-      </>
-    );
-  }
-
-  if (method === CLAIM_METHOD.PHYSICAL_MEDALLION && progress.medallionTapped) {
-    return (
-      <div className="physical-search-card">
-        <h4>The signal is strongest here. Search carefully.</h4>
-        {adventure.hintAfterTap && (
-          <p className="physical-hint">
-            <MapPin size={14} /> {adventure.hintAfterTap}
-          </p>
-        )}
-        <p>
-          Discover the hidden physical medallion nearby. Enter the engraved code from the
-          medallion to unlock your rewards.
-        </p>
-        <input
-          value={physicalInput}
-          onChange={(e) => setPhysicalInput(e.target.value.toUpperCase())}
-          placeholder="Engraved physical code"
-        />
-        <button type="button" onClick={handlePhysicalClaim}>
-          <Sparkles size={18} /> Claim Treasure
-        </button>
+      <div className="claim-success-card">
+        <Sparkles size={24} />
+        <p>Treasure claimed! Open your Passport to see everything you earned.</p>
       </div>
     );
   }
 
-  if (method === CLAIM_METHOD.SECRET_CODE) {
+  if (claimMethodUsesFinder(adventure) && !progress.medallionTapped) {
     return (
-      <>
-        <p>Enter the final claim code to unlock your rewards.</p>
-        <input id="claim-code" placeholder="Enter secret code" />
-        <button type="button" onClick={handleCodeClaim}>
-          <Sparkles size={18} /> Claim Treasure
-        </button>
-      </>
+      <div className="claim-awaiting-finder">
+        <ClaimGuidePanel guide={getClaimGuide(CLAIM_METHOD.TAP_MEDALLION, adventure)} />
+        <p className="claim-hint">
+          Enter Finder Mode and tap the medallion signal to unlock the final treasure claim.
+        </p>
+      </div>
     );
   }
 
-  if (method === CLAIM_METHOD.HYBRID) {
+  if (method === CLAIM_METHOD.TAP_MEDALLION && progress.medallionTapped) {
     return (
-      <>
-        <p>Virtual medallion secured. Enter the final claim code to complete your claim.</p>
-        <input id="claim-code" placeholder="Enter secret code" />
-        <button type="button" onClick={handleCodeClaim}>
-          <Sparkles size={18} /> Claim Treasure
-        </button>
-      </>
+      <div className="claim-success-card">
+        <Sparkles size={24} />
+        <p>Medallion captured — claiming your rewards…</p>
+      </div>
     );
   }
 
-  return null;
+  return (
+    <div className="treasure-claim-flow">
+      <ClaimGuidePanel guide={guide} />
+
+      {method === CLAIM_METHOD.QR_CODE && (
+        <div className="claim-input-block">
+          <input
+            value={qrInput}
+            onChange={(e) => setQrInput(e.target.value.toUpperCase())}
+            placeholder="Paste or type QR payload"
+            aria-label="QR code payload"
+          />
+          <button type="button" onClick={() => submitClaim(qrInput.trim().toUpperCase())} disabled={claiming || !qrInput.trim()}>
+            <QrCode size={18} /> {claiming ? 'Verifying…' : 'Verify QR & Claim'}
+          </button>
+        </div>
+      )}
+
+      {method === CLAIM_METHOD.PHYSICAL_MEDALLION && progress.medallionTapped && (
+        <div className="claim-input-block physical-search-card">
+          {adventure.hintAfterTap && (
+            <p className="physical-hint">
+              <MapPin size={14} /> {adventure.hintAfterTap}
+            </p>
+          )}
+          <input
+            value={physicalInput}
+            onChange={(e) => setPhysicalInput(e.target.value.toUpperCase())}
+            placeholder="Engraved physical code"
+            aria-label="Physical medallion code"
+          />
+          <button type="button" onClick={() => submitClaim(physicalInput.trim().toUpperCase())} disabled={claiming || !physicalInput.trim()}>
+            <Sparkles size={18} /> {claiming ? 'Claiming…' : 'Claim Treasure'}
+          </button>
+        </div>
+      )}
+
+      {(method === CLAIM_METHOD.SECRET_CODE || method === CLAIM_METHOD.HYBRID) && (
+        <div className="claim-input-block">
+          <input
+            value={codeInput}
+            onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+            placeholder="Enter secret code"
+            aria-label="Secret claim code"
+          />
+          <button type="button" onClick={() => submitClaim(codeInput.trim().toUpperCase())} disabled={claiming || !codeInput.trim()}>
+            <Sparkles size={18} /> {claiming ? 'Claiming…' : 'Claim Treasure'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ClaimMethodSelector({ value, onChange }) {

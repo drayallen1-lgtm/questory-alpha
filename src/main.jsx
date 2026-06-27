@@ -245,6 +245,8 @@ import {
   BackyardPrecisionBanner,
   ExperienceVictoryMessage,
   HorrorAtmosphereOverlay,
+  ClueChapterHeader,
+  AdventureIntroModal,
 } from './ExperienceUI';
 import {
   WorldEngineHub,
@@ -261,6 +263,7 @@ import {
 import {
   shouldShowWelcome,
   shouldShowJourney,
+  shouldShowPlayerGuide,
   getAccessibilityClassName,
   completeDemoIfNeeded,
   shouldShowFirstCompletionCelebration,
@@ -274,6 +277,7 @@ import {
 } from './growth';
 import {
   WelcomeOnboarding,
+  PlayerGuideOnboarding,
   ChooseYourJourney,
   QuickCreateWizard,
   InvitePlayersPanel,
@@ -472,6 +476,19 @@ function QuestoryApp() {
       }
       if (screen === 'play' && adventureId) {
         next = recordAdventureStart(next, adventureId);
+        const playProgress = getAdventureProgress(next, adventureId);
+        if (!playProgress.startedAt && playProgress.step === 0 && !playProgress.claimed) {
+          next = {
+            ...next,
+            progress: {
+              ...next.progress,
+              [adventureId]: {
+                ...playProgress,
+                startedAt: new Date().toISOString(),
+              },
+            },
+          };
+        }
       }
       return next;
     });
@@ -769,6 +786,9 @@ function QuestoryApp() {
 
     const primaryReward =
       vaultRewards.find((r) => r.type === 'medallion') || vaultRewards[0];
+    const medallionTitles = vaultRewards
+      .filter((r) => r.type === 'medallion')
+      .map((r) => r.title);
     const certificate = createCompletionCertificate({
       adventureId: freshAdventure.id,
       adventureName: freshAdventure.title,
@@ -776,6 +796,9 @@ function QuestoryApp() {
       completedAt: claimedAt,
       sponsorInfo,
       collectionName: freshAdventure.collectionName || '',
+      adventure: freshAdventure,
+      startedAt: p.startedAt || null,
+      medallions: medallionTitles,
     });
 
     const completion = applyAdventureCompletion(
@@ -812,7 +835,11 @@ function QuestoryApp() {
         engagement: completion.engagement,
         screen: 'victory',
         victoryCertificate: certificate,
-        victoryEngagement: completion,
+        victoryEngagement: {
+          ...completion,
+          coinsEarned: completion.coins + (resolved.coinsBonus || 0),
+          seasonXp: 100,
+        },
         pendingRating: isDemo ? null : freshAdventure.id,
         claimMessage: resolved.message || null,
         progress: {
@@ -967,6 +994,9 @@ function QuestoryApp() {
         )}
         {!shouldShowWelcome(state) && shouldShowJourney(state) && (
           <ChooseYourJourney state={state} setState={setState} nav={nav} />
+        )}
+        {shouldShowPlayerGuide(state) && (
+          <PlayerGuideOnboarding state={state} setState={setState} />
         )}
         {showQuickCreate && (
           <QuickCreateWizard
@@ -1217,6 +1247,9 @@ function QuestoryApp() {
               certificate={state.victoryCertificate}
               engagementUpdate={state.victoryEngagement}
               nav={nav}
+              adventure={selected}
+              state={state}
+              adventures={state.adventures}
             />
           </>
         )}
@@ -1287,12 +1320,14 @@ function QuestoryApp() {
           )
         )}
       </main>
-      <BottomNav
-        screen={state.screen}
-        nav={nav}
-        adminPreview={state.adminPreview}
-        isSponsor={isSponsor || isAdmin}
-      />
+      {!['play', 'finder', 'medallion-signal', 'victory', 'bonus'].includes(state.screen) && (
+        <BottomNav
+          screen={state.screen}
+          nav={nav}
+          adminPreview={state.adminPreview}
+          isSponsor={isSponsor || isAdmin}
+        />
+      )}
     </div>
   );
 }
@@ -1513,6 +1548,7 @@ function AdventureDetail({
   adventures,
   isAdmin,
 }) {
+  const [showIntro, setShowIntro] = useState(false);
   const ended = isAdventureEnded(adventure);
   const unlocked = isAdventureUnlocked(state, adventure);
   const playable = isAdventurePlayable(adventure, adminPreview) && (!ended || progress.claimed) && unlocked;
@@ -1521,8 +1557,25 @@ function AdventureDetail({
     : Math.round((progress.step / Math.max(adventure.clues.length, 1)) * 100);
   const myTeam = getMyTeam(state);
 
+  function startPlay() {
+    nav('play', adventure.id, { adminPreview });
+  }
+
   return (
     <>
+      {showIntro && (
+        <AdventureIntroModal
+          adventure={adventure}
+          onAccept={() => {
+            setShowIntro(false);
+            startPlay();
+          }}
+          onSkip={() => {
+            setShowIntro(false);
+            startPlay();
+          }}
+        />
+      )}
       <button
         className="ghost back"
         onClick={() =>
@@ -1704,7 +1757,13 @@ function AdventureDetail({
       ) : (
         <button
           disabled={!playable}
-          onClick={() => nav('play', adventure.id, { adminPreview })}
+          onClick={() => {
+            if (!progress.claimed && progress.step === 0 && !adminPreview) {
+              setShowIntro(true);
+            } else {
+              startPlay();
+            }
+          }}
         >
           {ended && !progress.claimed
             ? 'Adventure Ended'
@@ -1971,16 +2030,23 @@ function AdventurePlay({
 
       <MiniClueMap adventure={adventure} activeClueIndex={clueIndex} />
 
-      <div className="card clue">
-        <h3>
-          {!atClaim
-            ? `Clue ${progress.step + 1}: ${clue?.title}`
-            : progress.claimed
+      <div className={`card clue ${!atClaim && clue ? 'clue-chapter-card' : ''}`}>
+        {!atClaim && !progress.claimed && clue ? (
+          <ClueChapterHeader
+            chapter={progress.step + 1}
+            total={total}
+            title={clue.title}
+            adventureTitle={adventure.title}
+          />
+        ) : (
+          <h3>
+            {progress.claimed
               ? 'Treasure Claimed'
               : awaitingFinder
                 ? 'Medallion Finder'
                 : 'Treasure Claim'}
-        </h3>
+          </h3>
+        )}
 
         {!atClaim && !progress.claimed && clue && (
           <>

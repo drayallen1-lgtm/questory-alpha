@@ -11,6 +11,46 @@ import {
   getScalePreset,
 } from './templates';
 
+/** Short skippable guide for first-time players (how to play). */
+export const PLAYER_GUIDE_SLIDES = [
+  {
+    id: 'types',
+    icon: '🗺',
+    title: 'Adventure Types',
+    desc: 'Family hunts, horror trails, date nights, and sponsor quests — each follows the same flow: clues, AR scenes, medallion, treasure.',
+  },
+  {
+    id: 'gps',
+    icon: '📍',
+    title: 'GPS Check-In',
+    desc: 'When a clue marks a location, walk there and check in. Your phone confirms you reached the right spot.',
+  },
+  {
+    id: 'ar',
+    icon: '📱',
+    title: 'AR Scenes',
+    desc: 'Tap to play cinematic moments — story beats, ghosts, and clues appear in your camera view.',
+  },
+  {
+    id: 'finder',
+    icon: '🧭',
+    title: 'Finder Mode',
+    desc: 'After the final clue, follow the medallion signal. Get close enough to capture it.',
+  },
+  {
+    id: 'collections',
+    icon: '📘',
+    title: 'Collections',
+    desc: 'Complete related adventures to fill your Passport and earn exclusive medallions.',
+  },
+  {
+    id: 'rewards',
+    icon: '🏆',
+    title: 'Rewards',
+    desc: 'Earn coins, badges, and certificates. Claim treasure with a code, QR scan, or medallion tap.',
+  },
+];
+
 export const ONBOARDING_SLIDES = [
   { id: 'family', icon: '🏡', title: 'Family Treasure Hunts', desc: 'Birthdays, reunions, and backyard memories.' },
   { id: 'horror', icon: '👻', title: 'Horror Experiences', desc: 'Spooky trails your friends will talk about.' },
@@ -90,6 +130,8 @@ export const DEFAULT_ONBOARDING = {
   completed: false,
   skipped: false,
   journeyChosen: false,
+  playerGuideCompleted: false,
+  playerGuideSkipped: false,
   completedAt: null,
   slideIndex: 0,
 };
@@ -137,6 +179,27 @@ export function shouldShowWelcome(state) {
 export function shouldShowJourney(state) {
   const onboarding = normalizeOnboarding(state.onboarding);
   return onboarding.completed && !onboarding.journeyChosen;
+}
+
+export function shouldShowPlayerGuide(state) {
+  const onboarding = normalizeOnboarding(state.onboarding);
+  return (
+    onboarding.completed &&
+    onboarding.journeyChosen &&
+    !onboarding.playerGuideCompleted &&
+    !onboarding.playerGuideSkipped
+  );
+}
+
+export function completePlayerGuide(state, skipped = false) {
+  return {
+    ...state,
+    onboarding: normalizeOnboarding({
+      ...state.onboarding,
+      playerGuideCompleted: true,
+      playerGuideSkipped: skipped,
+    }),
+  };
 }
 
 export function completeWelcome(state, skipped = false) {

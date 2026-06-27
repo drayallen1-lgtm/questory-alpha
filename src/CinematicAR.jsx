@@ -195,7 +195,7 @@ export function CinematicAROverlay({
   const normalized = normalizeArScene(scene);
 
   return (
-    <div className="cinematic-ar-overlay-root">
+    <div className="cinematic-ar-overlay-root cinematic-ar-fade-in">
       <CinematicTimelinePlayer
         scene={normalized}
         onComplete={onComplete}

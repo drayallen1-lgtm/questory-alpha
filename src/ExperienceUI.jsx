@@ -527,6 +527,62 @@ export function HorrorAtmosphereOverlay({ adventure }) {
   );
 }
 
+export function ClueChapterHeader({ chapter, total, title, adventureTitle }) {
+  const pct = total > 0 ? Math.round((chapter / total) * 100) : 0;
+  return (
+    <div className="clue-chapter-header">
+      <div className="chapter-meta">
+        <span className="chapter-label">Chapter {chapter} of {total}</span>
+        {adventureTitle && <small className="chapter-adventure">{adventureTitle}</small>}
+      </div>
+      <h3 className="chapter-title">{title}</h3>
+      <div className="chapter-progress">
+        <div className="progress">
+          <i style={{ width: `${pct}%` }} />
+        </div>
+        <small>{pct}% through the trail</small>
+      </div>
+    </div>
+  );
+}
+
+export function ClueCompleteFlash({ show }) {
+  if (!show) return null;
+  return (
+    <div className="clue-complete-flash" aria-live="polite">
+      <span className="clue-complete-icon">✓</span>
+      <p>Chapter complete</p>
+    </div>
+  );
+}
+
+export function AdventureIntroModal({ adventure, onAccept, onSkip }) {
+  return (
+    <div className="invitation-overlay adventure-intro-modal">
+      <div className="card adventure-intro-panel">
+        <span className="intro-badge">Story Introduction</span>
+        <h2>{adventure.title}</h2>
+        {adventure.collectionName && (
+          <p className="intro-collection">⭐ {adventure.collectionName}</p>
+        )}
+        <p className="intro-story">{adventure.story}</p>
+        <ul className="intro-steps">
+          <li>Follow GPS clues across the trail</li>
+          <li>Experience AR scenes at key moments</li>
+          <li>Capture the medallion in Finder Mode</li>
+          <li>Claim your treasure and earn rewards</li>
+        </ul>
+        <button type="button" onClick={onAccept}>
+          <Play size={18} /> Accept Adventure
+        </button>
+        <button type="button" className="ghost" onClick={onSkip}>
+          Skip intro
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ApplyTemplateButton({ templateId, scaleId, onApply }) {
   return (
     <button

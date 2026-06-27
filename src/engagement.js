@@ -429,6 +429,8 @@ export function applyAdventureCompletion(state, adventure, adventures) {
     ],
   };
 
+  const badgesBefore = [...engagement.badges];
+
   nextEngagement = evaluateBadges(nextEngagement, {
     adventuresCompleted,
     milesWalked,
@@ -449,6 +451,8 @@ export function applyAdventureCompletion(state, adventure, adventures) {
     });
   }
 
+  const newBadges = nextEngagement.badges.filter((b) => !badgesBefore.includes(b));
+
   return {
     coins,
     engagement: nextEngagement,
@@ -456,7 +460,23 @@ export function applyAdventureCompletion(state, adventure, adventures) {
     newlyCompletedCollections,
     collectionRewards,
     isFounder,
+    newBadges,
   };
+}
+
+export function findNextAdventure(state, adventures, currentId) {
+  const published = adventures.filter(
+    (a) =>
+      a.status === 'published' &&
+      a.id !== currentId &&
+      !getAdventureProgress(state, a.id).claimed
+  );
+  const current = adventures.find((a) => a.id === currentId);
+  if (!published.length) return null;
+  const sameCollection = published.filter(
+    (a) => current?.collectionId && a.collectionId === current.collectionId
+  );
+  return sameCollection[0] || published[0];
 }
 
 export function getFeaturedCollectionProgress(state, adventures) {

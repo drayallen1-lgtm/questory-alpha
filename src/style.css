@@ -5762,3 +5762,288 @@ button.marketplace-template {
   50% { opacity: 0.35; }
   55% { opacity: 0.9; }
 }
+
+/* Sweep 11 — Experience Pass */
+
+.player-guide-onboarding .invite-hero h1 {
+  font-size: 1.35rem;
+}
+
+.cinematic-ar-fade-in {
+  animation: cinematic-fade-in 0.45s ease-out;
+}
+
+@keyframes cinematic-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.adventure-intro-modal {
+  z-index: 900;
+}
+
+.adventure-intro-panel {
+  max-width: 420px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.intro-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.15);
+  color: var(--gold, #d4af37);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.intro-story {
+  text-align: left;
+  line-height: 1.55;
+  margin: 12px 0;
+}
+
+.intro-collection {
+  color: var(--gold, #d4af37);
+  margin-bottom: 4px;
+}
+
+.intro-steps {
+  text-align: left;
+  margin: 16px 0;
+  padding-left: 1.2rem;
+  line-height: 1.6;
+}
+
+.clue-chapter-header {
+  margin-bottom: 12px;
+}
+
+.chapter-label {
+  display: inline-block;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold, #d4af37);
+}
+
+.chapter-adventure {
+  display: block;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+.chapter-title {
+  margin: 8px 0 10px;
+  font-size: 1.25rem;
+}
+
+.chapter-progress {
+  margin-top: 8px;
+}
+
+.chapter-progress small {
+  display: block;
+  margin-top: 4px;
+  opacity: 0.75;
+}
+
+.clue-chapter-card {
+  animation: clue-chapter-in 0.35s ease-out;
+  border-left: 3px solid var(--gold, #d4af37);
+}
+
+@keyframes clue-chapter-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.treasure-claim-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.claim-guide {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.claim-guide h4 {
+  margin: 0 0 10px;
+}
+
+.claim-guide-section {
+  margin-bottom: 10px;
+}
+
+.claim-guide-section small {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.68rem;
+  opacity: 0.65;
+  margin-bottom: 2px;
+}
+
+.claim-guide-section p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.claim-steps {
+  margin: 8px 0 0;
+  padding-left: 1.2rem;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.claim-input-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.claim-success-card {
+  text-align: center;
+  padding: 16px;
+  color: var(--gold, #d4af37);
+}
+
+.claim-awaiting-finder .claim-hint {
+  margin-top: 8px;
+  opacity: 0.85;
+}
+
+.finder-excitement {
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+.finder-excitement.warm {
+  color: #f0c674;
+}
+
+.finder-excitement.hot {
+  color: #ff6b6b;
+  animation: finder-pulse 1s ease-in-out infinite;
+}
+
+.signal-meter.strong i {
+  background: linear-gradient(90deg, #d4af37, #f0c674);
+}
+
+.signal-meter.capture-ready i {
+  background: linear-gradient(90deg, #4ade80, #d4af37);
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+}
+
+.finder-medallion-card.capture-pulse {
+  animation: capture-glow 1.4s ease-in-out infinite;
+}
+
+.finder-medallion-card.signal-active {
+  border-color: rgba(212, 175, 55, 0.35);
+}
+
+@keyframes capture-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(74, 222, 128, 0); }
+  50% { box-shadow: 0 0 24px rgba(74, 222, 128, 0.25); }
+}
+
+.victory-celebration {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  position: relative;
+}
+
+.victory-celebration.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.victory-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.12), transparent 40%),
+    radial-gradient(circle at 80% 30%, rgba(74, 222, 128, 0.08), transparent 35%);
+}
+
+.victory-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 10px;
+  text-align: center;
+}
+
+.victory-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.victory-stat strong {
+  font-size: 1.2rem;
+  color: var(--gold, #d4af37);
+}
+
+.victory-rewards-summary .reward-line {
+  margin: 6px 0;
+}
+
+.victory-rewards-summary .badge-unlock {
+  color: var(--gold, #d4af37);
+}
+
+.victory-actions {
+  flex-wrap: wrap;
+}
+
+.social-share-card {
+  padding: 20px;
+  text-align: center;
+}
+
+.social-card-reward {
+  font-size: 1rem;
+  color: var(--gold, #d4af37);
+  margin: 6px 0;
+}
+
+.social-card-quote {
+  font-style: italic;
+  margin: 12px 0;
+  line-height: 1.45;
+  font-size: 0.95rem;
+}
+
+.collection-series-map {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 10px 0;
+  font-size: 0.85rem;
+}
+
+.series-node {
+  opacity: 0.65;
+}
+
+.series-node.done {
+  opacity: 1;
+  color: var(--gold, #d4af37);
+}
+
+.collection-next-reward,
+.collection-reward-unlocked {
+  display: block;
+  margin-top: 6px;
+}

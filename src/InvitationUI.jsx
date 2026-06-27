@@ -18,6 +18,7 @@ import {
   JOURNEY_CHOICES,
   KID_TEMPLATES,
   ONBOARDING_SLIDES,
+  PLAYER_GUIDE_SLIDES,
   WIZARD_AUDIENCES,
   WIZARD_CLUE_COUNTS,
   WIZARD_LOCATIONS,
@@ -29,6 +30,7 @@ import {
   buildSponsorExpressAdventureSync,
   completeJourneyChoice,
   completeWelcome,
+  completePlayerGuide,
   DEMO_ADVENTURE_ID,
   publishQuickAdventure,
   markInviteShared,
@@ -84,6 +86,57 @@ export function WelcomeOnboarding({ state, setState, onDone }) {
             onClick={() => (isLast ? finish(false) : setIndex((i) => i + 1))}
           >
             {isLast ? 'Start Exploring' : 'Next'}
+            {!isLast && <ChevronRight size={18} />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function PlayerGuideOnboarding({ state, setState, onDone }) {
+  const [index, setIndex] = useState(0);
+  const slide = PLAYER_GUIDE_SLIDES[index];
+  const isLast = index >= PLAYER_GUIDE_SLIDES.length - 1;
+
+  function finish(skipped = false) {
+    setState((s) => completePlayerGuide(s, skipped));
+    onDone?.();
+  }
+
+  return (
+    <div className="invitation-overlay player-guide-onboarding">
+      <div className="invitation-panel">
+        <button type="button" className="ghost invite-skip" onClick={() => finish(true)}>
+          Skip
+        </button>
+        <div className="invite-hero">
+          {index === 0 && (
+            <>
+              <h1>How Questory works</h1>
+              <p className="invite-subhead">A quick guide before your first adventure.</p>
+            </>
+          )}
+          <span className="invite-slide-icon">{slide.icon}</span>
+          <h2>{slide.title}</h2>
+          <p>{slide.desc}</p>
+        </div>
+        <div className="invite-dots">
+          {PLAYER_GUIDE_SLIDES.map((s, i) => (
+            <span key={s.id} className={i === index ? 'active' : ''} />
+          ))}
+        </div>
+        <div className="invite-nav-row">
+          {index > 0 && (
+            <button type="button" className="ghost" onClick={() => setIndex((i) => i - 1)}>
+              <ChevronLeft size={18} /> Back
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => (isLast ? finish(false) : setIndex((i) => i + 1))}
+          >
+            {isLast ? 'Got it — let\'s play' : 'Next'}
             {!isLast && <ChevronRight size={18} />}
           </button>
         </div>
