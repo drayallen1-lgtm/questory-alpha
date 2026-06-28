@@ -4,6 +4,11 @@
  */
 import { generateClaimCode } from './seed';
 import { generateSceneFromPrompt } from './aiSceneGenerator';
+import {
+  applyCinematicEntityToScene,
+  autoPickEntitiesForPrompt,
+  enhanceSceneWithCinematicAssets,
+} from './cinematicAssetEngine';
 import { emptyArScene, normalizeArScene } from './arEngine';
 import { FINALE_THEMES } from './finaleThemes';
 import { CLAIM_METHOD } from './claimSystem';
@@ -778,7 +783,14 @@ export function generateAdventureBlueprint(prompt, options = {}) {
 function generateArSceneFromPrompt(prompt) {
   if (!prompt) return emptyArScene();
   const result = generateSceneFromPrompt(prompt);
-  if (result?.ok && result.scene) return normalizeArScene(result.scene);
+  if (result?.ok && result.scene) {
+    const { scene } = enhanceSceneWithCinematicAssets(result.scene, prompt);
+    return normalizeArScene(scene);
+  }
+  const matches = autoPickEntitiesForPrompt(prompt, 1);
+  if (matches.length) {
+    return applyCinematicEntityToScene({ enabled: true, title: matches[0].label }, matches[0].id);
+  }
   return emptyArScene();
 }
 

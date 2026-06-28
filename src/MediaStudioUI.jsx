@@ -24,6 +24,7 @@ import {
   normalizeMediaManifest,
 } from './mediaStudio';
 import { AI_SCENE_GENERATOR, generateSceneFromPrompt } from './aiSceneGenerator';
+import { CinematicAssetBrowser } from './CinematicAssetBrowser';
 import { ScenePreviewOverlay } from './CinematicAR';
 import { uploadMediaFile, libraryAssetToMediaAsset } from './supabase/mediaService';
 import { HorrorAnimationPreview } from './horrorAssets/animations';
@@ -159,6 +160,9 @@ function GeneratedSceneSummary({ result, onPreview }) {
         <div><dt>Replay</dt><dd>{s.replay}</dd></div>
         {s.finaleTheme && (
           <div><dt>Finale Suggestion</dt><dd>{s.finaleTheme}</dd></div>
+        )}
+        {s.cinematicEntities && (
+          <div><dt>Cinematic Entities</dt><dd>{s.cinematicEntities}</dd></div>
         )}
       </dl>
       <div className="ai-scene-result-actions">
@@ -392,6 +396,11 @@ export function MediaStudioPanel({
       </select>
 
       <AISceneGeneratorPanel insertTarget={insertTarget} onGenerateScene={onGenerateScene} />
+
+      <CinematicAssetBrowser
+        insertTargetLabel={insertTarget === 'finale' ? 'AR Finale' : insertTarget.replace('clue-', 'Clue ')}
+        onInsertScene={(scene) => onGenerateScene?.({ ok: true, scene }, insertTarget)}
+      />
 
       <div
         className={`media-drop-zone ${dragOver ? 'drag-over' : ''}`}

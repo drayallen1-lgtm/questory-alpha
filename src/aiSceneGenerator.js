@@ -9,6 +9,7 @@ import { libraryAssetForInsert } from './horrorAssets/catalog';
 import { getFinaleTheme } from './finaleThemes';
 import { extractQuotedDialogue, sanitizeDialogueField } from './dialogueExtract';
 import { findLibraryAsset, insertAssetIntoScene } from './mediaStudio';
+import { enhanceSceneWithCinematicAssets, summarizeCinematicMatch } from './cinematicAssetEngine';
 import { buildCinematicTimeline, summarizeTimeline } from './aiTimelineGenerator';
 
 /** Local horror keyword engine — no API, instant matching */
@@ -287,6 +288,9 @@ export function generateSceneFromPrompt(prompt) {
     durationSeconds: timelineDuration,
   });
 
+  const cinematic = enhanceSceneWithCinematicAssets(scene, trimmed);
+  scene = cinematic.scene;
+
   const timelineSummary = summarizeTimeline(scene.timeline);
 
   const finaleTheme = finaleHint ? getFinaleTheme(finaleHint.themeId) : null;
@@ -306,6 +310,7 @@ export function generateSceneFromPrompt(prompt) {
       location: locationEntry,
       audio: audioEntries,
       visualAssets: visualAssets.filter(Boolean).map((a) => ({ id: a.id, title: a.title })),
+      cinematicEntities: cinematic.matched,
     },
     suggestions: {
       finaleTheme: finaleTheme
@@ -322,6 +327,7 @@ export function generateSceneFromPrompt(prompt) {
       durationSeconds: scene.durationSeconds,
       finaleTheme,
       timelineSummary,
+      cinematicEntities: summarizeCinematicMatch(cinematic.matched),
     }),
   };
 }
@@ -336,6 +342,7 @@ function buildGenerationSummary({
   durationSeconds,
   finaleTheme,
   timelineSummary,
+  cinematicEntities,
 }) {
   const sceneTypeLabels = {
     ghost: 'Ghost Appearance',
@@ -368,6 +375,7 @@ function buildGenerationSummary({
     timeline: timelineSummary?.eventCount
       ? `${timelineSummary.eventCount} events · ${timelineSummary.audioLayers} audio · ${timelineSummary.choreographySteps} choreography`
       : null,
+    cinematicEntities: cinematicEntities || null,
   };
 }
 
@@ -377,8 +385,8 @@ export const AI_SCENE_GENERATOR = {
   placeholder:
     'A ghost girl appears beside the swing and whispers, "Don\'t look back."',
   examples: [
-    'A shadow figure stands beneath the tree. Branches move above him. The radio crackles: "You\'re too late."',
-    'A little girl appears beside the swing and whispers, "Don\'t look back."',
-    'The hooded watcher flickers by the black lantern in the woods.',
+    'The ghost bride appears beside the swing and whispers, "Don\'t look back."',
+    'A plague doctor flickers by the floating lantern in the woods.',
+    'The cursed doll blinks on the porch steps. Static crackles on the radio.',
   ],
 };
