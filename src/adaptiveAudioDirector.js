@@ -55,6 +55,11 @@ function clamp01(v) {
   return Math.min(1, Math.max(0, v));
 }
 
+function resolveMoodUrl(assetKey) {
+  if (!assetKey) return '';
+  return MOOD_AUDIO_MAP[assetKey] || '';
+}
+
 function resolveSearchAmbienceUrl(mood, phase) {
   const searchKey = mood?.search;
   // Footsteps are loud when looped — reserve for tension/finder/AR, not normal search.
