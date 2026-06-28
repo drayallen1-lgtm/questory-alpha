@@ -15,9 +15,12 @@ import {
 } from './claimSystem';
 import {
   canCaptureMedallion,
+  canEnterFinderMode,
   canUnlockFinderMode,
   computeSignalStrength,
   getCaptureRadius,
+  getFinderCaptureLabel,
+  getFinderEnterLabel,
   getFinderSearchRadius,
   getMedallionLocation,
   measureMedallionDistance,
@@ -165,26 +168,29 @@ function buildFinderContext({
   return { phase, phaseUi };
 }
 
-export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
+export function MedallionSignalScreen({ adventure, nav, adminPreview, isDevMode = false }) {
+  const [devOverride, setDevOverride] = useState(false);
   const physical = isPhysicalMedallionClaim(adventure);
   const { distance, accuracy, gpsError, searchRadius, medallion, inSearchArea, signal, locating } =
     useMedallionGps(adventure);
+  const effectiveInSearchArea = inSearchArea || devOverride;
   const captureRadius = getCaptureRadius(adventure, accuracy);
   const { phase, phaseUi } = buildFinderContext({
     adventure,
-    distance,
-    accuracy,
+    distance: devOverride ? 10 : distance,
+    accuracy: devOverride ? 5 : accuracy,
     gpsError,
-    locating,
-    inSearchArea,
-    inCaptureRange: false,
+    locating: devOverride ? false : locating,
+    inSearchArea: effectiveInSearchArea,
+    inCaptureRange: devOverride,
     medallionTapped: false,
-    signal,
+    signal: devOverride ? 100 : signal,
     medallion,
     searchRadius,
     captureRadius,
     physical,
   });
+  const canEnter = canEnterFinderMode(phase, devOverride);
 
   if (!medallion) {
     return (
@@ -217,7 +223,7 @@ export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
         ← Adventure Play
       </button>
       <div className="card medallion-signal-card">
-        <div className={`signal-pulse-ring ${inSearchArea ? 'active' : ''}`} aria-hidden />
+        <div className={`signal-pulse-ring ${effectiveInSearchArea ? 'active' : ''}`} aria-hidden />
         <Radio size={36} className="signal-icon" />
         <h2>Medallion Signal Activated.</h2>
         <p>{phaseUi.body}</p>
@@ -245,12 +251,27 @@ export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
         )}
         <button
           type="button"
-          disabled={phase !== FINDER_PHASE.SEARCH_ACTIVE && phase !== FINDER_PHASE.CAPTURE_READY}
+          disabled={!canEnter}
           onClick={() => nav('finder', adventure.id, { adminPreview })}
         >
-          <Compass size={18} /> Enter Finder Mode
+          <Compass size={18} /> {getFinderEnterLabel(phase, devOverride)}
         </button>
-        {phase === FINDER_PHASE.OUTSIDE_SEARCH && (
+        {isDevMode && phase === FINDER_PHASE.OUTSIDE_SEARCH && !devOverride && (
+          <button
+            type="button"
+            className="ghost dev-unlock finder-dev-override-btn"
+            onClick={() => {
+              setDevOverride(true);
+              console.log('[Finder] Dev Override enabled on signal screen');
+            }}
+          >
+            <ShieldCheck size={16} /> Dev Override / Force Capture
+          </button>
+        )}
+        {devOverride && (
+          <p className="admin-meta">Dev override active — GPS distance bypassed for testing.</p>
+        )}
+        {phase === FINDER_PHASE.OUTSIDE_SEARCH && !isDevMode && (
           <p className="admin-meta">
             Finder unlocks within {searchRadius} m of the medallion.
           </p>
@@ -261,26 +282,29 @@ export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
 }
 
 /** Play-screen panel: enter Finder when inside search area, not capture range. */
-export function FinderAwaitingPanel({ adventure, nav, adminPreview }) {
+export function FinderAwaitingPanel({ adventure, nav, adminPreview, isDevMode = false }) {
+  const [devOverride, setDevOverride] = useState(false);
   const physical = isPhysicalMedallionClaim(adventure);
   const { distance, gpsError, searchRadius, medallion, inSearchArea, signal, locating, accuracy } =
     useMedallionGps(adventure);
+  const effectiveInSearchArea = inSearchArea || devOverride;
   const captureRadius = getCaptureRadius(adventure, accuracy);
   const { phase, phaseUi } = buildFinderContext({
     adventure,
-    distance,
-    accuracy,
+    distance: devOverride ? 10 : distance,
+    accuracy: devOverride ? 5 : accuracy,
     gpsError,
-    locating,
-    inSearchArea,
-    inCaptureRange: false,
+    locating: devOverride ? false : locating,
+    inSearchArea: effectiveInSearchArea,
+    inCaptureRange: devOverride,
     medallionTapped: false,
-    signal,
+    signal: devOverride ? 100 : signal,
     medallion,
     searchRadius,
     captureRadius,
     physical,
   });
+  const canEnter = canEnterFinderMode(phase, devOverride);
 
   if (!medallion) {
     return (
@@ -312,12 +336,21 @@ export function FinderAwaitingPanel({ adventure, nav, adminPreview }) {
       )}
       <button
         type="button"
-        disabled={phase !== FINDER_PHASE.SEARCH_ACTIVE && phase !== FINDER_PHASE.CAPTURE_READY}
+        disabled={!canEnter}
         onClick={() => nav('finder', adventure.id, { adminPreview })}
       >
-        <Compass size={18} /> Enter Finder Mode
+        <Compass size={18} /> {getFinderEnterLabel(phase, devOverride)}
       </button>
-      {phase === FINDER_PHASE.OUTSIDE_SEARCH && (
+      {isDevMode && phase === FINDER_PHASE.OUTSIDE_SEARCH && !devOverride && (
+        <button
+          type="button"
+          className="ghost dev-unlock finder-dev-override-btn"
+          onClick={() => setDevOverride(true)}
+        >
+          <ShieldCheck size={16} /> Dev Override / Force Capture
+        </button>
+      )}
+      {phase === FINDER_PHASE.OUTSIDE_SEARCH && !isDevMode && (
         <p className="admin-meta">
           Signal activates within {searchRadius} m · capture unlocks in Finder Mode.
         </p>
@@ -332,7 +365,15 @@ function SponsorLine({ adventure }) {
   return <p className="finder-sponsor">Sponsored by {name}</p>;
 }
 
-export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMedallionTap, setState }) {
+export function FinderModeScreen({
+  adventure,
+  progress,
+  nav,
+  adminPreview,
+  isDevMode = false,
+  onMedallionTap,
+  setState,
+}) {
   const [watching, setWatching] = useState(true);
   const [devOverride, setDevOverride] = useState(false);
   const [capturing, setCapturing] = useState(false);
@@ -382,7 +423,16 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
   });
 
   const tapDisabled =
-    !inCaptureRange || progress.medallionTapped || capturing || phase === FINDER_PHASE.CAPTURED;
+    (!inCaptureRange && !devOverride) ||
+    progress.medallionTapped ||
+    capturing ||
+    phase === FINDER_PHASE.CAPTURED;
+  const captureLabel = getFinderCaptureLabel({
+    inCaptureRange,
+    capturing,
+    autoClaim: autoClaimsOnTap(adventure),
+    devOverride,
+  });
   const arFinale = progress?.pathId
     ? getAdventureArFinaleForProgress(adventure, progress)
     : getAdventureArFinale(adventure);
@@ -535,9 +585,11 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
         <div className="card finder-ar-card">
           <ARFinderOverlay
             adventure={adventure}
-            inCaptureRange={inCaptureRange}
+            inCaptureRange={inCaptureRange || devOverride}
             capturing={capturing}
             onCapture={handleTap}
+            captureLabel={captureLabel}
+            tooFar={!inCaptureRange && !devOverride}
           />
           {tapError && <p className="form-error finder-tap-error">{tapError}</p>}
         </div>
@@ -565,17 +617,13 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
           ) : (
             <button
               type="button"
-              className="finder-tap-btn"
+              className={`finder-tap-btn ${!inCaptureRange && !devOverride ? 'finder-too-far' : ''}`}
               onClick={handleTap}
               disabled={tapDisabled}
               aria-busy={capturing}
             >
               <Sparkles size={18} />
-              {capturing
-                ? 'Capturing medallion...'
-                : autoClaimsOnTap(adventure)
-                  ? 'Tap to Claim Treasure'
-                  : 'Tap Medallion'}
+              {captureLabel}
             </button>
           )}
         </div>
@@ -585,9 +633,15 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
         <button type="button" className="ghost" onClick={() => setWatching((v) => !v)}>
           <LocateFixed size={16} /> {watching ? 'Pause GPS' : 'Resume GPS'}
         </button>
-        <button type="button" className="ghost dev-unlock" onClick={handleDevOverride}>
-          <ShieldCheck size={16} /> Dev Override
-        </button>
+        {isDevMode && (
+          <button
+            type="button"
+            className={`ghost dev-unlock ${devOverride ? 'active' : ''}`}
+            onClick={handleDevOverride}
+          >
+            <ShieldCheck size={16} /> Dev Override / Force Capture
+          </button>
+        )}
         <p className="admin-meta">
           <MapPin size={12} /> Search area {searchRadius} m · capture ~{Math.round(captureRadius)} m
         </p>

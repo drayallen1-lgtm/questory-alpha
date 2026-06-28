@@ -764,6 +764,7 @@ function QuestoryApp() {
             onClaim={(code, options) => claimTreasure(selected, code, options)}
             nav={nav}
             adminPreview={state.adminPreview}
+            isDevMode={state.adminPreview || isAdmin}
             clueStartRef={clueStartRef}
             advanceClueForAdventure={advanceClueForAdventure}
             onClueAdvanced={(nextState) => {
@@ -776,6 +777,7 @@ function QuestoryApp() {
             adventure={selected}
             nav={nav}
             adminPreview={state.adminPreview}
+            isDevMode={state.adminPreview || isAdmin}
           />
         )}
         {state.screen === 'finder' && selected && (
@@ -784,6 +786,7 @@ function QuestoryApp() {
             progress={progress}
             nav={nav}
             adminPreview={state.adminPreview}
+            isDevMode={state.adminPreview || isAdmin}
             setState={setState}
             onMedallionTap={(context) => handleMedallionCapture(selected, context)}
           />
@@ -1517,6 +1520,7 @@ function AdventurePlay({
   onClaim,
   nav,
   adminPreview,
+  isDevMode = false,
   clueStartRef,
   advanceClueForAdventure,
   onClueAdvanced,
@@ -1754,6 +1758,7 @@ function AdventurePlay({
             adventure={adventure}
             nav={nav}
             adminPreview={adminPreview}
+            isDevMode={isDevMode}
           />
         )}
 

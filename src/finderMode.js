@@ -58,6 +58,29 @@ export function computeSignalStrength(
   return Math.round(((searchRadius - distanceM) / span) * 75);
 }
 
+export function canEnterFinderMode(phase, devOverride = false) {
+  if (devOverride) return true;
+  return phase === FINDER_PHASE.SEARCH_ACTIVE || phase === FINDER_PHASE.CAPTURE_READY;
+}
+
+export function getFinderEnterLabel(phase, devOverride = false) {
+  if (canEnterFinderMode(phase, devOverride)) return 'Enter Finder Mode';
+  return 'Too far — move closer';
+}
+
+export function getFinderCaptureLabel({
+  inCaptureRange,
+  capturing,
+  autoClaim = false,
+  devOverride = false,
+}) {
+  if (capturing) return 'Capturing medallion...';
+  if (inCaptureRange || devOverride) {
+    return autoClaim ? 'Tap to Claim Treasure' : 'Tap Medallion';
+  }
+  return 'Too far — move closer';
+}
+
 export function canUnlockFinderMode(
   distanceM,
   accuracyM,

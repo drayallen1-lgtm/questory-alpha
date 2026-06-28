@@ -490,7 +490,14 @@ export function ArAssetSelector({ value, onChange }) {
   );
 }
 
-export function ARFinderOverlay({ adventure, inCaptureRange, onCapture, capturing }) {
+export function ARFinderOverlay({
+  adventure,
+  inCaptureRange,
+  onCapture,
+  capturing,
+  captureLabel,
+  tooFar = false,
+}) {
   const videoRef = useRef(null);
   const [cameraError, setCameraError] = useState('');
   const asset = adventure.arAssetType || 'ghost_lantern';
@@ -527,12 +534,20 @@ export function ARFinderOverlay({ adventure, inCaptureRange, onCapture, capturin
           <p>{assetLabel.replace(/^[^\s]+\s/, '')}</p>
         </div>
         <p className="ar-hint">
-          {inCaptureRange ? 'Medallion in range — capture now!' : 'Move closer to reveal the AR medallion'}
+          {inCaptureRange
+            ? 'Medallion in range — capture now!'
+            : 'Too far — move closer to reveal the AR medallion'}
         </p>
       </div>
       {cameraError && <p className="admin-meta">{cameraError}</p>}
-      <button type="button" disabled={!inCaptureRange || capturing} onClick={onCapture}>
-        <Camera size={18} /> {capturing ? 'Capturing…' : 'Capture AR Medallion'}
+      <button
+        type="button"
+        className={tooFar ? 'finder-too-far' : ''}
+        disabled={!inCaptureRange || capturing}
+        onClick={onCapture}
+      >
+        <Camera size={18} />{' '}
+        {captureLabel || (capturing ? 'Capturing…' : inCaptureRange ? 'Capture AR Medallion' : 'Too far — move closer')}
       </button>
     </div>
   );

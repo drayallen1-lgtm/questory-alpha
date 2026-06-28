@@ -55,9 +55,20 @@ function clamp01(v) {
   return Math.min(1, Math.max(0, v));
 }
 
-function resolveMoodUrl(assetKey) {
-  if (!assetKey) return '';
-  return MOOD_AUDIO_MAP[assetKey] || '';
+function resolveSearchAmbienceUrl(mood, phase) {
+  const searchKey = mood?.search;
+  // Footsteps are loud when looped — reserve for tension/finder/AR, not normal search.
+  if (
+    searchKey === 'footsteps' &&
+    phase === ADAPTIVE_AUDIO_PHASES.SEARCH
+  ) {
+    return resolveMoodUrl('wind') || resolveMoodUrl(searchKey);
+  }
+  return resolveMoodUrl(searchKey);
+}
+
+function isFootstepsLayer(url) {
+  return url === HORROR_AUDIO.footsteps;
 }
 
 function templateBucket(adventure) {
@@ -166,7 +177,7 @@ export function resolveAdaptiveAudioContext(ctx = {}) {
     };
   }
 
-  const intensity = 0.18 + clueProgress * 0.35;
+  const intensity = 0.12 + clueProgress * 0.22;
   return {
     phase: ADAPTIVE_AUDIO_PHASES.SEARCH,
     signal,
@@ -198,7 +209,7 @@ export function buildAdaptiveAudioPlan(adventure, audioCtx) {
   const { phase, signal, intensity } = audioCtx;
   const layers = [];
 
-  const searchUrl = resolveMoodUrl(mood.search);
+  const searchUrl = resolveSearchAmbienceUrl(mood, phase);
   const tensionUrl = resolveMoodUrl(mood.tension);
   const revealUrl = resolveMoodUrl(mood.reveal);
   const victoryUrl = resolveMoodUrl(mood.victory);
@@ -277,8 +288,8 @@ export function buildAdaptiveAudioPlan(adventure, audioCtx) {
   if (searchUrl) {
     const ambVol =
       phase === ADAPTIVE_AUDIO_PHASES.SEARCH
-        ? 0.14 + intensity * 0.12
-        : 0.1 + intensity * 0.08;
+        ? (0.04 + intensity * 0.04) * (isFootstepsLayer(searchUrl) ? 0.5 : 1)
+        : 0.06 + intensity * 0.05;
     layers.push({
       id: 'ambience',
       url: searchUrl,
@@ -288,12 +299,13 @@ export function buildAdaptiveAudioPlan(adventure, audioCtx) {
     });
   }
 
-  if (
-    tensionUrl &&
-    (phase === ADAPTIVE_AUDIO_PHASES.TENSION ||
-      phase === ADAPTIVE_AUDIO_PHASES.APPROACH ||
-      phase === ADAPTIVE_AUDIO_PHASES.REVEAL)
-  ) {
+  const allowTensionLoop =
+    phase === ADAPTIVE_AUDIO_PHASES.TENSION ||
+    phase === ADAPTIVE_AUDIO_PHASES.APPROACH ||
+    phase === ADAPTIVE_AUDIO_PHASES.REVEAL ||
+    phase === ADAPTIVE_AUDIO_PHASES.AR_STING;
+
+  if (tensionUrl && allowTensionLoop) {
     const tensionVol =
       phase === ADAPTIVE_AUDIO_PHASES.TENSION
         ? 0.22 + signal * 0.38
