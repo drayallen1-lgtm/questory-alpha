@@ -10,6 +10,8 @@ import {
 } from './worldEngine';
 import { resolveLivingNpcPresentation } from './livingNpcEngine';
 import { applyBranchToClue } from './branchingEngine';
+import { getAdventureProgress } from './seed';
+import { getVictoryLoreReveal, unlockAdventureLore } from './loreCollectionsEngine';
 
 export function isDirectorAdventure(adventure) {
   return Boolean(adventure?.experienceSettings?.directorGenerated);
@@ -120,53 +122,13 @@ export function getUnlockedLorePages(state, collectionId) {
 
 /** Unlock journal pages on adventure completion. */
 export function unlockDirectorLoreOnVictory(state, adventure) {
-  if (!isDirectorAdventure(adventure)) return state;
-
-  const lore = getDirectorCollectionLore(adventure);
-  const collectionId = adventure.collectionId || lore?.collectionId;
-  if (!collectionId || !lore?.journalPages?.length) return state;
-
-  const world = normalizeWorld(state.world);
-  const existing = world.secretCollectionProgress[collectionId] || { pages: [] };
-  const allIndices = lore.journalPages.map((_, i) => i);
-  const pages = [...new Set([...(existing.pages || []), ...allIndices])];
-
-  return {
-    ...state,
-    world: normalizeWorld({
-      ...world,
-      secretCollectionProgress: {
-        ...world.secretCollectionProgress,
-        [collectionId]: {
-          ...existing,
-          pages,
-          collectionName: lore.collectionName || adventure.collectionName,
-          lastUnlockedAt: new Date().toISOString(),
-          sourceAdventureId: adventure.id,
-        },
-      },
-    }),
-  };
+  const progress = getAdventureProgress(state, adventure?.id);
+  return unlockAdventureLore(state, adventure, progress);
 }
 
-export function getDirectorVictoryLore(state, adventure) {
-  const lore = getDirectorCollectionLore(adventure);
-  if (!lore?.journalPages?.length) return null;
-
-  const collectionId = adventure.collectionId || lore.collectionId;
-  const unlocked = getUnlockedLorePages(state, collectionId);
-  const pages = lore.journalPages.map((text, index) => ({
-    index,
-    text,
-    unlocked: unlocked.includes(index),
-  }));
-
-  return {
-    collectionId,
-    collectionName: lore.collectionName || adventure.collectionName,
-    pages,
-    newlyUnlocked: pages.every((p) => p.unlocked),
-  };
+export function getDirectorVictoryLore(state, adventure, adventures = []) {
+  const progress = getAdventureProgress(state, adventure?.id);
+  return getVictoryLoreReveal(state, adventure, progress, adventures);
 }
 
 /**

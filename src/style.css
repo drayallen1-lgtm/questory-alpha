@@ -3657,6 +3657,125 @@ nav button.active {
   margin-bottom: 4px;
 }
 
+.collection-lore-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.collection-lore-story-card {
+  margin-bottom: 0;
+}
+
+.collection-lore-story-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.collection-lore-story-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 0.82rem;
+  color: #5eead4;
+  white-space: nowrap;
+}
+
+.collection-lore-adventure-meta {
+  display: block;
+  margin-top: 6px;
+  color: var(--xp-muted);
+}
+
+.collection-lore-entries {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lore-type-group h5 {
+  margin: 0 0 8px;
+  color: var(--xp-heading);
+}
+
+.lore-entry-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.lore-entry-row.locked b,
+.lore-entry-row.locked p {
+  color: var(--xp-muted);
+}
+
+.lore-entry-icon {
+  font-size: 1.1rem;
+  padding-top: 2px;
+}
+
+.lore-video-link {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.82rem;
+}
+
+.collection-lore-unlock-banner {
+  margin-top: 12px;
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.06);
+}
+
+.collection-lore-intro {
+  color: var(--xp-body);
+  margin: 0 0 10px;
+}
+
+.collection-lore-unlock-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.lore-entry-chip {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.lore-entry-chip small {
+  display: block;
+  color: var(--xp-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.collection-lore-progress-meta {
+  display: block;
+  margin-top: 10px;
+  color: var(--xp-muted);
+}
+
+.collection-lore-mini {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: #5eead4;
+}
+
 .toolkit-panel {
   background: linear-gradient(145deg, rgba(21, 36, 56, 0.72), rgba(11, 19, 29, 0.95));
 }

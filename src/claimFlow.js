@@ -16,7 +16,7 @@ import {
 } from './invitation';
 import { trackDemoComplete } from './stability';
 import { applyEndingRewards } from './worldEngine';
-import { unlockDirectorLoreOnVictory } from './directorRuntime';
+import { unlockLoreOnVictory } from './loreCollectionsEngine';
 import { recordLivingNpcVictory } from './livingNpcEngine';
 import { applyBranchVictoryEffects } from './branchingEngine';
 import {
@@ -142,7 +142,12 @@ export function buildClaimSuccessState(
   nextState = completeDemoIfNeeded(nextState, freshAdventure.id);
   if (isDemo) nextState = trackDemoComplete(nextState);
   nextState = applyGrowthOnCompletion(nextState, freshAdventure);
-  nextState = unlockDirectorLoreOnVictory(nextState, freshAdventure);
+  nextState = unlockLoreOnVictory(
+    nextState,
+    freshAdventure,
+    p,
+    completion.newlyCompletedCollections || []
+  );
   nextState = recordLivingNpcVictory(nextState, freshAdventure);
   nextState = applyBranchVictoryEffects(nextState, freshAdventure, p);
 

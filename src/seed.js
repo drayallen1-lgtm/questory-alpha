@@ -419,6 +419,50 @@ export const defaultState = {
         dynamicHintsEnabled: true,
         backyardPrecision: true,
         arHorror: true,
+        collectionLore: {
+          storyTitle: 'The Depot Ghost Ledger',
+          storyIntro: 'The conductor still walks the platform at dusk. Every clue adds a page to the ghost ledger.',
+          journalPages: [
+            'March 14, 1924 — the midnight train never reached the depot.',
+            'The conductor signed the ledger with one word before the fog swallowed the platform.',
+          ],
+          maps: [
+            {
+              id: 'depot-platform-map',
+              title: 'Depot Platform Map',
+              desc: 'Bench count, archive wing, and the shadow line where the conductor waits.',
+            },
+          ],
+          characterHistories: [
+            {
+              id: 'conductor',
+              name: 'The Conductor',
+              bio: 'Walks the platform at dusk. Some say he is waiting for a train that will never arrive.',
+            },
+          ],
+          relics: [
+            {
+              id: 'ghost-lantern',
+              name: 'Ghost Lantern',
+              desc: 'Flickers when the archive door opens — cold light, no flame.',
+              icon: '🏮',
+            },
+          ],
+          secretEndings: [
+            {
+              id: 'ghost-path-lore',
+              title: 'Ghost Ledger',
+              desc: 'You followed the conductor into the platform shadows.',
+              pathId: 'ghost',
+            },
+            {
+              id: 'historian-path-lore',
+              title: 'Archivist Truth',
+              desc: 'The archives remember what the platform hides.',
+              pathId: 'historian',
+            },
+          ],
+        },
       },
       worldConfig: {
         branchingEnabled: true,

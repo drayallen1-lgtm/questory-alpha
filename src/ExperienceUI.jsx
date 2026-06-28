@@ -51,7 +51,6 @@ import {
 } from './adventureDirector';
 import {
   getDirectorIntroContent,
-  getDirectorVictoryLore,
 } from './directorRuntime';
 import { getDirectorMoodCue } from './directorAudioMood';
 import { AdaptiveAudioLayer } from './AdaptiveAudioLayer';
@@ -818,26 +817,7 @@ export function DirectorMoodBadge({ adventure, phaseKey, context }) {
   );
 }
 
-export function DirectorLoreRevealPanel({ adventure, state }) {
-  const lore = getDirectorVictoryLore(state, adventure);
-  if (!lore?.pages?.length) return null;
-
-  return (
-    <div className="card director-lore-reveal">
-      <h4>
-        <Sparkles size={16} /> {lore.collectionName || 'Collection'} · Lore Unlocked
-      </h4>
-      <ul className="director-lore-pages">
-        {lore.pages.map((page) => (
-          <li key={page.index} className={page.unlocked ? 'unlocked' : 'locked'}>
-            <span className="lore-page-num">Page {page.index + 1}</span>
-            <p>{page.unlocked ? page.text : 'Complete the adventure to unlock this page.'}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+export { DirectorLoreRevealPanel } from './CollectionLoreUI';
 
 export function ApplyTemplateButton({ templateId, scaleId, onApply }) {
   return (

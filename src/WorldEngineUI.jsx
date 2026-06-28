@@ -55,7 +55,7 @@ import {
   recordNpcChoice,
   resolveLivingNpcPresentation,
 } from './livingNpcEngine';
-import { computeCreatorAnalytics } from './experience';
+import { CollectionLoreHub } from './CollectionLoreUI';
 
 export function WorldEngineHub({ state, setState, adventures, nav }) {
   const [tab, setTab] = useState('events');
@@ -105,7 +105,12 @@ export function WorldEngineHub({ state, setState, adventures, nav }) {
       {tab === 'npcs' && <NpcGalleryPanel state={state} setState={setState} adventures={adventures} />}
       {tab === 'discoveries' && <HiddenDiscoveriesPanel state={state} setState={setState} weather={weather} />}
       {tab === 'creators' && <CreatorPrestigePanel adventures={adventures} />}
-      {tab === 'lore' && <LoreEventsPanel state={state} setState={setState} />}
+      {tab === 'lore' && (
+        <>
+          <CollectionLoreHub state={state} adventures={adventures} />
+          <LoreEventsPanel state={state} setState={setState} />
+        </>
+      )}
     </>
   );
 }

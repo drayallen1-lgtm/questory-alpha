@@ -37,6 +37,8 @@ import {
   parseMilesEstimate,
 } from './engagement';
 import { getAdventureProgress, getPublishedAdventures, getSponsorInfo } from './seed';
+import { CollectionLoreUnlockBanner } from './CollectionLoreUI';
+import { getCollectionStoryView } from './loreCollectionsEngine';
 import {
   copyShareText,
   downloadProofCard,
@@ -699,6 +701,14 @@ export function EnhancedVictoryScreen({
             expanded
           />
         )}
+
+        {adventure && state && (
+          <CollectionLoreUnlockBanner
+            adventure={adventure}
+            state={state}
+            progress={getAdventureProgress(state, adventure.id)}
+          />
+        )}
       </div>
 
       <div className="proof-card" ref={cardRef}>
@@ -768,6 +778,7 @@ export function CollectionProgressCard({ collectionId, state, adventures, expand
   if (!c) return null;
   const remaining = c.total - c.found;
   const def = getCollectionDef(collectionId, adventures);
+  const loreStory = getCollectionStoryView(state, collectionId, adventures);
   return (
     <div className="card collection-progress-card">
       <h4>{c.name}</h4>
@@ -777,6 +788,11 @@ export function CollectionProgressCard({ collectionId, state, adventures, expand
       <div className="progress">
         <i style={{ width: `${c.pct}%` }} />
       </div>
+      {loreStory && loreStory.totalCount > 0 && (
+        <p className="collection-lore-mini">
+          📖 Lore: {loreStory.unlockedCount}/{loreStory.totalCount} unlocked ({loreStory.pct}%)
+        </p>
+      )}
       {expanded && (
         <>
           <div className="collection-series-map">

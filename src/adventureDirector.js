@@ -173,9 +173,47 @@ const HORROR_BACKYARD_BASE = {
     ],
   },
   collectionLore: {
+    storyTitle: 'The Lantern Keeper Story',
+    storyIntro: 'Before the yard was haunted, keepers walked with black lanterns after midnight.',
     journalPages: [
       'The Lantern Keepers once guided lost souls through the yard after midnight.',
       'Lily was the youngest keeper — she still swings when no one watches.',
+    ],
+    maps: [
+      {
+        id: 'keeper-yard-map',
+        title: 'Keeper Yard Map',
+        desc: 'The shed, swing set, and flower bed — every keeper checkpoint marked in faded ink.',
+      },
+    ],
+    characterHistories: [
+      {
+        id: 'lily-keeper',
+        name: 'Lily',
+        bio: 'The youngest lantern keeper. Explorers say her swing still moves when the fog rolls in.',
+      },
+    ],
+    relics: [
+      {
+        id: 'keeper-lantern',
+        name: 'Keeper Lantern',
+        desc: 'A black lantern that burns without oil — left on the back porch for the brave.',
+        icon: '🏮',
+      },
+    ],
+    secretEndings: [
+      {
+        id: 'brave-ending-lore',
+        title: 'Shadow Survivor',
+        desc: 'You walked into the dark and the keepers counted you among the bold.',
+        pathId: 'brave',
+      },
+      {
+        id: 'cautious-ending-lore',
+        title: 'Lantern Wisdom',
+        desc: 'You circled the shed and earned the keepers\' quiet respect.',
+        pathId: 'cautious',
+      },
     ],
   },
 };
@@ -389,9 +427,18 @@ const CHURCH_TRAIL_BASE = {
     ],
   },
   collectionLore: {
+    storyTitle: 'The Faith Trail Chronicle',
+    storyIntro: 'Every completed trail adds a verse to the community blessing book.',
     journalPages: [
       'The Faith Trail began as an Easter youth outreach in 2012.',
       'Every completed trail adds a verse to the community blessing book.',
+    ],
+    characterHistories: [
+      {
+        id: 'pastor-elias',
+        name: 'Pastor Elias',
+        bio: 'Started the trail to bring families together through scripture and exploration.',
+      },
     ],
   },
 };

@@ -898,7 +898,11 @@ function QuestoryApp() {
               adventures={state.adventures}
             />
             {selected && (
-              <DirectorLoreRevealPanel adventure={selected} state={state} />
+              <DirectorLoreRevealPanel
+                adventure={selected}
+                state={state}
+                progress={getAdventureProgress(state, selected.id)}
+              />
             )}
           </>
         )}
