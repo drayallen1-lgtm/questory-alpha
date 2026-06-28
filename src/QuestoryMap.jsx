@@ -41,13 +41,14 @@ import {
   clusterVisualClasses,
   computeSpiderfyLayoutPixel,
   easeMapTo,
-  ensureAnchorsInView,
   flyMapTo,
+  getOffscreenSpiderGroup,
   groupOverlappingMarkers,
   shouldSpiderfyAtZoom,
   spiderLinesGeoJSON,
   summarizeClusterMarkers,
 } from './mapSpatial';
+import { createMapCameraController } from './mapCamera';
 import { MapFilterBar, MapPinCard } from './MapPinCard';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
@@ -64,7 +65,7 @@ function isClusterFeature(props) {
   return props.point_count != null && Number.isFinite(Number(props.point_count));
 }
 
-function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect, getMapState, triggerSpiderfyRefresh }) {
+function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect, getMapState, requestCameraMove }) {
   const clusterPopup = new mapboxgl.Popup({
     closeButton: false,
     closeOnClick: false,
@@ -90,17 +91,20 @@ function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect
       if (targetZoom <= currentZoom + 0.25) {
         source.getClusterLeaves(clusterId, 100, 0, (leafErr, leaves) => {
           if (leafErr || !leaves?.length) return;
-          const markerIds = leaves.map((f) => f.properties?.id ?? f.id).filter(Boolean);
-          const markers = markerIds.map((id) => getMarkerById?.(id)).filter(Boolean);
-          if (markers.length >= 2) {
-            easeMapTo(map, { center: coords, zoom: Math.max(currentZoom, SPIDERFY_MIN_ZOOM), duration: 600 });
-            triggerSpiderfyRefresh?.(markers, coords);
-          }
+          requestCameraMove?.('cluster', (m) => {
+            easeMapTo(m, {
+              center: coords,
+              zoom: Math.max(currentZoom, SPIDERFY_MIN_ZOOM),
+              duration: 600,
+            });
+          });
         });
         return;
       }
 
-      easeMapTo(map, { center: coords, zoom: targetZoom, duration: 600 });
+      requestCameraMove?.('cluster', (m) => {
+        easeMapTo(m, { center: coords, zoom: targetZoom, duration: 600 });
+      });
     });
   };
 
@@ -385,17 +389,27 @@ export function QuestoryMap({
   const adventureMarkersRef = useRef(adventureMarkers);
   const markerLookupRef = useRef(new Map());
   const mapStateRef = useRef(mapState);
+  const userLocationRef = useRef(userLocation);
+  const selectedAdventureIdRef = useRef(selectedAdventureId);
   const syncHtmlMarkersRef = useRef(() => {});
-  const spiderfyPanningRef = useRef(false);
+  const cameraRef = useRef(null);
   const onAdventureClickRef = useRef(onAdventureClick);
   const onPinHoverChangeRef = useRef(onPinHoverChange);
   const onSpatialStatsChangeRef = useRef(onSpatialStatsChange);
+  const requestCameraMoveRef = useRef(null);
   adventureMarkersRef.current = adventureMarkers;
   mapStateRef.current = mapState;
+  userLocationRef.current = userLocation;
+  selectedAdventureIdRef.current = selectedAdventureId;
   onAdventureClickRef.current = onAdventureClick;
   onPinHoverChangeRef.current = onPinHoverChange;
   onSpatialStatsChangeRef.current = onSpatialStatsChange;
   const token = getMapboxToken();
+
+  if (!cameraRef.current) {
+    cameraRef.current = createMapCameraController(() => mapRef.current);
+  }
+  requestCameraMoveRef.current = cameraRef.current.requestCameraMove;
 
   const markerLookup = useMemo(() => {
     const map = new Map();
@@ -414,6 +428,7 @@ export function QuestoryMap({
     nextIds.add(id);
     let entry = markersOnScreenRef.current[id];
     const mergedMeta = { ...meta, count };
+    const requestCameraMove = requestCameraMoveRef.current;
 
     const handleClusterTap = (e) => {
       e.stopPropagation();
@@ -424,18 +439,21 @@ export function QuestoryMap({
         const currentZoom = map.getZoom();
         const targetZoom = Math.min(zoom, SPIDERFY_MIN_ZOOM + 1);
         if (targetZoom <= currentZoom + 0.25) {
-          source.getClusterLeaves(clusterId, 100, 0, (leafErr, leaves) => {
-            if (leafErr || !leaves?.length) return;
-            easeMapTo(map, {
-              center: coords,
-              zoom: Math.max(currentZoom, SPIDERFY_MIN_ZOOM),
-              duration: 600,
+          source.getClusterLeaves(clusterId, 100, 0, (leafErr) => {
+            if (leafErr) return;
+            requestCameraMove?.('cluster', (m) => {
+              easeMapTo(m, {
+                center: coords,
+                zoom: Math.max(currentZoom, SPIDERFY_MIN_ZOOM),
+                duration: 600,
+              });
             });
-            syncHtmlMarkersRef.current();
           });
           return;
         }
-        easeMapTo(map, { center: coords, zoom: targetZoom, duration: 600 });
+        requestCameraMove?.('cluster', (m) => {
+          easeMapTo(m, { center: coords, zoom: targetZoom, duration: 600 });
+        });
       });
     };
 
@@ -463,7 +481,7 @@ export function QuestoryMap({
       const markerData = markerLookup.get(id);
       if (!markerData) return;
       const visual = resolvePinVisual(markerData.adventure, mapStateRef.current);
-      const selected = selectedAdventureId === id;
+      const selected = selectedAdventureIdRef.current === id;
       let entry = markersOnScreenRef.current[id];
 
       if (!entry) {
@@ -500,7 +518,7 @@ export function QuestoryMap({
         }
       }
     },
-    [markerLookup, selectedAdventureId]
+    [markerLookup]
   );
 
   const syncHtmlMarkers = useCallback(() => {
@@ -526,33 +544,78 @@ export function QuestoryMap({
 
     if (shouldSpiderfyAtZoom(zoom)) {
       const groups = groupOverlappingMarkers(markers);
+      const offscreenGroup = getOffscreenSpiderGroup(groups, map);
+      const cam = cameraRef.current?.state;
 
-      if (!spiderfyPanningRef.current && ensureAnchorsInView(map, groups)) {
-        spiderfyPanningRef.current = true;
-        map.once('moveend', () => {
-          spiderfyPanningRef.current = false;
-          syncHtmlMarkersRef.current();
+      if (
+        offscreenGroup &&
+        cam &&
+        !cam.isUserInteracting &&
+        cam.lastSpiderAnchorKey !== offscreenGroup.id
+      ) {
+        cam.lastSpiderAnchorKey = offscreenGroup.id;
+        const moved = requestCameraMoveRef.current?.('spiderAnchor', (m) => {
+          easeMapTo(m, {
+            center: [offscreenGroup.anchor.longitude, offscreenGroup.anchor.latitude],
+            zoom: Math.max(zoom, SPIDERFY_MIN_ZOOM),
+            duration: 450,
+          });
         });
-        reportStats(0);
-        return;
+        if (moved) {
+          reportStats(0);
+          return;
+        }
       }
 
       const layouts = new Map();
       const spiderGroups = [];
       const spiderDebug = [];
+      let deferSpiderfy = false;
 
       for (const group of groups) {
         if (group.markers.length >= 2) {
+          const result = computeSpiderfyLayoutPixel(group, map, { debug: isDev });
+          if (result.needsAnchorPan) {
+            const camState = cameraRef.current?.state;
+            if (
+              camState &&
+              !camState.isUserInteracting &&
+              camState.lastSpiderAnchorKey !== group.id
+            ) {
+              camState.lastSpiderAnchorKey = group.id;
+              const moved = requestCameraMoveRef.current?.('spiderAnchor', (m) => {
+                easeMapTo(m, {
+                  center: [group.anchor.longitude, group.anchor.latitude],
+                  zoom: Math.max(zoom, SPIDERFY_MIN_ZOOM),
+                  duration: 450,
+                });
+              });
+              if (moved) {
+                reportStats(0);
+                return;
+              }
+            }
+            deferSpiderfy = true;
+            continue;
+          }
+          if (result.invalidEdgeClamp || !result.layout.size) {
+            deferSpiderfy = true;
+            continue;
+          }
           spiderGroups.push(group);
-          const { layout, debug } = computeSpiderfyLayoutPixel(group, map, { debug: isDev });
-          layouts.set(group.id, layout);
-          if (isDev && debug.length) spiderDebug.push(...debug);
+          layouts.set(group.id, result.layout);
+          if (isDev && result.debug.length) spiderDebug.push(...result.debug);
         }
       }
       spiderGroupCount = spiderGroups.length;
 
       if (isDev && spiderDebug.length) {
         console.debug('[MapSpiderfy]', spiderDebug);
+      }
+
+      if (deferSpiderfy && !spiderGroups.length) {
+        reportStats(0);
+        return;
       }
 
       if (spiderGroups.length) {
@@ -574,6 +637,9 @@ export function QuestoryMap({
         }
       }
     } else {
+      if (cameraRef.current?.state) {
+        cameraRef.current.state.lastSpiderAnchorKey = null;
+      }
       clearSpiderLayers(map);
       let features = [];
       try {
@@ -673,6 +739,10 @@ export function QuestoryMap({
         ? [userLocation.longitude, userLocation.latitude]
         : [-95.261, 37.3392];
 
+    if (userLocation?.latitude != null) {
+      cameraRef.current.state.initialUserCentered = true;
+    }
+
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: 'mapbox://styles/mapbox/dark-v11',
@@ -683,6 +753,7 @@ export function QuestoryMap({
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
     mapRef.current = map;
+    const detachCameraHandlers = cameraRef.current.attachInteractionHandlers(map);
 
     map.on('load', () => {
       mapReadyRef.current = true;
@@ -781,7 +852,7 @@ export function QuestoryMap({
         onAdventureSelect: (markerData) => {
           if (markerData?.adventure) onAdventureClickRef.current?.(markerData.adventure, markerData);
         },
-        triggerSpiderfyRefresh: () => syncHtmlMarkers(),
+        requestCameraMove: (...args) => cameraRef.current?.requestCameraMove(...args),
       });
 
       map.on('moveend', syncHtmlMarkers);
@@ -794,6 +865,7 @@ export function QuestoryMap({
     });
 
     return () => {
+      detachCameraHandlers?.();
       mapReadyRef.current = false;
       Object.values(markersOnScreenRef.current).forEach((m) => m.remove());
       markersOnScreenRef.current = {};
@@ -869,24 +941,67 @@ export function QuestoryMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || mini || !findMeSignal) return;
-    if (userLocation?.latitude == null) return;
-    flyMapTo(map, {
-      center: [userLocation.longitude, userLocation.latitude],
-      zoom: 14,
-      duration: 900,
+    const cam = cameraRef.current;
+    if (!map || mini || !mapReadyRef.current || !cam) return;
+    const loc = userLocationRef.current;
+    if (loc?.latitude == null || cam.state.initialUserCentered) return;
+    cam.state.initialUserCentered = true;
+    requestCameraMoveRef.current?.('initialUser', (m) => {
+      flyMapTo(m, {
+        center: [loc.longitude, loc.latitude],
+        zoom: 13,
+        duration: 900,
+      });
     });
-  }, [findMeSignal, userLocation, mini]);
+  }, [userLocation, mini]);
+
+  const lastFindMeSignalRef = useRef(0);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || mini || !selectedAdventureId) return;
-    const marker = markerLookup.get(selectedAdventureId);
+    if (!map || mini || !findMeSignal || findMeSignal === lastFindMeSignalRef.current) return;
+    lastFindMeSignalRef.current = findMeSignal;
+    const loc = userLocationRef.current;
+    if (loc?.latitude == null) return;
+    requestCameraMoveRef.current?.(
+      'findMe',
+      (m) => {
+        flyMapTo(m, {
+          center: [loc.longitude, loc.latitude],
+          zoom: 14,
+          duration: 900,
+        });
+      },
+      { allowDuringInteraction: true }
+    );
+  }, [findMeSignal, mini]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const cam = cameraRef.current;
+    if (!map || mini || !cam) return;
+
+    if (!selectedAdventureId) {
+      cam.state.lastCenteredPinId = null;
+      return;
+    }
+
+    if (cam.state.lastCenteredPinId === selectedAdventureId) return;
+
+    const marker = markerLookupRef.current.get(selectedAdventureId);
     if (!marker) return;
-    centerOnPinWithCardPadding(map, [marker.longitude, marker.latitude], {
-      zoom: Math.max(map.getZoom(), SPIDERFY_MIN_ZOOM),
-    });
-  }, [selectedAdventureId, markerLookup, mini]);
+
+    cam.state.lastCenteredPinId = selectedAdventureId;
+    requestCameraMoveRef.current?.(
+      'pinSelect',
+      (m) => {
+        centerOnPinWithCardPadding(m, [marker.longitude, marker.latitude], {
+          zoom: Math.max(m.getZoom(), SPIDERFY_MIN_ZOOM),
+        });
+      },
+      { pinId: selectedAdventureId }
+    );
+  }, [selectedAdventureId, mini]);
 
   useEffect(() => {
     if (mini || !mapRef.current) return;

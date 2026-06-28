@@ -12,6 +12,65 @@ export const SPIDERFY_RADIUS_M = 38;
 export const CLUSTER_MAX_ZOOM = 14;
 export const SPIDERFY_BASE_RADIUS_PX = 42;
 export const SPIDERFY_VIEW_PADDING_PX = 56;
+export const SPIDERFY_EDGE_GUARD_PX = 8;
+
+function fanPixelPoints(anchorPx, count, radiusPx, startAngle = -Math.PI / 2) {
+  const points = [];
+  for (let i = 0; i < count; i += 1) {
+    const angle = startAngle + (2 * Math.PI * i) / count;
+    points.push({
+      x: anchorPx.x + Math.cos(angle) * radiusPx,
+      y: anchorPx.y + Math.sin(angle) * radiusPx,
+    });
+  }
+  return points;
+}
+
+function countEdgePinnedPoints(points, width, edgeMargin = SPIDERFY_EDGE_GUARD_PX) {
+  return points.filter((p) => p.x <= edgeMargin || p.x >= width - edgeMargin).length;
+}
+
+function allPointsInsideCanvas(points, width, height) {
+  return points.every((p) => p.x >= 0 && p.x <= width && p.y >= 0 && p.y <= height);
+}
+
+/**
+ * Shrink fan radius uniformly — never clamp individual pins to viewport edges.
+ */
+function resolveFanRadius(anchorPx, count, baseRadiusPx, width, height) {
+  let scale = 1;
+  let invalidEdgeClamp = false;
+
+  for (let attempt = 0; attempt < 14; attempt += 1) {
+    const radiusPx = baseRadiusPx * scale;
+    const points = fanPixelPoints(anchorPx, count, radiusPx);
+    const edgePinned = countEdgePinnedPoints(points, width);
+    const inside = allPointsInsideCanvas(points, width, height);
+
+    if (inside && edgePinned <= 2) {
+      return { radiusPx, points, scale, invalidEdgeClamp: false, edgePinnedCount: edgePinned };
+    }
+
+    if (edgePinned > 2) {
+      invalidEdgeClamp = true;
+    }
+    scale *= 0.76;
+  }
+
+  const radiusPx = baseRadiusPx * 0.3;
+  return {
+    radiusPx,
+    points: fanPixelPoints(anchorPx, count, radiusPx),
+    scale: 0.3,
+    invalidEdgeClamp: true,
+    edgePinnedCount: count,
+  };
+}
+
+export function getOffscreenSpiderGroup(groups, map) {
+  if (!map || !groups?.length) return null;
+  return groups.find((g) => g.markers.length >= 2 && !isAnchorInViewport(map, g.anchor)) || null;
+}
 
 const EARTH_M = 6371000;
 
@@ -90,32 +149,9 @@ export function isAnchorInViewport(map, anchor, paddingPx = SPIDERFY_VIEW_PADDIN
   );
 }
 
-function clampPixelFanAroundAnchor(anchorPx, dx, dy, paddingPx, width, height) {
-  let scale = 1;
-  const minX = paddingPx;
-  const maxX = width - paddingPx;
-  const minY = paddingPx;
-  const maxY = height - paddingPx;
-
-  for (let i = 0; i < 10; i += 1) {
-    const x = anchorPx.x + dx * scale;
-    const y = anchorPx.y + dy * scale;
-    if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
-      return { x, y, scale };
-    }
-    scale *= 0.82;
-  }
-
-  return {
-    x: anchorPx.x + dx * 0.55,
-    y: anchorPx.y + dy * 0.55,
-    scale: 0.55,
-  };
-}
-
 /**
- * Fan pins in pixel space around the true anchor so they stay near the real location.
- * @returns {{ layout: Map<string, [number, number]>, debug: object[] }}
+ * Fan pins in pixel space around the true anchor — radius shrinks, never edge-clamps.
+ * @returns {{ layout: Map<string, [number, number]>, debug: object[], needsAnchorPan: boolean, invalidEdgeClamp: boolean }}
  */
 export function computeSpiderfyLayoutPixel(group, map, options = {}) {
   const { anchor, markers } = group;
@@ -127,25 +163,43 @@ export function computeSpiderfyLayoutPixel(group, map, options = {}) {
     if (count === 1) {
       layout.set(markers[0].id, [markers[0].longitude, markers[0].latitude]);
     }
-    return { layout, debug };
+    return { layout, debug, needsAnchorPan: false, invalidEdgeClamp: false };
   }
 
   const anchorLngLat = [anchor.longitude, anchor.latitude];
+
+  if (!isAnchorInViewport(map, anchor, options.paddingPx ?? SPIDERFY_VIEW_PADDING_PX)) {
+    if (options.debug) {
+      debug.push({
+        groupId: group.id,
+        needsAnchorPan: true,
+        spiderAnchorLngLat: anchorLngLat,
+      });
+    }
+    return { layout, debug, needsAnchorPan: true, invalidEdgeClamp: false };
+  }
+
   const anchorPx = map.project(anchorLngLat);
   const zoom = map.getZoom();
   const { clientWidth: w, clientHeight: h } = map.getContainer();
-  const pad = options.paddingPx ?? SPIDERFY_VIEW_PADDING_PX;
-  const zoomBoost = Math.max(0, zoom - SPIDERFY_MIN_ZOOM) * 6;
-  const countScale = Math.min(1.28, 1 + (count - 2) * 0.05);
-  const radiusPx = (options.radiusPx ?? SPIDERFY_BASE_RADIUS_PX + zoomBoost) * countScale;
-  const startAngle = -Math.PI / 2;
+  const zoomBoost = Math.max(0, zoom - SPIDERFY_MIN_ZOOM) * 5;
+  const countScale = Math.min(1.22, 1 + (count - 2) * 0.04);
+  const baseRadiusPx = (options.radiusPx ?? SPIDERFY_BASE_RADIUS_PX + zoomBoost) * countScale;
+
+  const fan = resolveFanRadius(anchorPx, count, baseRadiusPx, w, h);
+
+  if (options.debug && fan.invalidEdgeClamp) {
+    console.debug('[MapSpiderfy]', {
+      spiderInvalidEdgeClampDetected: true,
+      groupId: group.id,
+      edgePinnedCount: fan.edgePinnedCount,
+      spiderAnchorScreenPoint: { x: anchorPx.x, y: anchorPx.y },
+    });
+  }
 
   markers.forEach((marker, i) => {
-    const angle = startAngle + (2 * Math.PI * i) / count;
-    const dx = Math.cos(angle) * radiusPx;
-    const dy = Math.sin(angle) * radiusPx;
-    const clamped = clampPixelFanAroundAnchor(anchorPx, dx, dy, pad, w, h);
-    const lngLat = map.unproject([clamped.x, clamped.y]);
+    const pinPoint = fan.points[i];
+    const lngLat = map.unproject([pinPoint.x, pinPoint.y]);
     const coords = [lngLat.lng, lngLat.lat];
 
     if (Number.isFinite(coords[0]) && Number.isFinite(coords[1])) {
@@ -157,18 +211,26 @@ export function computeSpiderfyLayoutPixel(group, map, options = {}) {
     if (options.debug) {
       debug.push({
         markerId: marker.id,
+        groupId: group.id,
         spiderAnchorLngLat: anchorLngLat,
         spiderPinLngLat: layout.get(marker.id),
+        spiderAnchorScreenPoint: { x: anchorPx.x, y: anchorPx.y },
         pixelOffset: {
-          dx: clamped.x - anchorPx.x,
-          dy: clamped.y - anchorPx.y,
+          dx: pinPoint.x - anchorPx.x,
+          dy: pinPoint.y - anchorPx.y,
         },
-        radiusScale: clamped.scale,
+        radiusPx: fan.radiusPx,
+        edgePinnedCount: fan.edgePinnedCount,
       });
     }
   });
 
-  return { layout, debug };
+  return {
+    layout,
+    debug,
+    needsAnchorPan: false,
+    invalidEdgeClamp: fan.invalidEdgeClamp,
+  };
 }
 
 /** @deprecated Prefer computeSpiderfyLayoutPixel when map instance is available. */
@@ -347,19 +409,10 @@ export function flyMapTo(map, options = {}) {
 }
 
 export function ensureAnchorsInView(map, groups, options = {}) {
-  if (!map || !groups?.length) return false;
-  const spiderGroups = groups.filter((g) => g.markers.length >= 2);
-  if (!spiderGroups.length) return false;
-
-  const offscreen = spiderGroups.find((g) => !isAnchorInViewport(map, g.anchor));
-  if (!offscreen) return false;
-
-  easeMapTo(map, {
-    center: [offscreen.anchor.longitude, offscreen.anchor.latitude],
-    zoom: Math.max(map.getZoom(), SPIDERFY_MIN_ZOOM),
-    duration: options.duration ?? 450,
-  });
-  return true;
+  void map;
+  void groups;
+  void options;
+  return false;
 }
 
 /** Keep selected pin above bottom card on mobile/desktop. */
