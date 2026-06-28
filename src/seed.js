@@ -45,6 +45,7 @@ import { DEFAULT_GROWTH, normalizeGrowth, mergeAdventureGrowth } from './growth'
 import { normalizeArScene } from './arEngine';
 import { normalizeMediaManifest } from './mediaStudio';
 import { normalizeAccessType } from './accessRules';
+import { normalizeMapExploration } from './mapDiscovery';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -81,6 +82,7 @@ export const defaultState = {
   pendingInviteAdventureId: null,
   editingAdventureId: null,
   quickSponsor: false,
+  mapExploration: { revealed: [] },
   adventures: ensureDemoAdventure([
     {
       id: 'parsons-gold-rush',
@@ -760,6 +762,7 @@ export function loadState() {
       firstTimeMetrics: normalizeFirstTimeMetrics(saved.firstTimeMetrics),
       growth: normalizeGrowth(saved.growth),
       launchFunnel: normalizeLaunchFunnel(saved.launchFunnel),
+      mapExploration: normalizeMapExploration(saved.mapExploration),
       growthTab: saved.growthTab || 'referrals',
       pendingInviteAdventureId: saved.pendingInviteAdventureId || null,
       claimHistory: buildClaimHistory(rewards, saved.claimHistory),

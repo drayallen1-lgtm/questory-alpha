@@ -1,5 +1,6 @@
 import { env, hasMapboxEnv } from './config/env';
 import { buildMapMarkerAccess, evaluateAccessContext } from './accessRules';
+import { haversineDistanceMeters } from './geolocation';
 
 export const MAPBOX_FALLBACK_MESSAGE =
   'Map preview unavailable. Add VITE_MAPBOX_TOKEN to enable live maps.';
@@ -25,7 +26,7 @@ export function getAdventureMapCenter(adventure) {
 }
 
 export function buildAdventureMarkers(adventures, accessOptions = {}) {
-  const { userLatitude, userLongitude, isAdmin, userId } = accessOptions;
+  const { userLatitude, userLongitude, isAdmin, userId, state } = accessOptions;
 
   return adventures
     .filter((a) => a.clues?.length)
@@ -38,6 +39,15 @@ export function buildAdventureMarkers(adventures, accessOptions = {}) {
         userId,
       });
       const pinAccess = buildMapMarkerAccess(adventure, access);
+      const distanceM =
+        userLatitude != null && userLongitude != null
+          ? haversineDistanceMeters(
+              userLatitude,
+              userLongitude,
+              center.latitude,
+              center.longitude
+            )
+          : null;
       return {
         id: adventure.id,
         type: 'adventure',
@@ -48,6 +58,7 @@ export function buildAdventureMarkers(adventures, accessOptions = {}) {
         adventure,
         access,
         pinAccess,
+        distanceM,
       };
     })
     .filter((m) => m.pinAccess !== 'hidden');

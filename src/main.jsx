@@ -85,6 +85,7 @@ import {
   evaluateAccessContext,
   getMapVisibleAdventures,
 } from './accessRules';
+import { recordMapReveal } from './mapDiscovery';
 import { getDirectorChapterBeat, resolveDirectorClue } from './directorRuntime';
 import { advanceClueForAdventure, continueAfterBonus, applyPlayNavigation } from './progressionEngine';
 import { useArSceneFlow } from './arFlow';
@@ -433,6 +434,8 @@ function QuestoryApp() {
       };
       if (screen === 'detail' && adventureId) {
         next = recordAdventureView(next, adventureId);
+        const adv = next.adventures.find((a) => a.id === adventureId);
+        if (adv) next = recordMapReveal(next, adv);
       }
       if (screen === 'play' && adventureId) {
         next = recordAdventureStart(next, adventureId);
