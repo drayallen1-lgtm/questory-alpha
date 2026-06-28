@@ -1,0 +1,10 @@
+[33m9dc4939[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Hotfix map camera bounce and spiderfy anchoring
+[33m8fb262d[m Remove local env file from git tracking
+[33m7dc062a[m Fix map pin clustering and improve user interaction responsiveness
+[33mb5c6616[m Hotfix map camera bounce and spiderfy anchoring
+[33m9ccaf5c[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Hotfix map spiderfy placement and card navigation
+[33mb139449[m Phase 1B map spatial intelligence
+[33m88c7b12[m Phase 1A map visual language - stacked pin types and overlays
+[33m20e7791[m Hotfix map pin hover and card interactions
+[33m2adce66[m Hotfix map pins not rendering
+[33m348c6fa[m git add . git commit -m "Map Polish and Discovery" git push origin main
