@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Sparkles,
   Video,
+  Volume2,
   Wand2,
 } from 'lucide-react';
 import { formatUserErrorMessage } from './claimSystem';
@@ -52,6 +53,7 @@ import {
   getDirectorIntroContent,
   getDirectorVictoryLore,
 } from './directorRuntime';
+import { getDirectorMoodCue } from './directorAudioMood';
 
 export function TemplatePicker({ selected, onSelect }) {
   return (
@@ -350,6 +352,20 @@ export function AdventureDirectorStrip({ onApplyDraft }) {
           onClick={() => applyPreset(DIRECTOR_PRESET_IDS.FAMILY_BACKYARD)}
         >
           👨‍👩‍👧 Family Treasure
+        </button>
+        <button
+          type="button"
+          className="ghost"
+          onClick={() => applyPreset(DIRECTOR_PRESET_IDS.CHURCH_TRAIL)}
+        >
+          ✝️ Church Trail
+        </button>
+        <button
+          type="button"
+          className="ghost"
+          onClick={() => applyPreset(DIRECTOR_PRESET_IDS.EDUCATIONAL_TRAIL)}
+        >
+          📚 Learning Trail
         </button>
       </div>
     </div>
@@ -678,12 +694,13 @@ export function HorrorAtmosphereOverlay({ adventure }) {
   );
 }
 
-export function ClueChapterHeader({ chapter, total, title, adventureTitle, beat }) {
+export function ClueChapterHeader({ chapter, total, title, adventureTitle, beat, pathVariant }) {
   const pct = total > 0 ? Math.round((chapter / total) * 100) : 0;
   return (
     <div className="clue-chapter-header">
       <div className="chapter-meta">
         <span className="chapter-label">Chapter {chapter} of {total}</span>
+        {pathVariant && <span className="chapter-path-badge">{pathVariant} path</span>}
         {adventureTitle && <small className="chapter-adventure">{adventureTitle}</small>}
       </div>
       <h3 className="chapter-title">{title}</h3>
@@ -756,6 +773,37 @@ export function AdventureIntroModal({ adventure, onAccept, onSkip }) {
           Skip intro
         </button>
       </div>
+    </div>
+  );
+}
+
+export function DirectorMoodBadge({ adventure, phaseKey }) {
+  const cue = getDirectorMoodCue(adventure, phaseKey);
+  const audioRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !cue?.audioUrl) return undefined;
+
+    audio.volume = cue.volume ?? 0.25;
+    audio.loop = phaseKey === 'search' || phaseKey === 'tension';
+    audio.play().catch(() => {});
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, [cue?.audioUrl, cue?.volume, phaseKey]);
+
+  if (!cue) return null;
+
+  return (
+    <div className="director-mood-badge" aria-live="polite">
+      <Volume2 size={14} />
+      <span>{cue.label}</span>
+      {cue.audioUrl && (
+        <audio ref={audioRef} src={cue.audioUrl} preload="auto" aria-hidden="true" />
+      )}
     </div>
   );
 }

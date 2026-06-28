@@ -81,7 +81,8 @@ import {
   formatProofDate,
 } from './share';
 import { runClaimTreasure, runMedallionCapture } from './claimFlow';
-import { getDirectorChapterBeat } from './directorRuntime';
+import { getDirectorChapterBeat, resolveDirectorClue } from './directorRuntime';
+import { resolveDirectorMoodPhase } from './directorAudioMood';
 import { advanceClueForAdventure, continueAfterBonus, applyPlayNavigation } from './progressionEngine';
 import { useArSceneFlow } from './arFlow';
 import {
@@ -241,6 +242,7 @@ import {
   ClueChapterHeader,
   AdventureIntroModal,
   DirectorLoreRevealPanel,
+  DirectorMoodBadge,
 } from './ExperienceUI';
 import {
   WorldEngineHub,
@@ -1514,11 +1516,18 @@ function AdventurePlay({
   const total = clues.length;
   const atClaim = total === 0 || progress.step >= total;
   const clueIndex = total > 0 ? Math.min(progress.step, total - 1) : 0;
-  const clue = total > 0 ? clues[clueIndex] : null;
+  const rawClue = total > 0 ? clues[clueIndex] : null;
+  const clue = rawClue ? resolveDirectorClue(adventure, rawClue, progress) : null;
   const pct = progress.claimed ? 100 : total > 0 ? Math.round((progress.step / total) * 100) : 100;
   const method = adventure.claimMethod || CLAIM_METHOD.SECRET_CODE;
   const finderFlow = adventureUsesFinder(adventure);
   const awaitingFinder = atClaim && finderFlow && !progress.medallionTapped && !progress.claimed;
+  const moodPhase = resolveDirectorMoodPhase({
+    claimed: progress.claimed,
+    atClaim,
+    awaitingFinder,
+    medallionTapped: progress.medallionTapped,
+  });
   const readyToClaim =
     atClaim &&
     !progress.claimed &&
@@ -1607,6 +1616,7 @@ function AdventurePlay({
       <WeatherOverlay state={state} />
       <HorrorAtmosphereOverlay adventure={adventure} />
       <BackyardPrecisionBanner adventure={adventure} />
+      <DirectorMoodBadge adventure={adventure} phaseKey={moodPhase} />
       <CinematicAROverlay
         open={Boolean(activeAr)}
         scene={activeAr?.scene}
@@ -1643,6 +1653,7 @@ function AdventurePlay({
             title={clue.title}
             adventureTitle={adventure.title}
             beat={getDirectorChapterBeat(adventure, clueIndex, total)}
+            pathVariant={clue._directorVariant}
           />
         ) : (
           <h3>
@@ -2789,6 +2800,9 @@ function CreateAdventure({
       audioUrl: c.audioUrl?.trim() || '',
       videoUrl: c.videoUrl?.trim() || '',
       imageUrl: c.imageUrl?.trim() || '',
+      bonusRewardText: c.bonusRewardText?.trim() || '',
+      branchOptions: Array.isArray(c.branchOptions) ? c.branchOptions : [],
+      pathVariants: c.pathVariants || undefined,
       arScene: normalizeArScene(c.arScene),
     }));
 

@@ -17,11 +17,13 @@ import {
 } from './templates';
 import { normalizeWorldConfig } from './worldEngine';
 
-export const BLUEPRINT_VERSION = '1.1';
+export const BLUEPRINT_VERSION = '1.2';
 
 export const DIRECTOR_PRESET_IDS = {
   HORROR_BACKYARD: 'horror_backyard',
   FAMILY_BACKYARD: 'family_backyard',
+  CHURCH_TRAIL: 'church_trail',
+  EDUCATIONAL_TRAIL: 'educational_trail',
 };
 
 const GPS_OFFSETS = [
@@ -94,12 +96,36 @@ const HORROR_BACKYARD_BASE = {
       arPrompt: 'A shadow figure stands beneath the dead tree. Branches move above him.',
       isFalseLead: true,
       bonusRewardText: 'False trail — the real signal is east toward the lantern.',
+      pathVariants: {
+        brave: {
+          title: 'Into the Dark',
+          text: 'You followed the whispers behind the shed. Count the broken boards on the north wall.',
+          arPrompt: 'A shadow figure lunges from the shed darkness. Radio static crackles.',
+        },
+        cautious: {
+          title: 'The Long Way Round',
+          text: 'You circled wide around the shed. Find the garden gate — the latch holds a number.',
+          arPrompt: 'A ghost girl waits by the flower bed, pointing toward the lantern.',
+        },
+      },
     },
     {
       title: 'Lantern Signal',
       text: 'The ghost lantern flickers where roots tangle old. Follow the light.',
       clueType: CLUE_TYPES.TEXT_RIDDLE,
       arPrompt: 'The hooded watcher flickers by the black lantern in the woods.',
+      pathVariants: {
+        brave: {
+          title: 'Lantern in the Woods',
+          text: 'The hooded watcher left a mark on the old oak. Stand beneath it at dusk.',
+          arPrompt: 'The hooded watcher flickers by the black lantern deep in the woods.',
+        },
+        cautious: {
+          title: 'Porch Lantern',
+          text: 'Safer ground — the porch lantern flickers three times. Count the flashes.',
+          arPrompt: 'A black lantern floats near the porch steps, flame steady and waiting.',
+        },
+      },
     },
   ],
   finalePrompt:
@@ -229,6 +255,254 @@ const FAMILY_BACKYARD_BASE = {
   },
 };
 
+const CHURCH_TRAIL_BASE = {
+  presetId: DIRECTOR_PRESET_IDS.CHURCH_TRAIL,
+  meta: {
+    tone: 'reverent',
+    template: ADVENTURE_TEMPLATES.CHURCH,
+    scale: 'neighborhood',
+    claimMethod: CLAIM_METHOD.SECRET_CODE,
+    finderMode: FINDER_MODES.FINDER,
+    arAssetType: 'faith_trail',
+    title: 'Scripture Scavenger Hunt',
+    location: 'Your Neighborhood',
+    collectionId: 'faith-trail',
+    collectionName: 'Faith Trail Collection',
+    collectionBadge: '✝️',
+  },
+  storyArc: {
+    hook: 'Your youth group scattered scripture clues across the neighborhood.',
+    mystery: 'Each stop unlocks a verse and a blessing for your team.',
+    rising: 'Walk together — read aloud, reflect, and search with purpose.',
+    reveals: 'The final clue points to where the community gathers on Sundays.',
+    finale: 'Enter the claim code and receive your Faith Trail badge.',
+  },
+  characters: [
+    {
+      id: 'pastor-grace',
+      name: 'Pastor Grace',
+      role: 'Trail Guide',
+      avatar: '✝️',
+      personality: 'warm, encouraging, scripture-focused',
+      voice: 'calm',
+      memoryKeys: ['trail_started'],
+    },
+    {
+      id: 'youth-leader',
+      name: 'Marcus',
+      role: 'Youth Leader',
+      avatar: '🙌',
+      personality: 'energetic, supportive',
+      voice: 'friendly',
+      memoryKeys: ['hints_given'],
+    },
+  ],
+  clueBlueprints: [
+    {
+      title: 'Scripture Unlock',
+      text: 'Psalm 119:105 — where does the lamp guide your feet? Find the path marker.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      npcLine: 'The lamp guides our feet — start where the sidewalk turns east.',
+    },
+    {
+      title: 'Steeple Path',
+      text: 'Follow the path the bell once rang. Count the steps to the garden gate.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      npcLine: 'Listen for the echo — Marcus hid the next clue near the garden.',
+    },
+    {
+      title: 'Community Bench',
+      text: 'Where neighbors rest and pray together — look under the memorial bench plaque.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      npcLine: 'Faith grows in community. The plaque year is your hint.',
+      pathVariants: {
+        sanctuary: {
+          title: 'Sanctuary Steps',
+          text: 'You chose the sanctuary path. Count the front steps — that number opens the next clue.',
+        },
+        garden: {
+          title: 'Garden Walk',
+          text: 'You chose the garden path. Find the rose bed with the white cross marker.',
+        },
+      },
+    },
+    {
+      title: 'Blessing Stone',
+      text: 'The final marker bears a single word from Pastor Grace. Find the cornerstone.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      npcLine: 'You walked the path of faith — claim your blessing!',
+    },
+  ],
+  finalePrompt: null,
+  finaleThemeId: null,
+  twists: [],
+  audioMood: {
+    search: 'musicbox',
+    tension: 'footsteps',
+    reveal: 'musicbox',
+    victory: 'musicbox',
+  },
+  branching: {
+    enabled: true,
+    branchOptions: [
+      { id: 'sanctuary', label: 'Walk toward the sanctuary', pathId: 'sanctuary' },
+      { id: 'garden', label: 'Follow the garden path', pathId: 'garden' },
+    ],
+    alternateEndings: [
+      {
+        id: 'sanctuary',
+        pathId: 'sanctuary',
+        title: 'Sanctuary Path',
+        description: 'You walked the path of worship and earned the Sanctuary Crest.',
+        medallionTitle: 'Sanctuary Crest',
+      },
+      {
+        id: 'garden',
+        pathId: 'garden',
+        title: 'Garden Path',
+        description: 'You found blessings in the garden and earned the Gardener Badge.',
+        medallionTitle: 'Gardener Badge',
+      },
+    ],
+  },
+  collectionLore: {
+    journalPages: [
+      'The Faith Trail began as an Easter youth outreach in 2012.',
+      'Every completed trail adds a verse to the community blessing book.',
+    ],
+  },
+};
+
+const EDUCATIONAL_TRAIL_BASE = {
+  presetId: DIRECTOR_PRESET_IDS.EDUCATIONAL_TRAIL,
+  meta: {
+    tone: 'curious',
+    template: ADVENTURE_TEMPLATES.EDUCATIONAL,
+    scale: 'city',
+    claimMethod: CLAIM_METHOD.SECRET_CODE,
+    finderMode: FINDER_MODES.FINDER,
+    arAssetType: 'learning_trail',
+    title: 'Learning Trail Quest',
+    location: 'Downtown',
+    collectionId: 'scholar-trail',
+    collectionName: 'Scholar Trail',
+    collectionBadge: '📚',
+  },
+  storyArc: {
+    hook: 'Professor Ellis turned the city into an outdoor classroom.',
+    mystery: 'History markers, science stops, and riddles await curious minds.',
+    rising: 'Observe carefully — the answer is often in plain sight.',
+    reveals: 'The final exhibit holds the claim code for your Scholar Badge.',
+    finale: 'Complete the trail and claim your Scholar medallion!',
+  },
+  characters: [
+    {
+      id: 'prof-ellis',
+      name: 'Professor Ellis',
+      role: 'Trail Author',
+      avatar: '📚',
+      personality: 'curious, precise, encouraging',
+      voice: 'teacher',
+      memoryKeys: ['trail_started'],
+    },
+    {
+      id: 'lab-assistant',
+      name: 'Sam',
+      role: 'Lab Assistant',
+      avatar: '🔬',
+      personality: 'enthusiastic, helpful',
+      voice: 'friendly',
+      memoryKeys: ['hints_given'],
+    },
+  ],
+  clueBlueprints: [
+    {
+      title: 'History Marker',
+      text: 'What year appears on the bronze plaque at the town square?',
+      clueType: CLUE_TYPES.MULTIPLE_CHOICE,
+      choices: ['1876', '1903', '1924'],
+      npcLine: 'Start at the square — history is the first lesson.',
+    },
+    {
+      title: 'Science Stop',
+      text: 'Name the tree species on the interpretive sign near the park entrance.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      npcLine: 'Sam says: botany counts! Read the sign carefully.',
+    },
+    {
+      title: 'Museum Steps',
+      text: 'Count the museum steps — multiply by two for the locker combination hint.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      npcLine: 'The museum holds more than artifacts — look at the architecture.',
+      pathVariants: {
+        historian: {
+          title: 'Archives Wing',
+          text: 'You chose the archives. Find the display case labeled "Founding Year."',
+        },
+        exhibit: {
+          title: 'Main Exhibit',
+          text: 'You chose the main hall. Locate the dinosaur footprint cast.',
+        },
+      },
+    },
+    {
+      title: 'Final Exhibit',
+      text: 'The scholar medallion code is carved into the bench by the fountain.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      npcLine: 'Excellent work — you earned the Scholar Badge!',
+    },
+  ],
+  finalePrompt: null,
+  finaleThemeId: null,
+  twists: [],
+  audioMood: {
+    search: 'footsteps',
+    tension: 'footsteps',
+    reveal: 'musicbox',
+    victory: 'musicbox',
+  },
+  branching: {
+    enabled: true,
+    branchOptions: [
+      { id: 'historian', label: 'Explore the archives', pathId: 'historian' },
+      { id: 'exhibit', label: 'Visit the main exhibit', pathId: 'exhibit' },
+    ],
+    alternateEndings: [
+      {
+        id: 'historian',
+        pathId: 'historian',
+        title: 'Historian Path',
+        description: 'You mastered the archives and earned the Historian Crest.',
+        medallionTitle: 'Historian Crest',
+      },
+      {
+        id: 'exhibit',
+        pathId: 'exhibit',
+        title: 'Exhibit Path',
+        description: 'You explored the main hall and earned the Explorer Badge.',
+        medallionTitle: 'Explorer Badge',
+      },
+    ],
+  },
+  collectionLore: {
+    journalPages: [
+      'Professor Ellis designed the Scholar Trail for field-trip groups in 2019.',
+      'Completing all city learning trails unlocks the Master Scholar medallion.',
+    ],
+  },
+};
+
+const PRESET_BASES = {
+  [DIRECTOR_PRESET_IDS.HORROR_BACKYARD]: HORROR_BACKYARD_BASE,
+  [DIRECTOR_PRESET_IDS.FAMILY_BACKYARD]: FAMILY_BACKYARD_BASE,
+  [DIRECTOR_PRESET_IDS.CHURCH_TRAIL]: CHURCH_TRAIL_BASE,
+  [DIRECTOR_PRESET_IDS.EDUCATIONAL_TRAIL]: EDUCATIONAL_TRAIL_BASE,
+};
+
+function getPresetBase(presetId) {
+  return cloneBlueprintBase(PRESET_BASES[presetId] || HORROR_BACKYARD_BASE);
+}
+
 export const DIRECTOR_PRESETS = {
   [DIRECTOR_PRESET_IDS.HORROR_BACKYARD]: {
     id: DIRECTOR_PRESET_IDS.HORROR_BACKYARD,
@@ -244,6 +518,20 @@ export const DIRECTOR_PRESETS = {
     desc: 'Grandpa\'s hunt · kid-friendly · tap medallion claim',
     examplePrompt: 'Family backyard treasure hunt for grandparents visiting, tap medallion',
   },
+  [DIRECTOR_PRESET_IDS.CHURCH_TRAIL]: {
+    id: DIRECTOR_PRESET_IDS.CHURCH_TRAIL,
+    label: 'Church Trail',
+    icon: '✝️',
+    desc: 'Scripture scavenger · youth group · branching paths',
+    examplePrompt: 'Church youth group Easter scavenger hunt, 4 clues, secret code',
+  },
+  [DIRECTOR_PRESET_IDS.EDUCATIONAL_TRAIL]: {
+    id: DIRECTOR_PRESET_IDS.EDUCATIONAL_TRAIL,
+    label: 'Learning Trail',
+    icon: '📚',
+    desc: 'History & science · classroom field trip · city scale',
+    examplePrompt: 'Educational history trail for my classroom, 4 clues',
+  },
 };
 
 function normalizePrompt(text) {
@@ -255,6 +543,12 @@ function normalizePrompt(text) {
 }
 
 function detectPresetId(text) {
+  if (/church|bible|faith|youth group|easter|scripture|pastor/i.test(text)) {
+    return DIRECTOR_PRESET_IDS.CHURCH_TRAIL;
+  }
+  if (/school|teacher|education|museum|history|classroom|science trail/i.test(text)) {
+    return DIRECTOR_PRESET_IDS.EDUCATIONAL_TRAIL;
+  }
   if (/family|kids|grandpa|grandparent|birthday|treasure hunt for/i.test(text)) {
     return DIRECTOR_PRESET_IDS.FAMILY_BACKYARD;
   }
@@ -369,9 +663,7 @@ export function generateAdventureBlueprint(prompt, options = {}) {
   }
 
   const presetId = options.presetId || detectPresetId(text) || DIRECTOR_PRESET_IDS.HORROR_BACKYARD;
-  const base = cloneBlueprintBase(
-    presetId === DIRECTOR_PRESET_IDS.FAMILY_BACKYARD ? FAMILY_BACKYARD_BASE : HORROR_BACKYARD_BASE
-  );
+  const base = getPresetBase(presetId);
 
   const scale = parseScale(text, base.meta.scale);
   const scalePreset = getScalePreset(scale);
@@ -440,6 +732,7 @@ export function generateAdventureBlueprint(prompt, options = {}) {
       imageUrl: c.imageUrl || '',
       bonusRewardText: c.bonusRewardText || '',
       arPrompt: c.arPrompt || null,
+      pathVariants: c.pathVariants || null,
       branchOptions: i === 0 && base.branching?.enabled ? base.branching.branchOptions : [],
       isFalseLead: Boolean(c.isFalseLead),
     })),
@@ -548,6 +841,22 @@ function buildCharacterNpcs(blueprint) {
   });
 }
 
+function buildPathVariantScenes(pathVariants, useAr) {
+  if (!pathVariants || typeof pathVariants !== 'object') return undefined;
+  const result = {};
+  for (const [pathId, variant] of Object.entries(pathVariants)) {
+    result[pathId] = {
+      title: variant.title,
+      text: variant.text,
+      arScene:
+        useAr && variant.arPrompt
+          ? generateArSceneFromPrompt(variant.arPrompt)
+          : emptyArScene(),
+    };
+  }
+  return result;
+}
+
 /**
  * Convert blueprint → Create Adventure form draft (compatible with applyDirectorDraft).
  */
@@ -593,12 +902,12 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
     collectionLore: blueprint.collectionLore,
   };
 
+  const useAr = bpMeta.finderMode === FINDER_MODES.AR_ENHANCED;
+
   const clues = blueprint.clues.map((c, i) => {
     const [dLat, dLng] = GPS_OFFSETS[i % GPS_OFFSETS.length];
     const arScene =
-      bpMeta.finderMode === FINDER_MODES.AR_ENHANCED && c.arPrompt
-        ? generateArSceneFromPrompt(c.arPrompt)
-        : emptyArScene();
+      useAr && c.arPrompt ? generateArSceneFromPrompt(c.arPrompt) : emptyArScene();
 
     return {
       id: `dir-clue-${i + 1}-${Date.now()}`,
@@ -614,6 +923,7 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
       videoUrl: c.videoUrl || '',
       imageUrl: c.imageUrl || '',
       branchOptions: c.branchOptions || [],
+      pathVariants: buildPathVariantScenes(c.pathVariants, useAr),
       arScene,
     };
   });
@@ -656,6 +966,7 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
   });
 
   const arCount = clues.filter((c) => c.arScene?.enabled).length;
+  const pathVariantCount = clues.filter((c) => c.pathVariants && Object.keys(c.pathVariants).length).length;
 
   return {
     ok: true,
@@ -690,7 +1001,7 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
     arFinale,
     arTheme,
     worldConfig,
-    summary: summarizeBlueprint(blueprint, { arCount }),
+    summary: summarizeBlueprint(blueprint, { arCount, pathVariantCount }),
   };
 }
 
@@ -698,11 +1009,16 @@ export function summarizeBlueprint(blueprint, extras = {}) {
   const clueCount = blueprint.clues?.length || 0;
   const charCount = blueprint.characters?.length || 0;
   const arCount = extras.arCount ?? blueprint.arEncounters?.length ?? 0;
+  const pathVariantCount =
+    extras.pathVariantCount ??
+    blueprint.clues?.filter((c) => c.pathVariants && Object.keys(c.pathVariants).length).length ??
+    0;
   const preset = DIRECTOR_PRESETS[blueprint.presetId];
   const label = preset?.label || 'Custom';
   const twists = blueprint.twists?.length || 0;
   const branch = blueprint.branching?.enabled ? ' · branching' : '';
-  return `${label} adventure · ${clueCount} clues · ${charCount} characters · ${arCount} AR scenes${twists ? ` · ${twists} twist` : ''}${branch}`;
+  const paths = pathVariantCount ? ` · ${pathVariantCount} path-variant clues` : '';
+  return `${label} adventure · ${clueCount} clues · ${charCount} characters · ${arCount} AR scenes${twists ? ` · ${twists} twist` : ''}${branch}${paths}`;
 }
 
 export function refineDirectorBlueprint(blueprint, instruction) {
@@ -787,8 +1103,9 @@ export function getDirectorSuggestions() {
     'Haunted backyard for 8-year-olds, 5 clues, tap medallion',
     'Scary backyard ghost hunt for teens, secret code claim',
     'Family backyard treasure hunt for grandparents visiting',
+    'Church youth group Easter scavenger hunt, branching paths',
+    'Educational history trail for my classroom, 4 clues',
     'Horror yard hunt with branching paths and lantern finale',
-    'Kid-friendly family treasure, 4 clues, tap medallion to claim',
   ];
 }
 

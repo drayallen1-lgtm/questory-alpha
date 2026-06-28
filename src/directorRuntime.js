@@ -88,6 +88,9 @@ export function getDirectorBranchFlavor(adventure, progress) {
     cautious: 'You chose the safer route — watch for hidden signs.',
     ghost: 'The platform shadows deepen around you.',
     historian: 'Archive whispers guide your next steps.',
+    sanctuary: 'The sanctuary path opens — walk with purpose.',
+    garden: 'The garden path blooms with quiet blessings.',
+    exhibit: 'The main exhibit holds your next discovery.',
   };
 
   return {
@@ -152,4 +155,30 @@ export function getDirectorVictoryLore(state, adventure) {
     pages,
     newlyUnlocked: pages.every((p) => p.unlocked),
   };
+}
+
+/**
+ * Apply path-specific clue variant when player has chosen a branch.
+ */
+export function resolveDirectorClue(adventure, clue, progress) {
+  if (!clue || !progress?.pathId || !clue.pathVariants) return clue;
+
+  const variant = clue.pathVariants[progress.pathId];
+  if (!variant) return clue;
+
+  return {
+    ...clue,
+    title: variant.title || clue.title,
+    text: variant.text || clue.text,
+    arScene:
+      variant.arScene?.enabled ? variant.arScene : clue.arScene,
+    _directorVariant: progress.pathId,
+  };
+}
+
+export function countDirectorPathVariants(adventure) {
+  if (!isDirectorAdventure(adventure)) return 0;
+  return (adventure.clues || []).filter(
+    (c) => c.pathVariants && Object.keys(c.pathVariants).length > 0
+  ).length;
 }

@@ -147,6 +147,7 @@ export function cluesFormFromAdventure(adventure) {
     videoUrl: c.videoUrl || '',
     imageUrl: c.imageUrl || '',
     branchOptions: c.branchOptions || [],
+    pathVariants: c.pathVariants || undefined,
     arScene: normalizeArScene(c.arScene),
   }));
 }

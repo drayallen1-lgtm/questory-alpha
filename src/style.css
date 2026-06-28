@@ -3412,6 +3412,34 @@ nav button.active {
   line-height: 1.45;
 }
 
+.chapter-path-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  text-transform: capitalize;
+  background: rgba(94, 234, 212, 0.12);
+  color: #5eead4;
+}
+
+.director-mood-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  color: var(--xp-body-soft);
+  background: rgba(15, 26, 40, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.director-mood-badge svg {
+  color: #5eead4;
+  flex-shrink: 0;
+}
+
 .director-npc-card .npc-role {
   display: block;
   color: var(--xp-muted);
