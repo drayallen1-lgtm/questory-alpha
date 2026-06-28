@@ -267,6 +267,119 @@ export function revealedAreasGeoJSON(exploration) {
   };
 }
 
+export function getPinAccessBadgeLabel(pinAccess) {
+  switch (pinAccess) {
+    case 'preview':
+      return 'Preview';
+    case 'virtual':
+      return 'Virtual only';
+    case 'playable':
+      return 'Playable';
+    default:
+      return 'Adventure';
+  }
+}
+
+export function buildPinAriaLabel(title) {
+  return `Open ${title} map card`;
+}
+
+function escapeHtml(text) {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function buildPinTooltipHtml(markerData, visual) {
+  const title = escapeHtml(markerData?.title || visual?.label || 'Adventure');
+  const category = escapeHtml(visual?.label || 'Adventure');
+  const accessLabel = escapeHtml(getPinAccessBadgeLabel(markerData?.pinAccess));
+  const distance =
+    markerData?.distanceM != null
+      ? `<span class="questory-pin-tooltip-distance">${formatPinDistanceImperial(markerData.distanceM)}</span>`
+      : '';
+  return `
+    <strong class="questory-pin-tooltip-title">${title}</strong>
+    <span class="questory-pin-tooltip-meta">
+      <span class="questory-pin-tooltip-badge">${category}</span>
+      <span class="questory-pin-tooltip-badge pin-access">${accessLabel}</span>
+      ${distance}
+    </span>
+  `;
+}
+
+function syncPinTooltip(el, markerData, visual, selected) {
+  let tooltip = el.querySelector('.questory-pin-tooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.className = 'questory-pin-tooltip';
+    tooltip.setAttribute('role', 'tooltip');
+    el.appendChild(tooltip);
+  }
+  tooltip.innerHTML = buildPinTooltipHtml(markerData, visual);
+  if (selected) {
+    tooltip.classList.remove('visible');
+    tooltip.classList.add('pin-tooltip-selected');
+  } else {
+    tooltip.classList.remove('pin-tooltip-selected');
+  }
+}
+
+export function wireAdventurePinElement(
+  el,
+  { markerData, visual, selected = false, onSelect, onHoverChange } = {}
+) {
+  if (!el || !markerData) return;
+
+  const title = markerData.title || visual?.label || 'Adventure';
+  el.setAttribute('aria-label', buildPinAriaLabel(title));
+  el.dataset.adventureId = markerData.id;
+  el.classList.toggle('pin-selected', selected);
+  syncPinTooltip(el, markerData, visual, selected);
+
+  if (el.__pinInteractionsWired) return;
+  el.__pinInteractionsWired = true;
+
+  const tooltip = el.querySelector('.questory-pin-tooltip');
+  const canHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches;
+
+  const showTooltip = () => {
+    if (el.classList.contains('pin-selected')) return;
+    tooltip?.classList.add('visible');
+    onHoverChange?.(markerData.id);
+  };
+
+  const hideTooltip = () => {
+    if (el.classList.contains('pin-selected')) return;
+    tooltip?.classList.remove('visible');
+    onHoverChange?.(null);
+  };
+
+  if (canHover) {
+    el.addEventListener('mouseenter', showTooltip);
+    el.addEventListener('mouseleave', hideTooltip);
+  }
+
+  el.addEventListener('focus', showTooltip);
+  el.addEventListener('blur', hideTooltip);
+
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onSelect?.(markerData);
+  });
+
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      onSelect?.(markerData);
+    }
+  });
+}
+
 export function createAdventurePinElement(visual, { selected = false, pinAccess = 'playable' } = {}) {
   const el = document.createElement('button');
   el.type = 'button';
@@ -282,7 +395,6 @@ export function createAdventurePinElement(visual, { selected = false, pinAccess 
     .join(' ');
   el.style.setProperty('--pin-color', visual.color);
   el.style.setProperty('--pin-glow', visual.glow);
-  el.setAttribute('aria-label', visual.label);
   el.innerHTML = `<span class="questory-pin-icon">${visual.icon}</span><span class="questory-pin-ring"></span>`;
   return el;
 }

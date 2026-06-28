@@ -15,6 +15,7 @@ import {
 } from './mapUtils';
 import { AccessStatusBanner, usePlayerLocation } from './AccessRulesUI';
 import { evaluateAccessContext } from './accessRules';
+import { isDev } from './config/env';
 import {
   MAP_FILTERS,
   MAP_LAYER_IDS,
@@ -28,6 +29,7 @@ import {
   resolvePinVisual,
   revealedAreasGeoJSON,
   recordMapReveal,
+  wireAdventurePinElement,
 } from './mapDiscovery';
 import { MapFilterBar, MapPinCard } from './MapPinCard';
 
@@ -43,6 +45,69 @@ function parseFeatureProps(props) {
 
 function isClusterFeature(props) {
   return props.point_count != null && Number.isFinite(Number(props.point_count));
+}
+
+function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect, onClusterHover }) {
+  const clusterPopup = new mapboxgl.Popup({
+    closeButton: false,
+    closeOnClick: false,
+    className: 'questory-cluster-tooltip-popup',
+    offset: 14,
+    maxWidth: '240px',
+  });
+
+  map.on('click', MAP_LAYER_IDS.CLUSTERS, (e) => {
+    const features = map.queryRenderedFeatures(e.point, { layers: [MAP_LAYER_IDS.CLUSTERS] });
+    if (!features.length) return;
+    const clusterId = features[0].properties?.cluster_id;
+    if (clusterId == null) return;
+    map.getSource(ADVENTURE_SOURCE).getClusterExpansionZoom(clusterId, (err, zoom) => {
+      if (err) return;
+      map.easeTo({
+        center: features[0].geometry.coordinates,
+        zoom: Math.min(zoom, 16),
+        duration: 500,
+      });
+    });
+  });
+
+  map.on('mouseenter', MAP_LAYER_IDS.CLUSTERS, (e) => {
+    map.getCanvas().style.cursor = 'pointer';
+    const count = Number(e.features?.[0]?.properties?.point_count) || 0;
+    if (count > 0) {
+      onClusterHover?.(count);
+      clusterPopup
+        .setLngLat(e.features[0].geometry.coordinates)
+        .setHTML(`<div class="questory-cluster-tooltip">${count} adventures</div>`)
+        .addTo(map);
+    }
+  });
+
+  map.on('mouseleave', MAP_LAYER_IDS.CLUSTERS, () => {
+    map.getCanvas().style.cursor = '';
+    onClusterHover?.(null);
+    clusterPopup.remove();
+  });
+
+  map.on('click', MAP_LAYER_IDS.UNCLUSTERED, (e) => {
+    const feature = e.features?.[0];
+    if (!feature) return;
+    const props = feature.properties || {};
+    const id = props.id ?? feature.id;
+    if (!id) return;
+    const markerData = getMarkerById?.(id);
+    if (markerData?.adventure) {
+      e.originalEvent?.stopPropagation?.();
+      onAdventureSelect?.(markerData);
+    }
+  });
+
+  map.on('mouseenter', MAP_LAYER_IDS.UNCLUSTERED, () => {
+    map.getCanvas().style.cursor = 'pointer';
+  });
+  map.on('mouseleave', MAP_LAYER_IDS.UNCLUSTERED, () => {
+    map.getCanvas().style.cursor = '';
+  });
 }
 
 function addAdventureClusterLayers(map) {
@@ -81,31 +146,9 @@ function addAdventureClusterLayers(map) {
     source: ADVENTURE_SOURCE,
     filter: ['!', ['has', 'point_count']],
     paint: {
-      'circle-radius': 10,
+      'circle-radius': 14,
       'circle-opacity': 0,
     },
-  });
-
-  map.on('click', MAP_LAYER_IDS.CLUSTERS, (e) => {
-    const features = map.queryRenderedFeatures(e.point, { layers: [MAP_LAYER_IDS.CLUSTERS] });
-    if (!features.length) return;
-    const clusterId = features[0].properties?.cluster_id;
-    if (clusterId == null) return;
-    map.getSource(ADVENTURE_SOURCE).getClusterExpansionZoom(clusterId, (err, zoom) => {
-      if (err) return;
-      map.easeTo({
-        center: features[0].geometry.coordinates,
-        zoom: Math.min(zoom, 16),
-        duration: 500,
-      });
-    });
-  });
-
-  map.on('mouseenter', MAP_LAYER_IDS.CLUSTERS, () => {
-    map.getCanvas().style.cursor = 'pointer';
-  });
-  map.on('mouseleave', MAP_LAYER_IDS.CLUSTERS, () => {
-    map.getCanvas().style.cursor = '';
   });
 }
 
@@ -222,6 +265,7 @@ export function QuestoryMap({
   onFindMe,
   findMeSignal = 0,
   onVisiblePinCountChange,
+  onPinHoverChange,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -229,7 +273,12 @@ export function QuestoryMap({
   const userMarkerRef = useRef(null);
   const mapReadyRef = useRef(false);
   const adventureMarkersRef = useRef(adventureMarkers);
+  const markerLookupRef = useRef(new Map());
+  const onAdventureClickRef = useRef(onAdventureClick);
+  const onPinHoverChangeRef = useRef(onPinHoverChange);
   adventureMarkersRef.current = adventureMarkers;
+  onAdventureClickRef.current = onAdventureClick;
+  onPinHoverChangeRef.current = onPinHoverChange;
   const token = getMapboxToken();
 
   const markerLookup = useMemo(() => {
@@ -237,6 +286,7 @@ export function QuestoryMap({
     adventureMarkers.forEach((m) => map.set(m.id, m));
     return map;
   }, [adventureMarkers]);
+  markerLookupRef.current = markerLookup;
 
   const geoJson = useMemo(
     () => markersToGeoJSON(adventureMarkers),
@@ -247,18 +297,24 @@ export function QuestoryMap({
     (map, id, coords, nextIds) => {
       nextIds.add(id);
       const markerData = markerLookup.get(id);
-      const visual = resolvePinVisual(markerData?.adventure);
+      if (!markerData) return;
+      const visual = resolvePinVisual(markerData.adventure);
       const selected = selectedAdventureId === id;
       let entry = markersOnScreenRef.current[id];
 
       if (!entry) {
         const el = createAdventurePinElement(visual, {
           selected,
-          pinAccess: markerData?.pinAccess,
+          pinAccess: markerData.pinAccess,
         });
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (markerData?.adventure) onAdventureClick?.(markerData.adventure, markerData);
+        wireAdventurePinElement(el, {
+          markerData,
+          visual,
+          selected,
+          onSelect: (data) => {
+            if (data?.adventure) onAdventureClickRef.current?.(data.adventure, data);
+          },
+          onHoverChange: (hoverId) => onPinHoverChangeRef.current?.(hoverId),
         });
         entry = new mapboxgl.Marker({ element: el, anchor: 'center' })
           .setLngLat(coords)
@@ -266,10 +322,21 @@ export function QuestoryMap({
         markersOnScreenRef.current[id] = entry;
       } else {
         entry.setLngLat(coords);
-        entry.getElement()?.classList.toggle('pin-selected', selected);
+        const el = entry.getElement();
+        if (el) {
+          wireAdventurePinElement(el, {
+            markerData,
+            visual,
+            selected,
+            onSelect: (data) => {
+              if (data?.adventure) onAdventureClickRef.current?.(data.adventure, data);
+            },
+            onHoverChange: (hoverId) => onPinHoverChangeRef.current?.(hoverId),
+          });
+        }
       }
     },
-    [markerLookup, onAdventureClick, selectedAdventureId]
+    [markerLookup, selectedAdventureId]
   );
 
   const syncHtmlMarkers = useCallback(() => {
@@ -446,6 +513,13 @@ export function QuestoryMap({
       });
 
       addAdventureClusterLayers(map);
+      setupAdventureLayerInteractions(map, {
+        getMarkerById: (id) => markerLookupRef.current.get(id),
+        onAdventureSelect: (markerData) => {
+          if (markerData?.adventure) onAdventureClickRef.current?.(markerData.adventure, markerData);
+        },
+        onClusterHover: () => {},
+      });
 
       map.on('moveend', syncHtmlMarkers);
       map.on('zoomend', syncHtmlMarkers);
@@ -591,6 +665,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const [focusedAdventure, setFocusedAdventure] = useState(null);
   const [findMeSignal, setFindMeSignal] = useState(0);
   const [visiblePinCount, setVisiblePinCount] = useState(null);
+  const [hoveredPinId, setHoveredPinId] = useState(null);
   const { location } = usePlayerLocation();
   const presence = state?.social?.mapPresence || {
     explorersNearby: 12,
@@ -635,6 +710,15 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     visiblePinCount === 0 &&
     pinStats.pinCount > 0;
 
+  useEffect(() => {
+    if (!isDev) return;
+    console.debug('[QuestoryMap]', {
+      renderedPins: visiblePinCount ?? adventureMarkers.length,
+      selectedPinId: selectedMarker?.id ?? null,
+      hoveredPinId,
+    });
+  }, [visiblePinCount, adventureMarkers.length, selectedMarker?.id, hoveredPinId]);
+
   const selectedAdventure = selectedMarker?.adventure || null;
   const previewAccess = selectedAdventure
     ? evaluateAccessContext(selectedAdventure, { ...accessOptions, adminPreview: false })
@@ -664,6 +748,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   }, [adventures, state, location, follows]);
 
   function handleAdventureClick(adventure, marker) {
+    setHoveredPinId(null);
     setSelectedMarker(marker || { adventure, id: adventure.id });
     setFocusedAdventure(null);
     if (setState) {
@@ -731,6 +816,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           selectedAdventureId={selectedAdventure?.id}
           findMeSignal={findMeSignal}
           onVisiblePinCountChange={setVisiblePinCount}
+          onPinHoverChange={setHoveredPinId}
         />
 
         {showPinDebugLine && (
