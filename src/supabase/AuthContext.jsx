@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase, hasSupabase } from './client';
 import { fetchUserProfile } from './dataService';
-import { formatAuthError } from './authErrors';
+import { formatAuthError, clearOAuthCallbackUrl } from './authErrors';
 
 const AuthContext = createContext(null);
 
@@ -27,23 +27,42 @@ export function AuthProvider({ children }) {
       if (mounted) setProfile(data);
     }
 
-    supabase.auth.getSession().then(({ data }) => {
+    async function initSession() {
+      const { data, error } = await supabase.auth.getSession();
       if (!mounted) return;
+      if (error) console.error('Auth session error:', formatAuthError(error));
       setUser(data.session?.user ?? null);
-      loadProfile(data.session?.user ?? null).finally(() => {
-        if (mounted) setLoading(false);
-      });
-    });
+      await loadProfile(data.session?.user ?? null);
+      if (mounted) {
+        clearOAuthCallbackUrl();
+        setLoading(false);
+      }
+    }
+
+    initSession();
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession().then(({ data }) => {
+          if (!mounted) return;
+          setUser(data.session?.user ?? null);
+          loadProfile(data.session?.user ?? null);
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       loadProfile(session?.user ?? null);
+      if (session) clearOAuthCallbackUrl();
     });
 
     return () => {
       mounted = false;
+      document.removeEventListener('visibilitychange', onVisible);
       subscription.unsubscribe();
     };
   }, []);
@@ -68,9 +87,13 @@ export function AuthProvider({ children }) {
 
     async function signInWithGoogle() {
       if (!supabase) throw new Error('Cloud mode is off. Add Supabase env vars to enable Google sign-in.');
+      const redirectTo = `${window.location.origin}${window.location.pathname}`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin },
+        options: {
+          redirectTo,
+          skipBrowserRedirect: false,
+        },
       });
       if (error) throw new Error(formatAuthError(error));
     }

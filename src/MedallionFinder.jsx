@@ -6,8 +6,12 @@ import {
   normalizeClaimMethod,
   claimMethodUsesFinder,
   isPhysicalMedallionClaim,
+  autoClaimsOnTap,
   handleClaimResponse,
   formatUserErrorMessage,
+  getClaimCodeDiscoveryHint,
+  canShowClaimCodeEntry,
+  getTreasureClaimStep,
 } from './claimSystem';
 import {
   canCaptureMedallion,
@@ -17,12 +21,16 @@ import {
   getFinderSearchRadius,
   getMedallionLocation,
   measureMedallionDistance,
+  resolveFinderPhase,
+  getFinderPhaseUI,
+  FINDER_PHASE,
   usesFinderGps,
 } from './finderMode';
 import { formatDistanceAway, getCurrentPosition } from './geolocation';
 import { usesArFinder } from './expansion';
 import { ARFinderOverlay } from './ExpansionUI';
 import { CinematicAROverlay } from './CinematicAR';
+import { QrClaimScanner } from './QrClaimScanner';
 import {
   getAdventureArFinale,
   getArSceneId,
@@ -84,25 +92,19 @@ function useMedallionGps(adventure, watching = true) {
   };
 }
 
-function getFinderExcitement(distance, inCaptureRange, inSearchArea) {
-  if (inCaptureRange) return { label: 'Capture range!', className: 'hot' };
-  if (!inSearchArea || distance == null) return { label: 'Searching…', className: '' };
-  if (distance <= 30) return { label: 'Almost there!', className: 'warm' };
-  if (distance <= 80) return { label: 'Signal building…', className: 'warm' };
-  return { label: 'Follow the signal', className: '' };
-}
-
-function FinderSignalPreview({ distance, accuracy, signal, searchRadius, inCaptureRange, inSearchArea }) {
-  const excitement = getFinderExcitement(distance, inCaptureRange, inSearchArea);
+function FinderSignalPreview({ distance, accuracy, signal, searchRadius, phase, phaseUi }) {
   return (
     <div className="finder-signal-preview">
-      <p className={`finder-excitement ${excitement.className}`}>{excitement.label}</p>
+      <p className={`finder-excitement ${phaseUi.excitement.className}`}>{phaseUi.excitement.label}</p>
       <div className="finder-stat">
         <small>Signal strength</small>
-        <div className={`signal-meter ${signal > 50 ? 'strong' : ''}`} aria-label={`Signal ${signal}%`}>
-          <i style={{ width: `${signal}%` }} />
+        <div
+          className={`signal-meter ${phaseUi.signalPercent > 50 ? 'strong' : ''} ${phase === FINDER_PHASE.CAPTURE_READY ? 'capture-ready' : ''}`}
+          aria-label={`Signal ${phaseUi.signalPercent}%`}
+        >
+          <i style={{ width: `${phaseUi.signalPercent}%` }} />
         </div>
-        <strong>{signal}%</strong>
+        <strong>{phaseUi.signalPercent > 0 ? `${phaseUi.signalPercent}%` : '—'}</strong>
       </div>
       <div className="finder-stat-row">
         <div>
@@ -123,10 +125,64 @@ function FinderSignalPreview({ distance, accuracy, signal, searchRadius, inCaptu
   );
 }
 
+function buildFinderContext({
+  adventure,
+  distance,
+  accuracy,
+  gpsError,
+  locating,
+  inSearchArea,
+  inCaptureRange,
+  medallionTapped,
+  capturing,
+  signal,
+  medallion,
+  searchRadius,
+  captureRadius,
+  physical,
+}) {
+  const phase = resolveFinderPhase({
+    medallion,
+    distance,
+    gpsError,
+    locating,
+    inSearchArea,
+    inCaptureRange,
+    medallionTapped,
+  });
+  const phaseUi = getFinderPhaseUI(phase, {
+    distance,
+    accuracy,
+    captureRadius,
+    searchRadius,
+    physical,
+    capturing,
+    gpsError,
+    signal,
+  });
+  return { phase, phaseUi };
+}
+
 export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
   const physical = isPhysicalMedallionClaim(adventure);
   const { distance, accuracy, gpsError, searchRadius, medallion, inSearchArea, signal, locating } =
     useMedallionGps(adventure);
+  const captureRadius = getCaptureRadius(adventure, accuracy);
+  const { phase, phaseUi } = buildFinderContext({
+    adventure,
+    distance,
+    accuracy,
+    gpsError,
+    locating,
+    inSearchArea,
+    inCaptureRange: false,
+    medallionTapped: false,
+    signal,
+    medallion,
+    searchRadius,
+    captureRadius,
+    physical,
+  });
 
   if (!medallion) {
     return (
@@ -152,40 +208,37 @@ export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
         <div className={`signal-pulse-ring ${inSearchArea ? 'active' : ''}`} aria-hidden />
         <Radio size={36} className="signal-icon" />
         <h2>Medallion Signal Activated.</h2>
-        <p>
-          {physical
-            ? 'The trail is complete. A hidden physical medallion is nearby — enter Finder Mode within the search area and follow the signal.'
-            : 'The trail is complete. A virtual medallion is broadcasting nearby — enter Finder Mode within the search area and follow the signal.'}
-        </p>
+        <p>{phaseUi.body}</p>
         <SponsorLine adventure={adventure} />
-        {locating && <p className="finder-gps-status">Locating your position…</p>}
-        {gpsError && <p className="loc-feedback denied">{gpsError}</p>}
-        {!locating && !gpsError && !inSearchArea && (
+        {phase === FINDER_PHASE.LOCATING && (
+          <p className="finder-gps-status">Locating your position…</p>
+        )}
+        {phase === FINDER_PHASE.GPS_ERROR && (
+          <p className="loc-feedback denied">{phaseUi.body}</p>
+        )}
+        {phase === FINDER_PHASE.OUTSIDE_SEARCH && phaseUi.hint && (
           <p className="loc-feedback denied finder-activate-hint">
-            Move closer to activate signal.
-            {distance != null && (
-              <span className="distance-away">{formatDistanceAway(distance)}</span>
-            )}
+            {phaseUi.hint}
           </p>
         )}
-        {inSearchArea && (
+        {(phase === FINDER_PHASE.SEARCH_ACTIVE || phase === FINDER_PHASE.CAPTURE_READY) && (
           <FinderSignalPreview
             distance={distance}
             accuracy={accuracy}
             signal={signal}
             searchRadius={searchRadius}
-            inCaptureRange={false}
-            inSearchArea={inSearchArea}
+            phase={phase}
+            phaseUi={phaseUi}
           />
         )}
         <button
           type="button"
-          disabled={!inSearchArea}
+          disabled={phase !== FINDER_PHASE.SEARCH_ACTIVE && phase !== FINDER_PHASE.CAPTURE_READY}
           onClick={() => nav('finder', adventure.id, { adminPreview })}
         >
           <Compass size={18} /> Enter Finder Mode
         </button>
-        {!inSearchArea && !locating && (
+        {phase === FINDER_PHASE.OUTSIDE_SEARCH && (
           <p className="admin-meta">
             Finder unlocks within {searchRadius} m of the medallion.
           </p>
@@ -198,8 +251,24 @@ export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
 /** Play-screen panel: enter Finder when inside search area, not capture range. */
 export function FinderAwaitingPanel({ adventure, nav, adminPreview }) {
   const physical = isPhysicalMedallionClaim(adventure);
-  const { distance, gpsError, searchRadius, medallion, inSearchArea, signal, locating } =
+  const { distance, gpsError, searchRadius, medallion, inSearchArea, signal, locating, accuracy } =
     useMedallionGps(adventure);
+  const captureRadius = getCaptureRadius(adventure, accuracy);
+  const { phase, phaseUi } = buildFinderContext({
+    adventure,
+    distance,
+    accuracy,
+    gpsError,
+    locating,
+    inSearchArea,
+    inCaptureRange: false,
+    medallionTapped: false,
+    signal,
+    medallion,
+    searchRadius,
+    captureRadius,
+    physical,
+  });
 
   if (!medallion) {
     return (
@@ -209,38 +278,36 @@ export function FinderAwaitingPanel({ adventure, nav, adminPreview }) {
 
   return (
     <>
-      <p>
-        {physical
-          ? 'All clues solved. Follow the physical medallion signal in Finder Mode.'
-          : 'All clues solved. The virtual medallion is broadcasting — enter Finder Mode to track the signal.'}
-      </p>
-      {locating && <p className="finder-gps-status">Locating your position…</p>}
-      {gpsError && <p className="loc-feedback denied">{gpsError}</p>}
-      {!locating && !gpsError && !inSearchArea && (
-        <p className="loc-feedback denied finder-activate-hint">
-          Move closer to activate signal.
-          {distance != null && (
-            <span className="distance-away">{formatDistanceAway(distance)}</span>
-          )}
-        </p>
+      <p>{phaseUi.body}</p>
+      {phase === FINDER_PHASE.LOCATING && (
+        <p className="finder-gps-status">Locating your position…</p>
       )}
-      {inSearchArea && (
+      {phase === FINDER_PHASE.GPS_ERROR && (
+        <p className="loc-feedback denied">{phaseUi.body}</p>
+      )}
+      {phase === FINDER_PHASE.OUTSIDE_SEARCH && phaseUi.hint && (
+        <p className="loc-feedback denied finder-activate-hint">{phaseUi.hint}</p>
+      )}
+      {(phase === FINDER_PHASE.SEARCH_ACTIVE || phase === FINDER_PHASE.CAPTURE_READY) && (
         <FinderSignalPreview
           distance={distance}
+          accuracy={accuracy}
           signal={signal}
           searchRadius={searchRadius}
+          phase={phase}
+          phaseUi={phaseUi}
         />
       )}
       <button
         type="button"
-        disabled={!inSearchArea}
+        disabled={phase !== FINDER_PHASE.SEARCH_ACTIVE && phase !== FINDER_PHASE.CAPTURE_READY}
         onClick={() => nav('finder', adventure.id, { adminPreview })}
       >
         <Compass size={18} /> Enter Finder Mode
       </button>
-      {!inSearchArea && !locating && (
+      {phase === FINDER_PHASE.OUTSIDE_SEARCH && (
         <p className="admin-meta">
-          Signal activates within {searchRadius} m · tap unlocks in capture range.
+          Signal activates within {searchRadius} m · capture unlocks in Finder Mode.
         </p>
       )}
     </>
@@ -284,7 +351,26 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
   );
   const physical = isPhysicalMedallionClaim(adventure);
   const claimMethod = normalizeClaimMethod(adventure.claimMethod);
-  const tapDisabled = !inCaptureRange || progress.medallionTapped || capturing;
+
+  const { phase, phaseUi } = buildFinderContext({
+    adventure,
+    distance: effectiveDistance,
+    accuracy: effectiveAccuracy,
+    gpsError,
+    locating: effectiveDistance == null && !gpsError,
+    inSearchArea,
+    inCaptureRange,
+    medallionTapped: progress.medallionTapped,
+    capturing,
+    signal,
+    medallion,
+    searchRadius,
+    captureRadius,
+    physical,
+  });
+
+  const tapDisabled =
+    !inCaptureRange || progress.medallionTapped || capturing || phase === FINDER_PHASE.CAPTURED;
   const arFinale = getAdventureArFinale(adventure);
   const finaleSceneId = getArSceneId(adventure.id, 'finale', 'finale');
 
@@ -374,27 +460,20 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
         ← Signal
       </button>
       <div className="preview-banner finder-mode-banner">
-        <Compass size={16} /> Finder Mode ·{' '}
-        {inCaptureRange
-          ? 'Capture ready'
-          : inSearchArea
-            ? 'Signal active'
-            : 'Searching…'}
+        <Compass size={16} /> {phaseUi.banner}
       </div>
 
       <div className="card finder-stats">
-        {(() => {
-          const excitement = getFinderExcitement(effectiveDistance, inCaptureRange, inSearchArea);
-          return (
-            <p className={`finder-excitement ${excitement.className}`}>{excitement.label}</p>
-          );
-        })()}
+        <p className={`finder-excitement ${phaseUi.excitement.className}`}>{phaseUi.excitement.label}</p>
         <div className="finder-stat">
           <small>Signal strength</small>
-          <div className={`signal-meter ${inSearchArea && signal > 50 ? 'strong' : ''} ${inCaptureRange ? 'capture-ready' : ''}`} aria-label={`Signal ${signal}%`}>
-            <i style={{ width: `${inSearchArea ? signal : 0}%` }} />
+          <div
+            className={`signal-meter ${phaseUi.signalPercent > 50 ? 'strong' : ''} ${phase === FINDER_PHASE.CAPTURE_READY ? 'capture-ready' : ''}`}
+            aria-label={`Signal ${phaseUi.signalPercent}%`}
+          >
+            <i style={{ width: `${phaseUi.signalPercent}%` }} />
           </div>
-          <strong>{inSearchArea ? `${signal}%` : '—'}</strong>
+          <strong>{phaseUi.signalPercent > 0 ? `${phaseUi.signalPercent}%` : '—'}</strong>
         </div>
         <div className="finder-stat-row">
           <div>
@@ -420,12 +499,10 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
             <strong>~{Math.round(captureRadius)} m</strong>
           </div>
         </div>
-        {!inSearchArea && effectiveDistance != null && !gpsError && (
-          <p className="loc-feedback denied finder-activate-hint">
-            Move closer to activate signal.
-          </p>
+        {phaseUi.hint && <p className="finder-phase-hint">{phaseUi.hint}</p>}
+        {phaseUi.showMoveCloser && (
+          <p className="loc-feedback denied finder-activate-hint">{phaseUi.body}</p>
         )}
-        {gpsError && <p className="loc-feedback denied">{gpsError}</p>}
       </div>
 
       {usesArFinder(adventure) ? (
@@ -439,40 +516,42 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
           {tapError && <p className="form-error finder-tap-error">{tapError}</p>}
         </div>
       ) : (
-        <div className={`card finder-medallion-card ${inCaptureRange ? 'ready capture-pulse' : inSearchArea ? 'signal-active' : ''}`}>
+        <div
+          className={`card finder-medallion-card ${
+            phase === FINDER_PHASE.CAPTURE_READY
+              ? 'ready capture-pulse'
+              : phase === FINDER_PHASE.SEARCH_ACTIVE
+                ? 'signal-active'
+                : ''
+          }`}
+        >
           <div className="finder-medallion-visual" aria-hidden="true">
             <span className="finder-chest">{physical ? '📍' : '🧭'}</span>
             <span className="finder-medallion">🥇</span>
           </div>
           <h3>{physical ? 'Physical Medallion Signal' : 'Virtual Medallion'}</h3>
-          <p>
-            {capturing
-              ? 'Capturing medallion...'
-              : inCaptureRange
-                ? physical
-                  ? 'Signal peak reached. Tap to mark this search zone.'
-                  : 'You are within capture range. Tap the medallion to secure it.'
-                : inSearchArea
-                  ? `Signal active. Move within ~${Math.round(captureRadius)} m to tap the medallion.`
-                  : effectiveDistance != null
-                    ? 'Move closer to activate signal.'
-                    : 'Locating your position…'}
-          </p>
+          <p>{phaseUi.body}</p>
           {tapError && <p className="form-error finder-tap-error">{tapError}</p>}
-          <button
-            type="button"
-            className="finder-tap-btn"
-            onClick={handleTap}
-            disabled={tapDisabled}
-            aria-busy={capturing}
-          >
-            <Sparkles size={18} />
-            {capturing
-              ? 'Capturing medallion...'
-              : progress.medallionTapped
-                ? 'Signal captured'
-                : 'Tap Medallion'}
-          </button>
+          {phase === FINDER_PHASE.CAPTURED ? (
+            <button type="button" onClick={() => nav('play', adventure.id, { adminPreview })}>
+              <Sparkles size={18} /> Continue to Treasure Claim
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="finder-tap-btn"
+              onClick={handleTap}
+              disabled={tapDisabled}
+              aria-busy={capturing}
+            >
+              <Sparkles size={18} />
+              {capturing
+                ? 'Capturing medallion...'
+                : autoClaimsOnTap(adventure)
+                  ? 'Tap to Claim Treasure'
+                  : 'Tap Medallion'}
+            </button>
+          )}
         </div>
       )}
 
@@ -500,7 +579,7 @@ function getClaimGuide(method, adventure) {
         why: 'Your trail is complete. Scan the sponsor QR code to verify your visit and unlock rewards.',
         where: hint || 'Look for the Questory QR poster at the finish line or sponsor location.',
         after: 'Rewards appear in your Passport. Share your certificate when you are done.',
-        steps: ['Find the sponsor QR code', 'Scan or enter the code below', 'Tap Verify & Claim'],
+        steps: ['Open the QR scanner', 'Scan the sponsor poster', 'Rewards unlock automatically'],
       };
     case CLAIM_METHOD.PHYSICAL_MEDALLION:
       return {
@@ -514,7 +593,9 @@ function getClaimGuide(method, adventure) {
       return {
         title: 'Final Claim Code',
         why: 'Virtual medallion secured. Enter the final claim code to complete your treasure.',
-        where: hint || 'Check your invite, sponsor card, or adventure details for the secret code.',
+        where:
+          hint ||
+          'The claim code unlocks after medallion capture — check your invite or sponsor card.',
         after: 'Full rewards unlock and your celebration screen appears.',
         steps: ['Virtual medallion captured ✓', 'Enter the final claim code', 'Tap Claim Treasure'],
       };
@@ -562,18 +643,30 @@ function ClaimGuidePanel({ guide }) {
   );
 }
 
-export function TreasureClaimPanel({ adventure, progress, onClaim }) {
+function ClaimCodeDiscoveryCard({ adventure, state }) {
+  const hint = getClaimCodeDiscoveryHint(adventure, state);
+  return (
+    <div className="claim-discovery-card">
+      <h4>Where to find your code</h4>
+      <p>{hint}</p>
+    </div>
+  );
+}
+
+export function TreasureClaimPanel({ adventure, progress, onClaim, state }) {
   const method = normalizeClaimMethod(adventure.claimMethod);
-  const [qrInput, setQrInput] = useState('');
   const [physicalInput, setPhysicalInput] = useState('');
   const [codeInput, setCodeInput] = useState('');
   const [claiming, setClaiming] = useState(false);
+  const [showQrScanner, setShowQrScanner] = useState(method === CLAIM_METHOD.QR_CODE);
+  const step = getTreasureClaimStep(adventure, progress);
   const guide = getClaimGuide(method, adventure);
 
   async function submitClaim(code) {
     setClaiming(true);
     try {
-      await handleClaimResponse(onClaim, code);
+      const result = await handleClaimResponse(onClaim, code);
+      return result;
     } finally {
       setClaiming(false);
     }
@@ -588,7 +681,7 @@ export function TreasureClaimPanel({ adventure, progress, onClaim }) {
     );
   }
 
-  if (claimMethodUsesFinder(adventure) && !progress.medallionTapped) {
+  if (step === 'finder_required') {
     return (
       <div className="claim-awaiting-finder">
         <ClaimGuidePanel guide={getClaimGuide(CLAIM_METHOD.TAP_MEDALLION, adventure)} />
@@ -599,30 +692,63 @@ export function TreasureClaimPanel({ adventure, progress, onClaim }) {
     );
   }
 
-  if (method === CLAIM_METHOD.TAP_MEDALLION && progress.medallionTapped) {
+  if (step === 'auto_claim_pending') {
     return (
       <div className="claim-success-card">
         <Sparkles size={24} />
-        <p>Medallion captured — claiming your rewards…</p>
+        <p>Medallion captured.</p>
+        <button type="button" onClick={() => submitClaim(adventure.claimCode)} disabled={claiming}>
+          <Sparkles size={18} /> {claiming ? 'Claiming…' : 'Claim Your Rewards'}
+        </button>
       </div>
     );
   }
 
   return (
     <div className="treasure-claim-flow">
+      {method === CLAIM_METHOD.HYBRID && progress.medallionTapped && (
+        <div className="claim-unlocked-banner">
+          <Sparkles size={16} /> Virtual medallion secured — enter your final claim code below.
+        </div>
+      )}
+
       <ClaimGuidePanel guide={guide} />
+
+      {(method === CLAIM_METHOD.SECRET_CODE || method === CLAIM_METHOD.HYBRID) &&
+        canShowClaimCodeEntry(adventure, progress) && (
+          <>
+            <ClaimCodeDiscoveryCard adventure={adventure} state={state} />
+            <div className="claim-input-block">
+              <input
+                value={codeInput}
+                onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                placeholder="Enter secret code"
+                aria-label="Secret claim code"
+              />
+              <button
+                type="button"
+                onClick={() => submitClaim(codeInput.trim().toUpperCase())}
+                disabled={claiming || !codeInput.trim()}
+              >
+                <Sparkles size={18} /> {claiming ? 'Claiming…' : 'Claim Treasure'}
+              </button>
+            </div>
+          </>
+        )}
 
       {method === CLAIM_METHOD.QR_CODE && (
         <div className="claim-input-block">
-          <input
-            value={qrInput}
-            onChange={(e) => setQrInput(e.target.value.toUpperCase())}
-            placeholder="Paste or type QR payload"
-            aria-label="QR code payload"
-          />
-          <button type="button" onClick={() => submitClaim(qrInput.trim().toUpperCase())} disabled={claiming || !qrInput.trim()}>
-            <QrCode size={18} /> {claiming ? 'Verifying…' : 'Verify QR & Claim'}
-          </button>
+          {showQrScanner ? (
+            <QrClaimScanner
+              busy={claiming}
+              onScan={(payload) => submitClaim(payload)}
+              onClose={() => setShowQrScanner(false)}
+            />
+          ) : (
+            <button type="button" onClick={() => setShowQrScanner(true)}>
+              <QrCode size={18} /> Open QR Scanner
+            </button>
+          )}
         </div>
       )}
 
@@ -633,27 +759,20 @@ export function TreasureClaimPanel({ adventure, progress, onClaim }) {
               <MapPin size={14} /> {adventure.hintAfterTap}
             </p>
           )}
+          <p className="claim-hint">
+            Find the hidden physical medallion and enter the engraved code.
+          </p>
           <input
             value={physicalInput}
             onChange={(e) => setPhysicalInput(e.target.value.toUpperCase())}
             placeholder="Engraved physical code"
             aria-label="Physical medallion code"
           />
-          <button type="button" onClick={() => submitClaim(physicalInput.trim().toUpperCase())} disabled={claiming || !physicalInput.trim()}>
-            <Sparkles size={18} /> {claiming ? 'Claiming…' : 'Claim Treasure'}
-          </button>
-        </div>
-      )}
-
-      {(method === CLAIM_METHOD.SECRET_CODE || method === CLAIM_METHOD.HYBRID) && (
-        <div className="claim-input-block">
-          <input
-            value={codeInput}
-            onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
-            placeholder="Enter secret code"
-            aria-label="Secret claim code"
-          />
-          <button type="button" onClick={() => submitClaim(codeInput.trim().toUpperCase())} disabled={claiming || !codeInput.trim()}>
+          <button
+            type="button"
+            onClick={() => submitClaim(physicalInput.trim().toUpperCase())}
+            disabled={claiming || !physicalInput.trim()}
+          >
             <Sparkles size={18} /> {claiming ? 'Claiming…' : 'Claim Treasure'}
           </button>
         </div>

@@ -48,19 +48,35 @@ export function formatAuthError(err) {
   return safeMessage(message, 'Something went wrong. Please try again.');
 }
 
+/** Clear OAuth tokens from the URL after Supabase has consumed the session. */
+export function clearOAuthCallbackUrl() {
+  const search = window.location.search || '';
+  const hash = window.location.hash || '';
+  const hasAuthQuery = search.includes('code=') || search.includes('error=');
+  const hasAuthHash =
+    hash.includes('access_token=') || hash.includes('error=') || hash.includes('error_description=');
+  if (!hasAuthQuery && !hasAuthHash) return false;
+  window.history.replaceState({}, document.title, window.location.pathname);
+  return true;
+}
+
 /** Parse Supabase OAuth error returned in the URL hash after redirect. */
 export function parseOAuthCallbackError() {
   const hash = window.location.hash?.startsWith('#')
     ? window.location.hash.slice(1)
     : window.location.hash;
-  if (!hash) return null;
+  const search = window.location.search?.startsWith('?')
+    ? window.location.search.slice(1)
+    : window.location.search;
 
-  const params = new URLSearchParams(hash);
-  const error = params.get('error');
-  const description = params.get('error_description');
+  const hashParams = hash ? new URLSearchParams(hash) : null;
+  const searchParams = search ? new URLSearchParams(search) : null;
+  const error = hashParams?.get('error') || searchParams?.get('error');
+  const description =
+    hashParams?.get('error_description') || searchParams?.get('error_description');
   if (!error && !description) return null;
 
-  window.history.replaceState({}, '', window.location.pathname + window.location.search);
+  clearOAuthCallbackUrl();
 
   if (description) {
     return formatAuthError({

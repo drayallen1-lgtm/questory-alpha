@@ -128,6 +128,8 @@ export const defaultState = {
       difficulty: 3,
       claimCode: 'PARSONS128',
       claimMethod: 'secret_code',
+      claimHint:
+        'The conductor left medallion #128. Combine the city name PARSONS with that number for your claim code.',
       qrClaimValue: 'PARSONS128',
       finderSearchRadiusM: 200,
       finderCaptureBaseM: 25,
@@ -156,6 +158,8 @@ export const defaultState = {
           id: 'clue-3',
           title: 'River Bridge Signal',
           text: 'Cross the bridge where the Neosho runs slow. Look for the rusted signal post pointing east — the medallion waits beyond the last rivet.',
+          claimCodeHint:
+            'The conductor left medallion #128. Combine PARSONS with 128 for your final claim code.',
           latitude: 37.3348,
           longitude: -95.2545,
           radiusMeters: 500,
@@ -335,6 +339,7 @@ export const defaultState = {
       difficulty: 3,
       claimCode: 'SENTINEL',
       claimMethod: 'hybrid',
+      claimHint: 'After capturing the virtual medallion, enter code SENTINEL from your trail briefing.',
       qrClaimValue: 'SENTINEL',
       finderSearchRadiusM: 200,
       finderCaptureBaseM: 25,
@@ -456,6 +461,7 @@ export const defaultState = {
       difficulty: 3,
       claimCode: 'DEPOTGHOST',
       claimMethod: 'secret_code',
+      claimHint: 'The ghost signed the ledger with one word: DEPOTGHOST.',
       qrClaimValue: 'DEPOTGHOST',
       rewardCoins: 50,
       potEntries: 3,

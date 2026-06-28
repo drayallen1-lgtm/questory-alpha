@@ -1702,14 +1702,28 @@ function AdventurePlay({
         {readyToClaim && (
           <>
             <EndingRevealBanner adventure={adventure} progress={progress} />
-            <TreasureClaimPanel adventure={adventure} progress={progress} onClaim={onClaim} />
+            <TreasureClaimPanel
+              adventure={adventure}
+              progress={progress}
+              onClaim={onClaim}
+              state={state}
+            />
           </>
         )}
 
         {progress.claimed && (
-          <button onClick={() => nav('vault')}>
-            <Sparkles size={18} /> Open Reward Vault
-          </button>
+          <>
+            <div className="claim-success-card">
+              <Sparkles size={24} />
+              <p>Adventure complete! Your rewards are in your Passport.</p>
+            </div>
+            <button type="button" onClick={() => nav('victory', adventure.id, { adminPreview })}>
+              <Award size={18} /> View Celebration
+            </button>
+            <button type="button" className="ghost" onClick={() => nav('vault')}>
+              <Sparkles size={18} /> Open Passport
+            </button>
+          </>
         )}
       </div>
 

@@ -6,5 +6,12 @@ export function hasSupabase() {
 }
 
 export const supabase = hasSupabase()
-  ? createClient(env.supabaseUrl, env.supabaseAnonKey)
+  ? createClient(env.supabaseUrl, env.supabaseAnonKey, {
+      auth: {
+        flowType: 'pkce',
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
   : null;

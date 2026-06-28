@@ -97,6 +97,53 @@ export function isPhysicalMedallionClaim(adventure) {
   return normalizeClaimMethod(adventure?.claimMethod) === CLAIM_METHOD.PHYSICAL_MEDALLION;
 }
 
+/** Whether the player can enter a secret/hybrid claim code yet. */
+export function canShowClaimCodeEntry(adventure, progress) {
+  const method = normalizeClaimMethod(adventure?.claimMethod);
+  if (method === CLAIM_METHOD.SECRET_CODE || method === CLAIM_METHOD.QR_CODE) return true;
+  if (method === CLAIM_METHOD.HYBRID || method === CLAIM_METHOD.PHYSICAL_MEDALLION) {
+    return Boolean(progress?.medallionTapped);
+  }
+  return false;
+}
+
+/** Player-facing hint for where to find the secret claim code (never the code itself). */
+export function getClaimCodeDiscoveryHint(adventure, state) {
+  if (adventure?.claimHint?.trim()) return adventure.claimHint.trim();
+
+  const clues = Array.isArray(adventure?.clues) ? adventure.clues : [];
+  const lastClue = clues[clues.length - 1];
+  if (lastClue?.claimCodeHint) return lastClue.claimCodeHint;
+
+  const questCode =
+    adventure?.questCode ||
+    state?.growth?.questCodes?.[adventure?.id] ||
+    state?.growth?.activeQuestCode;
+  if (questCode) {
+    return `Your adventure invite includes quest code "${questCode}" — use what you learned on the trail to form the final claim code.`;
+  }
+
+  if (lastClue?.title) {
+    return `Revisit "${lastClue.title}" and your final discoveries — the claim code is woven into the story.`;
+  }
+
+  return 'Re-read the final clue and your adventure invite. The claim code is hidden in what you discovered along the trail.';
+}
+
+export function getTreasureClaimStep(adventure, progress) {
+  const method = normalizeClaimMethod(adventure?.claimMethod);
+  if (progress?.claimed) return 'claimed';
+  if (method === CLAIM_METHOD.TAP_MEDALLION) {
+    if (progress?.medallionTapped) return 'auto_claim_pending';
+    return 'finder_required';
+  }
+  if (claimMethodUsesFinder(adventure) && !progress?.medallionTapped) return 'finder_required';
+  if (method === CLAIM_METHOD.QR_CODE) return 'qr_scan';
+  if (method === CLAIM_METHOD.PHYSICAL_MEDALLION) return 'physical_code';
+  if (method === CLAIM_METHOD.HYBRID) return 'hybrid_code';
+  return 'secret_code';
+}
+
 export function getClaimFieldConfig(method) {
   const m = normalizeClaimMethod(method);
   return {

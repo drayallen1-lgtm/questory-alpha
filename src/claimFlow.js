@@ -298,6 +298,9 @@ export async function runMedallionCapture({
       medallionTapped: true,
     });
     console.log('[Questory] medallion auto-claim result', result);
+    if (!result?.ok && result?.requiresLogin) {
+      return { ok: false, requiresLogin: true, message: result.message };
+    }
     return result;
   }
 
