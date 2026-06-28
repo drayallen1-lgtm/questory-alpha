@@ -689,12 +689,14 @@ export function ExperienceVictoryMessage({ adventure }) {
   return <p className="experience-victory-message">{msg}</p>;
 }
 
-export function HorrorAtmosphereOverlay({ adventure }) {
-  const atm = adventure.experienceSettings?.atmosphere;
-  if (!atm || atm === 'mild') return null;
+export function HorrorAtmosphereOverlay({ adventure, eventContext }) {
+  const eventAtm = adventure?._worldEvent?.modifiers?.atmosphere || eventContext?.modifiers?.atmosphere;
+  const darker = adventure?._worldEvent?.modifiers?.darkerAtmosphere || eventContext?.modifiers?.darkerAtmosphere;
+  const atm = eventAtm || adventure?.experienceSettings?.atmosphere;
+  if (!atm || (atm === 'mild' && !darker)) return null;
   return (
-    <div className={`horror-atmosphere ${atm}`} aria-hidden="true">
-      {atm === 'terrifying' && <span className="horror-fog" />}
+    <div className={`horror-atmosphere ${atm} ${darker ? 'darker' : ''}`} aria-hidden="true">
+      {(atm === 'terrifying' || atm === 'halloween' || atm === 'dread') && <span className="horror-fog" />}
     </div>
   );
 }

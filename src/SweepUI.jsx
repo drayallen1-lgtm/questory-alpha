@@ -68,6 +68,7 @@ import { GlobalLoreBanner, WorldEventBadge, CreatorPrestigeBadge } from './World
 import { InvitationEmptyState, InvitationHomeBanner } from './InvitationUI';
 import { GrowthHomeBanner, QuestCodeBadge, FollowingFeedSection } from './GrowthUI';
 import { LaunchFunnelCard } from './StabilityUI';
+import { TodaysWorldPanel, WorldEventNotificationBar } from './WorldEventUI';
 import { isAdventureUnlocked } from './worldEngine';
 
 export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
@@ -88,6 +89,8 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
       </section>
 
       <GrowthHomeBanner state={state} setState={setState} nav={nav} adventures={adventures} />
+      <WorldEventNotificationBar state={state} setState={setState} adventures={adventures} />
+      <TodaysWorldPanel state={state} adventures={adventures} nav={nav} setState={setState} />
       <LaunchFunnelCard state={state} />
       <InvitationHomeBanner state={state} setState={setState} nav={nav} />
       <GlobalLoreBanner state={state} setState={setState} />

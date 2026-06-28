@@ -56,10 +56,12 @@ import {
   resolveLivingNpcPresentation,
 } from './livingNpcEngine';
 import { CollectionLoreHub } from './CollectionLoreUI';
+import { LiveEventDashboard } from './WorldEventUI';
+import { getWorldEventContext } from './worldEventEngine';
 
 export function WorldEngineHub({ state, setState, adventures, nav }) {
   const [tab, setTab] = useState('events');
-  const weather = getDemoWeather(state);
+  const weather = getDemoWeather(state, adventures);
   const overlay = getActiveSeasonalOverlay();
 
   const tabs = [
@@ -100,7 +102,12 @@ export function WorldEngineHub({ state, setState, adventures, nav }) {
         ))}
       </div>
 
-      {tab === 'events' && <CityEventsPanel state={state} setState={setState} adventures={adventures} />}
+      {tab === 'events' && (
+        <>
+          <LiveEventDashboard state={state} setState={setState} adventures={adventures} />
+          <CityEventsPanel state={state} setState={setState} adventures={adventures} />
+        </>
+      )}
       {tab === 'weather' && <WeatherPanel state={state} setState={setState} weather={weather} />}
       {tab === 'npcs' && <NpcGalleryPanel state={state} setState={setState} adventures={adventures} />}
       {tab === 'discoveries' && <HiddenDiscoveriesPanel state={state} setState={setState} weather={weather} />}
@@ -538,8 +545,9 @@ export function BranchChoicePanel({ clue, progress, onSelect, adventure }) {
   );
 }
 
-export function NpcPlayCard({ adventure, state, setState, clueIndex, progress }) {
-  const directorCtx = getDirectorNpcContext(adventure, clueIndex, state, progress);
+export function NpcPlayCard({ adventure, state, setState, clueIndex, progress, eventContext }) {
+  const directorCtx = getDirectorNpcContext(adventure, clueIndex, state, progress, resolvedEventContext);
+  const resolvedEventContext = eventContext || getWorldEventContext(state, []);
 
   if (directorCtx?.presentation) {
     return (
@@ -549,6 +557,7 @@ export function NpcPlayCard({ adventure, state, setState, clueIndex, progress })
         progress={progress}
         state={state}
         setState={setState}
+        eventContext={resolvedEventContext}
       />
     );
   }
@@ -561,6 +570,7 @@ export function NpcPlayCard({ adventure, state, setState, clueIndex, progress })
       state,
       adventure,
       progress,
+      eventContext: resolvedEventContext,
     });
     if (fallback) {
       return (
@@ -589,6 +599,7 @@ export function NpcPlayCard({ adventure, state, setState, clueIndex, progress })
     state,
     adventure,
     progress,
+    eventContext: resolvedEventContext,
   });
 
   return (

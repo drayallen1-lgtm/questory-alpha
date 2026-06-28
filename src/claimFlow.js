@@ -17,6 +17,7 @@ import {
 import { trackDemoComplete } from './stability';
 import { applyEndingRewards } from './worldEngine';
 import { unlockLoreOnVictory } from './loreCollectionsEngine';
+import { getWorldEventContext, recordWorldEventVictory } from './worldEventEngine';
 import { recordLivingNpcVictory } from './livingNpcEngine';
 import { applyBranchVictoryEffects } from './branchingEngine';
 import {
@@ -150,6 +151,8 @@ export function buildClaimSuccessState(
   );
   nextState = recordLivingNpcVictory(nextState, freshAdventure);
   nextState = applyBranchVictoryEffects(nextState, freshAdventure, p);
+  const eventContext = getWorldEventContext(nextState, nextState.adventures || []);
+  nextState = recordWorldEventVictory(nextState, freshAdventure, eventContext);
 
   return nextState;
 }

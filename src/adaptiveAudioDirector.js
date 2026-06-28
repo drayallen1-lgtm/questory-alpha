@@ -81,10 +81,11 @@ function templateBucket(adventure) {
 
 export function getAudioMoodForAdventure(adventure) {
   const custom = adventure?.experienceSettings?.audioMood;
-  if (custom && typeof custom === 'object') {
-    return { ...DEFAULT_MOODS[templateBucket(adventure)], ...custom };
-  }
-  return { ...DEFAULT_MOODS[templateBucket(adventure)] };
+  const eventMood = adventure?._worldEvent?.audioMood;
+  const base = { ...DEFAULT_MOODS[templateBucket(adventure)] };
+  if (custom && typeof custom === 'object') Object.assign(base, custom);
+  if (eventMood && typeof eventMood === 'object') Object.assign(base, eventMood);
+  return base;
 }
 
 export function hasAdaptiveAudio(adventure) {

@@ -211,6 +211,10 @@ export const DEFAULT_WORLD = {
   seasonNarrativeChapter: 0,
   loreEventsSeen: [],
   lastWeatherChange: null,
+  eventCompletions: {},
+  eventRelicsEarned: [],
+  worldNotificationsSeen: [],
+  communityMilestonesSeen: [],
 };
 
 export function normalizeWorld(world = {}) {
@@ -223,6 +227,15 @@ export function normalizeWorld(world = {}) {
     discoveriesFound: Array.isArray(world.discoveriesFound) ? world.discoveriesFound : [],
     unlockedAdventureIds: Array.isArray(world.unlockedAdventureIds) ? world.unlockedAdventureIds : [],
     loreEventsSeen: Array.isArray(world.loreEventsSeen) ? world.loreEventsSeen : [],
+    eventCompletions:
+      world.eventCompletions && typeof world.eventCompletions === 'object' ? world.eventCompletions : {},
+    eventRelicsEarned: Array.isArray(world.eventRelicsEarned) ? world.eventRelicsEarned : [],
+    worldNotificationsSeen: Array.isArray(world.worldNotificationsSeen)
+      ? world.worldNotificationsSeen
+      : [],
+    communityMilestonesSeen: Array.isArray(world.communityMilestonesSeen)
+      ? world.communityMilestonesSeen
+      : [],
     npcProgress:
       world.npcProgress && typeof world.npcProgress === 'object' ? world.npcProgress : {},
     secretCollectionProgress:
@@ -268,16 +281,22 @@ export function mergeAdventureWorld(adventure) {
   };
 }
 
-export function getDemoWeather(state) {
+import { getEffectiveWeather, getWorldEventContext } from './worldEventEngine';
+
+export function getDemoWeather(state, adventures = []) {
   const world = normalizeWorld(state?.world);
   if (world.weatherOverride) return world.weatherOverride;
   const hour = new Date().getHours();
-  if (hour >= 20 || hour < 6) return WEATHER_TYPES.NIGHT;
-  const day = new Date().getDate();
-  if (day % 7 === 0) return WEATHER_TYPES.FOG;
-  if (day % 5 === 0) return WEATHER_TYPES.RAIN;
-  if (day % 11 === 0) return WEATHER_TYPES.SNOW;
-  return world.activeWeather || WEATHER_TYPES.CLEAR;
+  let base = world.activeWeather || WEATHER_TYPES.CLEAR;
+  if (hour >= 20 || hour < 6) base = WEATHER_TYPES.NIGHT;
+  else {
+    const day = new Date().getDate();
+    if (day % 7 === 0) base = WEATHER_TYPES.FOG;
+    else if (day % 5 === 0) base = WEATHER_TYPES.RAIN;
+    else if (day % 11 === 0) base = WEATHER_TYPES.SNOW;
+  }
+  const context = getWorldEventContext(state, adventures);
+  return getEffectiveWeather(state, base, context);
 }
 
 export function getWeatherEffects(weather) {

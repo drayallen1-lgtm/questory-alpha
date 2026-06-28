@@ -3776,6 +3776,194 @@ nav button.active {
   color: #5eead4;
 }
 
+.todays-world-panel {
+  margin-bottom: 12px;
+  border-color: rgba(94, 234, 212, 0.25);
+}
+
+.todays-world-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.world-event-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: #5eead4;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: live-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.todays-world-primary {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.todays-world-icon {
+  font-size: 2rem;
+}
+
+.todays-world-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.todays-world-tile {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.todays-world-tile small {
+  display: block;
+  color: var(--xp-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.todays-world-tile.ending-soon {
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.todays-world-relics {
+  margin-top: 12px;
+}
+
+.relic-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.relic-chip {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.12);
+  font-size: 0.82rem;
+}
+
+.world-event-notification-bar {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  border-color: rgba(94, 234, 212, 0.3);
+}
+
+.live-world-event-banner {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.live-event-icon {
+  font-size: 1.8rem;
+}
+
+.world-event-atmosphere {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+}
+
+.world-event-atmosphere.darker {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.world-event-atmosphere.golden-hour {
+  background: linear-gradient(180deg, rgba(251, 146, 60, 0.08), transparent 40%);
+}
+
+.event-particle-layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+}
+
+.fog-layer {
+  background: radial-gradient(circle at 50% 80%, rgba(148, 163, 184, 0.25), transparent 60%);
+}
+
+.snow-layer {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.5) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.pumpkin-layer {
+  background: radial-gradient(circle at 20% 20%, rgba(251, 146, 60, 0.12), transparent 35%);
+}
+
+.live-event-row,
+.upcoming-event-row,
+.limited-relic-row,
+.participating-adventure-row,
+.community-milestone-row,
+.completed-event-row {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.event-bonus-pill {
+  align-self: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.event-type-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.event-type-chip {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.55);
+  font-size: 0.78rem;
+}
+
+.world-event-active-badge {
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+}
+
+.horror-atmosphere.darker,
+.horror-atmosphere.halloween,
+.horror-atmosphere.dread {
+  background: rgba(0, 0, 0, 0.22);
+}
+
 .toolkit-panel {
   background: linear-gradient(145deg, rgba(21, 36, 56, 0.72), rgba(11, 19, 29, 0.95));
 }

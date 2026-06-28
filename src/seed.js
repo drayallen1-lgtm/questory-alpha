@@ -419,6 +419,7 @@ export const defaultState = {
         dynamicHintsEnabled: true,
         backyardPrecision: true,
         arHorror: true,
+        eventSupport: ['halloween', 'horror', 'friday_13th', 'full_moon', 'fall'],
         collectionLore: {
           storyTitle: 'The Depot Ghost Ledger',
           storyIntro: 'The conductor still walks the platform at dusk. Every clue adds a page to the ghost ledger.',
@@ -694,8 +695,9 @@ export const defaultState = {
       claimCode: 'NEOSHO',
       worldConfig: {
         unlockRequirement: { type: 'discovery', discoveryId: 'black-lantern-whisper' },
-        worldEventTags: ['legendary-roaming'],
+        worldEventTags: ['legendary-roaming', 'horror'],
       },
+      eventSupport: ['halloween', 'friday_13th', 'full_moon', 'horror'],
       story: 'A second trail along the Neosho River — unlock via a hidden discovery in the World tab.',
       clues: [
         {

@@ -57,7 +57,7 @@ export function getDirectorChapterBeat(adventure, clueIndex, totalClues) {
 }
 
 /** Pick NPC + dialogue for the current clue. */
-export function getDirectorNpcContext(adventure, clueIndex, state, progress) {
+export function getDirectorNpcContext(adventure, clueIndex, state, progress, eventContext) {
   const npcs = getNpcsForAdventure(adventure);
   if (!npcs.length) return null;
 
@@ -81,6 +81,7 @@ export function getDirectorNpcContext(adventure, clueIndex, state, progress) {
         state,
         adventure,
         progress,
+        eventContext,
       })
     : null;
 

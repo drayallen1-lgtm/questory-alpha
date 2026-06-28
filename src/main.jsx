@@ -219,7 +219,12 @@ import {
   normalizeWorld,
   normalizeWorldConfig,
 } from './worldEngine';
-import { commitBranchPath } from './branchingEngine';
+import {
+  applyWorldEventToAdventure,
+  getWorldEventContext,
+  initWorldEventEngine,
+} from './worldEventEngine';
+import { WorldEventAtmosphereOverlay, ActiveWorldEventBadge } from './WorldEventUI';
 import { ADVENTURE_TEMPLATES, SCALE_PRESETS, buildTemplateClues, buildTemplateRewards, buildTemplateStory, getTemplateMeta } from './templates';
 import {
   TemplatePicker,
@@ -337,7 +342,7 @@ function QuestoryApp() {
   }, [isSupabaseMode, user?.id]);
 
   useEffect(() => {
-    setState((s) => recordSessionStart(s));
+    initWorldEventEngine(state.adventures, state);
   }, []);
 
   useEffect(() => {
@@ -1504,7 +1509,7 @@ function GpsCheckIn({ clue, onUnlock, disabled = false }) {
 }
 
 function AdventurePlay({
-  adventure,
+  adventure: baseAdventure,
   progress,
   state,
   setState,
@@ -1516,6 +1521,14 @@ function AdventurePlay({
   advanceClueForAdventure,
   onClueAdvanced,
 }) {
+  const eventContext = useMemo(
+    () => getWorldEventContext(state, state.adventures || []),
+    [state]
+  );
+  const adventure = useMemo(
+    () => applyWorldEventToAdventure(baseAdventure, eventContext),
+    [baseAdventure, eventContext]
+  );
   const clues = Array.isArray(adventure?.clues) ? adventure.clues : [];
   const total = clues.length;
   const atClaim = total === 0 || progress.step >= total;
@@ -1634,7 +1647,8 @@ function AdventurePlay({
       )}
       {adminPreview && <AdminClaimCode adventure={adventure} />}
       <WeatherOverlay state={state} />
-      <HorrorAtmosphereOverlay adventure={adventure} />
+      <WorldEventAtmosphereOverlay context={eventContext} />
+      <HorrorAtmosphereOverlay adventure={adventure} eventContext={eventContext} />
       <BackyardPrecisionBanner adventure={adventure} />
       <DirectorMoodBadge adventure={adventure} context={adaptiveAudioContext} />
       <CinematicAROverlay
@@ -1694,6 +1708,7 @@ function AdventurePlay({
               setState={setState}
               clueIndex={clueIndex}
               progress={progress}
+              eventContext={eventContext}
             />
             <BranchChoicePanel
               clue={clue}

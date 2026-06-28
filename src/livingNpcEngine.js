@@ -3,6 +3,7 @@
  * Memory, trust, return-visitor lines, and choice-driven dialogue resolution.
  */
 import { normalizeWorld } from './worldEngine';
+import { resolveEventNpcDialogue } from './worldEventEngine';
 
 export const NPC_MOODS = {
   GUIDE: 'guide',
@@ -247,44 +248,50 @@ export function resolveLivingNpcPresentation({
   state,
   adventure,
   progress,
+  eventContext,
 }) {
   if (!npc || !dialogue) return null;
+
+  let activeDialogue = dialogue;
+  if (eventContext) {
+    activeDialogue = resolveEventNpcDialogue(npc, dialogue, eventContext);
+  }
 
   const record = getNpcProgressRecord(state, npc.id);
   const adventureId = adventure?.id;
   const greeting = getReturnVisitorLine(npc, state, adventureId);
   const memoryLine = getMemoryCallbackLine(npc, state);
   const chosenChoiceId = record.choices[dialogueId];
-  const selectedChoice = (dialogue.choices || []).find((c) => c.id === chosenChoiceId);
+  const selectedChoice = (activeDialogue.choices || []).find((c) => c.id === chosenChoiceId);
 
-  let text = dialogue.text;
+  let text = activeDialogue.text;
   if (selectedChoice?.response) {
     text = selectedChoice.response;
   } else if (selectedChoice?.nextLine) {
-    text = `${dialogue.text} ${selectedChoice.nextLine}`;
+    text = `${activeDialogue.text} ${selectedChoice.nextLine}`;
   }
 
-  if (progress?.pathId && dialogue.pathFlavors?.[progress.pathId]) {
-    text = `${text} ${dialogue.pathFlavors[progress.pathId]}`;
+  if (progress?.pathId && activeDialogue.pathFlavors?.[progress.pathId]) {
+    text = `${text} ${activeDialogue.pathFlavors[progress.pathId]}`;
   }
 
   const trust = record.trust;
   const needsChoice = Boolean(
-    dialogue.choices?.length && !chosenChoiceId && !record.seenDialogues.includes(dialogueId)
+    activeDialogue.choices?.length && !chosenChoiceId && !record.seenDialogues.includes(dialogueId)
   );
 
   return {
     npc,
-    dialogue,
+    dialogue: activeDialogue,
     dialogueId,
     text,
-    mood: dialogue.mood || NPC_MOODS.GUIDE,
-    moodLabel: NPC_MOOD_LABELS[dialogue.mood] || 'Guide',
+    mood: activeDialogue.mood || NPC_MOODS.GUIDE,
+    moodLabel: NPC_MOOD_LABELS[activeDialogue.mood] || 'Guide',
     greeting,
     memoryLine,
     trust,
     trustLabel: getTrustLabel(trust),
-    choices: needsChoice ? dialogue.choices : [],
+    choices: needsChoice ? activeDialogue.choices : [],
     selectedChoiceId: chosenChoiceId || null,
     seen: record.seenDialogues.includes(dialogueId),
     isReturnVisitor: Boolean(greeting),

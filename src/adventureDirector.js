@@ -23,6 +23,23 @@ import {
   CLUE_TYPES,
 } from './templates';
 import { normalizeWorldConfig } from './worldEngine';
+import { getActiveEventDirectorHints, getWorldEventContext } from './worldEventEngine';
+
+function defaultEventSupportForTemplate(template) {
+  if (template === ADVENTURE_TEMPLATES.HORROR) {
+    return ['halloween', 'horror', 'friday_13th', 'full_moon', 'fall'];
+  }
+  if (template === ADVENTURE_TEMPLATES.FAMILY_FUN) {
+    return ['christmas', 'easter', 'summer', 'community', 'double_coin'];
+  }
+  if (template === ADVENTURE_TEMPLATES.FAITH_TRAIL) {
+    return ['christmas', 'easter', 'community'];
+  }
+  if (template === ADVENTURE_TEMPLATES.EDUCATIONAL) {
+    return ['spring', 'summer', 'community'];
+  }
+  return ['community'];
+}
 
 export const BLUEPRINT_VERSION = '1.2';
 
@@ -1071,6 +1088,8 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
     directorGenerated: true,
     storyArc,
     collectionLore: blueprint.collectionLore,
+    eventSupport: blueprint.meta.eventSupport || defaultEventSupportForTemplate(bpMeta.template),
+    activeEventTheme: getActiveEventDirectorHints(getWorldEventContext(null, [])),
   };
 
   const useAr = bpMeta.finderMode === FINDER_MODES.AR_ENHANCED;
