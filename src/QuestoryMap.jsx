@@ -33,13 +33,25 @@ import {
   wireAdventurePinElement,
 } from './mapDiscovery';
 import {
-  CLUSTER_PICKER_ZOOM,
   buildClusterTooltipHtml,
   clusterVisualClasses,
   easeMapTo,
   flyMapTo,
   summarizeClusterMarkers,
 } from './mapSpatial';
+import {
+  BLOSSOM_ANIM_MS,
+  BLOSSOM_MAX_PINS,
+  buildBlossomTooltipHtml,
+  computeBlossomLayout,
+  computeCategoryBlossomLayout,
+  createBlossomAdventureElement,
+  createBlossomCategoryElement,
+  createBlossomOverflowElement,
+  groupMarkersByCategory,
+  livingClusterPhase,
+  wireBlossomAdventureElement,
+} from './mapClusterBlossom';
 import { createMapCameraController } from './mapCamera';
 import { ClusterAdventurePicker, MapFilterBar, MapPinCard } from './MapPinCard';
 
@@ -263,11 +275,14 @@ export function QuestoryMap({
   onVisiblePinCountChange,
   onPinHoverChange,
   onSpatialStatsChange,
-  onClusterOpen,
+  onClusterDiscover,
   onMapBackgroundClick,
-  suppressedClusterId = null,
-  soloPinId = null,
-  pickerOpen = false,
+  onBlossomPinSelect,
+  onBlossomCategorySelect,
+  onBlossomOverflow,
+  livingCluster = null,
+  isAdmin = false,
+  userId = null,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -281,12 +296,14 @@ export function QuestoryMap({
   const selectedAdventureIdRef = useRef(selectedAdventureId);
   const syncHtmlMarkersRef = useRef(() => {});
   const handleClusterClickRef = useRef(null);
-  const onClusterOpenRef = useRef(onClusterOpen);
+  const onClusterDiscoverRef = useRef(onClusterDiscover);
   const onMapBackgroundClickRef = useRef(onMapBackgroundClick);
-  const suppressedClusterIdRef = useRef(suppressedClusterId);
-  const soloPinIdRef = useRef(soloPinId);
-  const pickerOpenRef = useRef(pickerOpen);
-  const lastSoloPinCameraRef = useRef(null);
+  const onBlossomPinSelectRef = useRef(onBlossomPinSelect);
+  const onBlossomCategorySelectRef = useRef(onBlossomCategorySelect);
+  const onBlossomOverflowRef = useRef(onBlossomOverflow);
+  const livingClusterRef = useRef(livingCluster);
+  const isAdminRef = useRef(isAdmin);
+  const userIdRef = useRef(userId);
   const cameraRef = useRef(null);
   const onAdventureClickRef = useRef(onAdventureClick);
   const onPinHoverChangeRef = useRef(onPinHoverChange);
@@ -300,11 +317,14 @@ export function QuestoryMap({
   onAdventureClickRef.current = onAdventureClick;
   onPinHoverChangeRef.current = onPinHoverChange;
   onSpatialStatsChangeRef.current = onSpatialStatsChange;
-  onClusterOpenRef.current = onClusterOpen;
+  onClusterDiscoverRef.current = onClusterDiscover;
   onMapBackgroundClickRef.current = onMapBackgroundClick;
-  suppressedClusterIdRef.current = suppressedClusterId;
-  soloPinIdRef.current = soloPinId;
-  pickerOpenRef.current = pickerOpen;
+  onBlossomPinSelectRef.current = onBlossomPinSelect;
+  onBlossomCategorySelectRef.current = onBlossomCategorySelect;
+  onBlossomOverflowRef.current = onBlossomOverflow;
+  livingClusterRef.current = livingCluster;
+  isAdminRef.current = isAdmin;
+  userIdRef.current = userId;
   const token = getMapboxToken();
 
   if (!cameraRef.current) {
@@ -324,7 +344,7 @@ export function QuestoryMap({
     [adventureMarkers, mapState]
   );
 
-  const upsertClusterMarker = useCallback((map, clusterId, coords, count, meta, nextIds) => {
+  const upsertClusterMarker = useCallback((map, clusterId, coords, count, meta, nextIds, options = {}) => {
     const id = `cluster-${clusterId}`;
     nextIds.add(id);
     let entry = markersOnScreenRef.current[id];
@@ -351,6 +371,11 @@ export function QuestoryMap({
         if (iconEl) iconEl.textContent = mergedMeta.dominant?.icon || '📍';
         if (countEl) countEl.textContent = String(count);
       }
+    }
+
+    const el = entry.getElement();
+    if (el) {
+      el.classList.toggle('questory-cluster-fading', Boolean(options.fading));
     }
   }, []);
 
@@ -418,28 +443,181 @@ export function QuestoryMap({
 
       const meta = summarizeClusterMarkers(leafMarkers, mapStateRef.current);
       meta.count = leafMarkers.length;
+      const categories = groupMarkersByCategory(leafMarkers, mapStateRef.current);
 
       if (isDev) {
-        console.debug('[QuestoryMap]', { clusterClicked: { count: meta.count, clusterId } });
-      }
-
-      const openPicker = () => {
-        onClusterOpenRef.current?.({ clusterId, coords, markers: leafMarkers, meta });
-      };
-
-      const currentZoom = map.getZoom();
-      if (currentZoom < CLUSTER_PICKER_ZOOM) {
-        requestCameraMoveRef.current?.('cluster', (m) => {
-          easeMapTo(m, { center: coords, zoom: CLUSTER_PICKER_ZOOM, duration: 600 });
+        console.debug('[QuestoryMap]', {
+          clusterClicked: { count: meta.count, clusterId, categories: categories.length },
         });
-        map.once('moveend', openPicker);
-      } else {
-        openPicker();
       }
+
+      onClusterDiscoverRef.current?.({
+        clusterId,
+        coords,
+        markers: leafMarkers,
+        meta,
+        categories,
+      });
     });
   }, []);
 
   handleClusterClickRef.current = handleClusterClick;
+
+  const syncBlossomMarkers = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const living = livingClusterRef.current;
+    const nextIds = new Set();
+    const accessOptions = {
+      userLatitude: userLocationRef.current?.latitude,
+      userLongitude: userLocationRef.current?.longitude,
+      isAdmin: isAdminRef.current,
+      userId: userIdRef.current,
+    };
+
+    const placeBlossomMarker = (id, coords, element, offset) => {
+      nextIds.add(id);
+      let entry = markersOnScreenRef.current[id];
+      if (!entry) {
+        entry = new mapboxgl.Marker({ element, anchor: 'center', offset })
+          .setLngLat(coords)
+          .addTo(map);
+        markersOnScreenRef.current[id] = entry;
+        requestAnimationFrame(() => {
+          element.classList.add('blossom-animate-in');
+          window.setTimeout(() => element.classList.add('blossom-open-pulse'), BLOSSOM_ANIM_MS);
+        });
+      } else {
+        entry.setLngLat(coords);
+        entry.setOffset(offset);
+      }
+    };
+
+    if (living && !living.overflowOpen && living.coords) {
+      const coords = living.coords;
+      const selectedId = living.selectedId;
+
+      if (living.phase === 'category' && living.categories?.length) {
+        const layout = computeCategoryBlossomLayout(living.categories);
+        living.categories.forEach((category, index) => {
+          const slot = layout.slots[index];
+          if (!slot) return;
+          const id = `blossom-${living.clusterId}-cat-${category.id}`;
+          let entry = markersOnScreenRef.current[id];
+          let el = entry?.getElement?.();
+          if (!el) {
+            el = createBlossomCategoryElement(category, index);
+            el.addEventListener('click', (e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onBlossomCategorySelectRef.current?.(category.id);
+            });
+          }
+          placeBlossomMarker(id, coords, el, [slot.x, slot.y]);
+        });
+      } else {
+        const markers = living.activeMarkers || [];
+        const layout = computeBlossomLayout(markers.length);
+        const selectedMarker = selectedId ? markers.find((m) => m.id === selectedId) : null;
+        const selectedInRing = Boolean(
+          selectedMarker &&
+            layout.slots.some(
+              (slot) => slot.kind === 'item' && markers[slot.index]?.id === selectedId
+            )
+        );
+        const selectedFromOverflow = Boolean(selectedMarker && !selectedInRing);
+
+        layout.slots.forEach((slot) => {
+          if (slot.kind === 'overflow') {
+            if (selectedFromOverflow) return;
+            const id = `blossom-${living.clusterId}-overflow`;
+            let entry = markersOnScreenRef.current[id];
+            let el = entry?.getElement?.();
+            if (!el) {
+              el = createBlossomOverflowElement(layout.overflowCount);
+              el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onBlossomOverflowRef.current?.();
+              });
+            } else {
+              const label = el.querySelector('.blossom-overflow-label');
+              if (label) label.textContent = `+${layout.overflowCount} More`;
+              el.classList.toggle('blossom-dimmed', Boolean(selectedId));
+            }
+            placeBlossomMarker(id, coords, el, [slot.x, slot.y]);
+            return;
+          }
+
+          const marker = markers[slot.index];
+          if (!marker) return;
+          const id = `blossom-${living.clusterId}-${marker.id}`;
+          const visual = resolvePinVisual(marker.adventure, mapStateRef.current);
+          const dimmed = Boolean(selectedId && selectedId !== marker.id);
+          const selected = selectedId === marker.id;
+          let entry = markersOnScreenRef.current[id];
+          let el = entry?.getElement?.();
+
+          if (!el) {
+            el = createBlossomAdventureElement(marker, visual, {
+              dimmed,
+              selected,
+              animIndex: slot.index,
+            });
+            wireBlossomAdventureElement(el, {
+              marker,
+              mapState: mapStateRef.current,
+              accessOptions,
+              onSelect: (data) => onBlossomPinSelectRef.current?.(data),
+              onHoverChange: (hoverId) => onPinHoverChangeRef.current?.(hoverId),
+              getTooltipHtml: buildBlossomTooltipHtml,
+            });
+          } else {
+            el.classList.toggle('blossom-dimmed', dimmed);
+            el.classList.toggle('blossom-selected', selected);
+            el.classList.toggle('pin-solo-active', selected);
+            el.classList.toggle('blossom-selected-pulse', selected);
+          }
+
+          placeBlossomMarker(id, coords, el, [slot.x, slot.y]);
+        });
+
+        if (selectedFromOverflow && selectedMarker) {
+          const id = `blossom-${living.clusterId}-selected`;
+          const visual = resolvePinVisual(selectedMarker.adventure, mapStateRef.current);
+          let entry = markersOnScreenRef.current[id];
+          let el = entry?.getElement?.();
+
+          if (!el) {
+            el = createBlossomAdventureElement(selectedMarker, visual, {
+              dimmed: false,
+              selected: true,
+              animIndex: 0,
+            });
+            wireBlossomAdventureElement(el, {
+              marker: selectedMarker,
+              mapState: mapStateRef.current,
+              accessOptions,
+              onSelect: (data) => onBlossomPinSelectRef.current?.(data),
+              onHoverChange: (hoverId) => onPinHoverChangeRef.current?.(hoverId),
+              getTooltipHtml: buildBlossomTooltipHtml,
+            });
+          }
+
+          placeBlossomMarker(id, coords, el, [0, 0]);
+        }
+      }
+    }
+
+    Object.keys(markersOnScreenRef.current).forEach((id) => {
+      if (!id.startsWith('blossom-')) return;
+      if (!nextIds.has(id)) {
+        markersOnScreenRef.current[id].remove();
+        delete markersOnScreenRef.current[id];
+      }
+    });
+  }, []);
 
   const syncHtmlMarkers = useCallback(() => {
     const map = mapRef.current;
@@ -448,9 +626,9 @@ export function QuestoryMap({
     const markers = adventureMarkersRef.current;
     const nextIds = new Set();
     let clusterCount = 0;
-    const suppressedId = suppressedClusterIdRef.current;
-    const soloPin = soloPinIdRef.current;
-    const isPickerOpen = pickerOpenRef.current;
+    const living = livingClusterRef.current;
+    const suppressedId = living?.clusterId ?? null;
+    const blossomOpen = Boolean(living && !living.overflowOpen);
 
     const reportStats = (pinCount) => {
       onVisiblePinCountChange?.(pinCount);
@@ -482,9 +660,32 @@ export function QuestoryMap({
       const props = parseFeatureProps(feature.properties);
       const coords = feature.geometry?.coordinates;
       if (!coords || props.cluster_id == null) continue;
-      if (suppressedId != null && props.cluster_id === suppressedId) continue;
-
       const count = props.point_count || 0;
+      if (suppressedId != null && props.cluster_id === suppressedId) {
+        upsertClusterMarker(
+          map,
+          props.cluster_id,
+          coords,
+          count,
+          { dominant: { icon: '📍', label: 'Adventure' } },
+          nextIds,
+          { fading: blossomOpen }
+        );
+        map.getSource(ADVENTURE_SOURCE).getClusterLeaves(props.cluster_id, 50, 0, (err, leaves) => {
+          if (err || !leaves?.length) return;
+          const leafMarkers = leaves
+            .map((f) => markerLookupRef.current.get(f.properties?.id ?? f.id))
+            .filter(Boolean);
+          if (!leafMarkers.length) return;
+          const meta = summarizeClusterMarkers(leafMarkers, mapStateRef.current);
+          meta.count = count;
+          upsertClusterMarker(map, props.cluster_id, coords, count, meta, nextIds, {
+            fading: blossomOpen,
+          });
+        });
+        continue;
+      }
+
       upsertClusterMarker(
         map,
         props.cluster_id,
@@ -505,18 +706,7 @@ export function QuestoryMap({
       });
     }
 
-    if (soloPin) {
-      const markerData = markerLookupRef.current.get(soloPin);
-      if (markerData) {
-        upsertAdventurePin(
-          map,
-          soloPin,
-          [markerData.longitude, markerData.latitude],
-          nextIds,
-          { soloActive: true }
-        );
-      }
-    } else if (!isPickerOpen) {
+    if (!blossomOpen && !living?.overflowOpen) {
       const useDirectMarkers = features.length === 0 && markers.length > 0;
 
       if (useDirectMarkers) {
@@ -551,6 +741,8 @@ export function QuestoryMap({
       }
     }
 
+    syncBlossomMarkers();
+
     Object.keys(markersOnScreenRef.current).forEach((id) => {
       if (!nextIds.has(id)) {
         markersOnScreenRef.current[id].remove();
@@ -561,7 +753,7 @@ export function QuestoryMap({
     let pinCount = [...nextIds].filter((id) => !String(id).startsWith('cluster-')).length;
     if (!pinCount && clusterCount > 0) pinCount = markers.length;
     reportStats(pinCount);
-  }, [upsertAdventurePin, upsertClusterMarker, onVisiblePinCountChange]);
+  }, [upsertAdventurePin, upsertClusterMarker, onVisiblePinCountChange, syncBlossomMarkers]);
 
   syncHtmlMarkersRef.current = syncHtmlMarkers;
 
@@ -779,26 +971,7 @@ export function QuestoryMap({
   useEffect(() => {
     if (mini || !mapRef.current) return;
     syncHtmlMarkers();
-  }, [selectedAdventureId, suppressedClusterId, soloPinId, pickerOpen, syncHtmlMarkers, mini]);
-
-  useEffect(() => {
-    if (mini || !soloPinId || soloPinId === lastSoloPinCameraRef.current) return;
-    const map = mapRef.current;
-    const marker = markerLookupRef.current.get(soloPinId);
-    if (!map || !marker) return;
-    lastSoloPinCameraRef.current = soloPinId;
-    requestCameraMoveRef.current?.('pinSelect', (m) => {
-      easeMapTo(m, {
-        center: [marker.longitude, marker.latitude],
-        zoom: Math.max(m.getZoom(), CLUSTER_PICKER_ZOOM),
-        duration: 500,
-      });
-    });
-  }, [soloPinId, mini]);
-
-  useEffect(() => {
-    if (!soloPinId) lastSoloPinCameraRef.current = null;
-  }, [soloPinId]);
+  }, [selectedAdventureId, livingCluster, syncHtmlMarkers, mini]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -842,7 +1015,7 @@ export function QuestoryMap({
 export function MapScreen({ adventures, nav, state, setState, isAdmin = false, userId = null }) {
   const [activeFilter, setActiveFilter] = useState(MAP_FILTERS.ALL);
   const [selectedMarker, setSelectedMarker] = useState(null);
-  const [clusterPicker, setClusterPicker] = useState(null);
+  const [livingCluster, setLivingCluster] = useState(null);
   const [focusedAdventure, setFocusedAdventure] = useState(null);
   const [findMeSignal, setFindMeSignal] = useState(0);
   const [visiblePinCount, setVisiblePinCount] = useState(null);
@@ -902,8 +1075,8 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       markerCount: adventureMarkers.length,
       filteredCount: filteredAdventures.length,
       clusterCount: spatialStats?.clusterCount ?? 0,
-      mapMode: clusterPicker ? 'PICKER_OPEN' : selectedMarker?.fromCluster ? 'ADVENTURE_ACTIVE' : 'CLUSTER_VIEW',
-      suppressedClusterId: clusterPicker?.clusterId ?? (selectedMarker?.fromCluster ? selectedMarker.clusterId : null),
+      mapMode: livingClusterPhase(livingCluster),
+      livingClusterId: livingCluster?.clusterId ?? null,
       missingCoords: pinStats.missingCoords,
       accessFiltered: pinStats.accessFiltered,
     });
@@ -916,6 +1089,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     filteredAdventures.length,
     spatialStats,
     pinStats,
+    livingCluster,
   ]);
 
   const selectedAdventure = selectedMarker?.adventure || null;
@@ -925,19 +1099,116 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const pinVisual = selectedAdventure ? resolvePinVisual(selectedAdventure, state) : null;
 
   const clusterDistanceM =
-    clusterPicker?.coords && location?.latitude != null
+    livingCluster?.coords && location?.latitude != null
       ? haversineDistanceMeters(
           location.latitude,
           location.longitude,
-          clusterPicker.coords[1],
-          clusterPicker.coords[0]
+          livingCluster.coords[1],
+          livingCluster.coords[0]
         )
       : null;
 
-  const suppressedClusterId =
-    clusterPicker?.clusterId ??
-    (selectedMarker?.fromCluster ? selectedMarker.clusterId : null);
-  const soloPinId = selectedMarker?.fromCluster ? selectedMarker.id : null;
+  const overflowPickerMarkers =
+    livingCluster?.overflowOpen && livingCluster.activeMarkers?.length
+      ? livingCluster.activeMarkers.slice(BLOSSOM_MAX_PINS)
+      : [];
+
+  function handleLivingClusterCollapse() {
+    setLivingCluster(null);
+    setSelectedMarker(null);
+    setHoveredPinId(null);
+  }
+
+  function handleClusterDiscover(payload) {
+    setSelectedMarker(null);
+    const { categories } = payload;
+    if (categories.length === 1) {
+      setLivingCluster({
+        clusterId: payload.clusterId,
+        coords: payload.coords,
+        markers: payload.markers,
+        meta: payload.meta,
+        categories,
+        phase: 'adventure',
+        categoryId: categories[0].id,
+        activeMarkers: payload.markers,
+        selectedId: null,
+        overflowOpen: false,
+      });
+      return;
+    }
+
+    setLivingCluster({
+      clusterId: payload.clusterId,
+      coords: payload.coords,
+      markers: payload.markers,
+      meta: payload.meta,
+      categories,
+      phase: 'category',
+      categoryId: null,
+      activeMarkers: [],
+      selectedId: null,
+      overflowOpen: false,
+    });
+  }
+
+  function handleBlossomCategorySelect(categoryId) {
+    setLivingCluster((lc) => {
+      if (!lc) return lc;
+      const cat = lc.categories.find((c) => c.id === categoryId);
+      if (!cat) return lc;
+      return {
+        ...lc,
+        phase: 'adventure',
+        categoryId,
+        activeMarkers: cat.markers,
+        selectedId: null,
+      };
+    });
+  }
+
+  function handleBlossomPinSelect(marker) {
+    if (!livingCluster) return;
+    setLivingCluster((lc) => (lc ? { ...lc, selectedId: marker.id } : lc));
+    handleAdventureClick(marker.adventure, {
+      ...marker,
+      fromCluster: true,
+      clusterId: livingCluster.clusterId,
+    });
+  }
+
+  function handleBlossomOverflow() {
+    setLivingCluster((lc) => (lc ? { ...lc, overflowOpen: true } : lc));
+  }
+
+  function handleOverflowPickerClose() {
+    setLivingCluster((lc) => (lc ? { ...lc, overflowOpen: false } : lc));
+  }
+
+  function handleOverflowAdventureSelect(marker) {
+    if (!livingCluster) return;
+    setLivingCluster((lc) =>
+      lc
+        ? {
+            ...lc,
+            overflowOpen: false,
+            selectedId: marker.id,
+          }
+        : lc
+    );
+    handleAdventureClick(marker.adventure, {
+      ...marker,
+      fromCluster: true,
+      clusterId: livingCluster.clusterId,
+    });
+  }
+
+  function handleMapBackgroundClick() {
+    if (isDev) {
+      console.debug('[QuestoryMap]', { mapBackgroundClicked: true });
+    }
+    handleLivingClusterCollapse();
+  }
 
   const filterCounts = useMemo(() => {
     const counts = { all: adventures.length };
@@ -961,35 +1232,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     return counts;
   }, [adventures, state, location, follows]);
 
-  function handleClusterOpen(payload) {
-    setSelectedMarker(null);
-    setClusterPicker(payload);
-  }
-
-  function handleClusterAdventureSelect(marker) {
-    if (!clusterPicker) return;
-    setClusterPicker(null);
-    handleAdventureClick(marker.adventure, {
-      ...marker,
-      fromCluster: true,
-      clusterId: clusterPicker.clusterId,
-    });
-  }
-
-  function handlePickerClose() {
-    setClusterPicker(null);
-  }
-
-  function handleMapBackgroundClick() {
-    if (isDev) {
-      console.debug('[QuestoryMap]', { mapBackgroundClicked: true });
-    }
-    setClusterPicker(null);
-    setSelectedMarker(null);
-  }
-
   function handleAdventureClick(adventure, marker) {
-    setClusterPicker(null);
     setHoveredPinId(null);
     setSelectedMarker(marker || { adventure, id: adventure.id });
     setFocusedAdventure(null);
@@ -999,8 +1242,17 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   }
 
   function handleCardClose() {
-    setSelectedMarker(null);
+    handleLivingClusterCollapse();
   }
+
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.key !== 'Escape') return;
+      if (selectedMarker || livingCluster) handleLivingClusterCollapse();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedMarker, livingCluster]);
 
   function handleViewClues(adventure, access) {
     if (!adventure?.id || !nav) return;
@@ -1043,7 +1295,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           <h2>Adventure Map</h2>
           <p>
             {hasMapboxToken()
-              ? 'Tap a pin to explore · icons only until selected'
+              ? 'Tap clusters to uncover adventures · blossom reveals secrets nearby'
               : 'Trail list · add VITE_MAPBOX_TOKEN for live map'}
           </p>
         </div>
@@ -1073,17 +1325,22 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         />
       )}
 
-      <div className="map-stage">
+      <div
+        className={`map-stage${livingCluster ? ' map-stage-living-cluster' : ''}${selectedMarker?.fromCluster ? ' map-stage-adventure-active' : ''}`}
+      >
         <QuestoryMap
           adventureMarkers={focusedAdventure ? [] : adventureMarkers}
           clueMarkers={clueMarkers}
           onAdventureClick={handleAdventureClick}
           onClueClick={(marker) => handleViewClues(marker.adventure)}
-          onClusterOpen={handleClusterOpen}
+          onClusterDiscover={handleClusterDiscover}
           onMapBackgroundClick={handleMapBackgroundClick}
-          suppressedClusterId={suppressedClusterId}
-          soloPinId={soloPinId}
-          pickerOpen={Boolean(clusterPicker)}
+          onBlossomPinSelect={handleBlossomPinSelect}
+          onBlossomCategorySelect={handleBlossomCategorySelect}
+          onBlossomOverflow={handleBlossomOverflow}
+          livingCluster={livingCluster}
+          isAdmin={isAdmin}
+          userId={userId}
           showUserLocation
           userLocation={location}
           mapExploration={state?.mapExploration}
@@ -1110,15 +1367,18 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           />
         )}
 
-        {clusterPicker && (
+        {livingCluster?.overflowOpen && overflowPickerMarkers.length > 0 && (
           <ClusterAdventurePicker
-            meta={clusterPicker.meta}
-            markers={clusterPicker.markers}
+            meta={{
+              ...livingCluster.meta,
+              count: overflowPickerMarkers.length,
+            }}
+            markers={overflowPickerMarkers}
             mapState={state}
             accessOptions={accessOptions}
             clusterDistanceM={clusterDistanceM}
-            onClose={handlePickerClose}
-            onSelectAdventure={handleClusterAdventureSelect}
+            onClose={handleOverflowPickerClose}
+            onSelectAdventure={handleOverflowAdventureSelect}
           />
         )}
 
