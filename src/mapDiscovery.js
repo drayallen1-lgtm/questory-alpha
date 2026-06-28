@@ -2,6 +2,7 @@
  * Map Polish & Discovery — pin categories, filters, clustering helpers, fog-of-war.
  */
 import { ADVENTURE_TEMPLATES } from './templates';
+import { isDev } from './config/env';
 import { haversineDistanceMeters } from './geolocation';
 import { getAdventureMapCenter } from './mapUtils';
 import { safeGetWorldEventContext } from './worldEventEngine';
@@ -689,6 +690,11 @@ export function wireAdventurePinElement(
   el.addEventListener('click', (e) => {
     e.stopPropagation();
     e.preventDefault();
+    if (isDev) {
+      console.debug('[QuestoryMap]', {
+        pinClicked: { adventureId: markerData.id, title: markerData.title || title },
+      });
+    }
     onSelect?.(markerData);
   });
 

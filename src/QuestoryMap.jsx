@@ -16,12 +16,12 @@ import {
 } from './mapUtils';
 import { AccessStatusBanner, usePlayerLocation } from './AccessRulesUI';
 import { evaluateAccessContext } from './accessRules';
+import { haversineDistanceMeters } from './geolocation';
 import { isDev } from './config/env';
 import {
   MAP_FILTERS,
   MAP_LAYER_IDS,
   MAP_SOURCE_IDS,
-  MAP_SPATIAL_SOURCE_IDS,
   NEAR_ME_PULSE_RADIUS_M,
   adventureMatchesFilter,
   circlePolygon,
@@ -35,18 +35,15 @@ import {
   wireAdventurePinElement,
 } from './mapDiscovery';
 import {
-  SPIDERFY_CLICK_ZOOM,
-  anchorPointsGeoJSON,
+  CLUSTER_PICKER_ZOOM,
   buildClusterTooltipHtml,
   clusterVisualClasses,
-  computeRadialSpiderfy,
   easeMapTo,
   flyMapTo,
-  spiderLinesGeoJSON,
   summarizeClusterMarkers,
 } from './mapSpatial';
 import { createMapCameraController } from './mapCamera';
-import { MapFilterBar, MapPinCard } from './MapPinCard';
+import { ClusterAdventurePicker, MapFilterBar, MapPinCard } from './MapPinCard';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -62,7 +59,7 @@ function isClusterFeature(props) {
   return props.point_count != null && Number.isFinite(Number(props.point_count));
 }
 
-function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect, getMapState, onClusterClick }) {
+function setupAdventureLayerInteractions(map, { getMarkerById, getMapState }) {
   const clusterPopup = new mapboxgl.Popup({
     closeButton: false,
     closeOnClick: false,
@@ -70,18 +67,6 @@ function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect
     offset: 14,
     maxWidth: '260px',
   });
-
-  const handleClusterClick = (e) => {
-    const features = map.queryRenderedFeatures(e.point, { layers: [MAP_LAYER_IDS.CLUSTERS] });
-    if (!features.length) return;
-    const feature = features[0];
-    const clusterId = feature.properties?.cluster_id;
-    if (clusterId == null) return;
-    const coords = feature.geometry.coordinates;
-    onClusterClick?.(clusterId, coords);
-  };
-
-  map.on('click', MAP_LAYER_IDS.CLUSTERS, handleClusterClick);
 
   map.on('mouseenter', MAP_LAYER_IDS.CLUSTERS, (e) => {
     map.getCanvas().style.cursor = 'pointer';
@@ -113,80 +98,6 @@ function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect
     map.getCanvas().style.cursor = '';
     clusterPopup.remove();
   });
-
-  map.on('click', MAP_LAYER_IDS.UNCLUSTERED, (e) => {
-    const feature = e.features?.[0];
-    if (!feature) return;
-    const props = feature.properties || {};
-    const id = props.id ?? feature.id;
-    if (!id) return;
-    const markerData = getMarkerById?.(id);
-    if (markerData?.adventure) {
-      e.originalEvent?.stopPropagation?.();
-      onAdventureSelect?.(markerData);
-    }
-  });
-
-  map.on('mouseenter', MAP_LAYER_IDS.UNCLUSTERED, () => {
-    map.getCanvas().style.cursor = 'pointer';
-  });
-  map.on('mouseleave', MAP_LAYER_IDS.UNCLUSTERED, () => {
-    map.getCanvas().style.cursor = '';
-  });
-}
-
-function addSpiderLayers(map) {
-  if (map.getSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_LINES)) return;
-
-  map.addSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_LINES, {
-    type: 'geojson',
-    data: { type: 'FeatureCollection', features: [] },
-  });
-  map.addSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_ANCHORS, {
-    type: 'geojson',
-    data: { type: 'FeatureCollection', features: [] },
-  });
-
-  map.addLayer({
-    id: 'spider-lines',
-    type: 'line',
-    source: MAP_SPATIAL_SOURCE_IDS.SPIDER_LINES,
-    paint: {
-      'line-color': '#5eead4',
-      'line-opacity': 0.35,
-      'line-width': 1.5,
-      'line-dasharray': [2, 3],
-    },
-  });
-
-  map.addLayer({
-    id: 'spider-anchors',
-    type: 'circle',
-    source: MAP_SPATIAL_SOURCE_IDS.SPIDER_ANCHORS,
-    paint: {
-      'circle-radius': 5,
-      'circle-color': '#14b8a6',
-      'circle-opacity': 0.55,
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#5eead4',
-      'circle-stroke-opacity': 0.75,
-    },
-  });
-}
-
-function updateSpiderLayers(map, spiderGroups, layouts) {
-  const lineSrc = map.getSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_LINES);
-  const anchorSrc = map.getSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_ANCHORS);
-  if (!lineSrc || !anchorSrc) return;
-  lineSrc.setData(spiderLinesGeoJSON(spiderGroups, layouts));
-  anchorSrc.setData(anchorPointsGeoJSON(spiderGroups));
-}
-
-function clearSpiderLayers(map) {
-  const lineSrc = map.getSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_LINES);
-  const anchorSrc = map.getSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_ANCHORS);
-  if (lineSrc) lineSrc.setData({ type: 'FeatureCollection', features: [] });
-  if (anchorSrc) anchorSrc.setData({ type: 'FeatureCollection', features: [] });
 }
 
 function addAdventureClusterLayers(map) {
@@ -354,6 +265,8 @@ export function QuestoryMap({
   onVisiblePinCountChange,
   onPinHoverChange,
   onSpatialStatsChange,
+  onClusterOpen,
+  onMapBackgroundClick,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -366,9 +279,9 @@ export function QuestoryMap({
   const userLocationRef = useRef(userLocation);
   const selectedAdventureIdRef = useRef(selectedAdventureId);
   const syncHtmlMarkersRef = useRef(() => {});
-  const activeSpiderfyRef = useRef(null);
   const handleClusterClickRef = useRef(null);
-  const clearSpiderfyRef = useRef(null);
+  const onClusterOpenRef = useRef(onClusterOpen);
+  const onMapBackgroundClickRef = useRef(onMapBackgroundClick);
   const cameraRef = useRef(null);
   const onAdventureClickRef = useRef(onAdventureClick);
   const onPinHoverChangeRef = useRef(onPinHoverChange);
@@ -382,6 +295,8 @@ export function QuestoryMap({
   onAdventureClickRef.current = onAdventureClick;
   onPinHoverChangeRef.current = onPinHoverChange;
   onSpatialStatsChangeRef.current = onSpatialStatsChange;
+  onClusterOpenRef.current = onClusterOpen;
+  onMapBackgroundClickRef.current = onMapBackgroundClick;
   const token = getMapboxToken();
 
   if (!cameraRef.current) {
@@ -477,52 +392,10 @@ export function QuestoryMap({
     [markerLookup]
   );
 
-  const clearSpiderfy = useCallback((reason) => {
-    if (!activeSpiderfyRef.current) return;
-    activeSpiderfyRef.current = null;
-    if (isDev) {
-      console.debug('[QuestoryMap]', { spiderfyCleared: reason });
-    }
-  }, []);
-
-  const applyClusterSpiderfy = useCallback((clusterId, coords, markers, map) => {
-    if (markers.length < 2) {
-      if (markers[0]?.adventure) {
-        onAdventureClickRef.current?.(markers[0].adventure, markers[0]);
-      }
-      return;
-    }
-
-    const { layout, radius } = computeRadialSpiderfy(coords, markers, map);
-    activeSpiderfyRef.current = {
-      clusterId,
-      center: coords,
-      markers,
-      layout,
-      radius,
-    };
-
-    if (isDev) {
-      console.debug('[QuestoryMap]', {
-        spiderfyCreated: { count: markers.length, center: coords, radius },
-      });
-    }
-
-    syncHtmlMarkersRef.current?.();
-  }, []);
-
   const handleClusterClick = useCallback((clusterId, coords) => {
     const map = mapRef.current;
-    if (!map) return;
-
-    if (isDev) {
-      console.debug('[QuestoryMap]', { clusterClicked: clusterId });
-    }
-
-    const source = map.getSource(ADVENTURE_SOURCE);
-    if (!source) return;
-
-    const currentZoom = map.getZoom();
+    const source = map?.getSource(ADVENTURE_SOURCE);
+    if (!map || !source) return;
 
     source.getClusterLeaves(clusterId, 100, 0, (err, leaves) => {
       if (err || !leaves?.length) return;
@@ -531,20 +404,34 @@ export function QuestoryMap({
         .filter(Boolean);
       if (!leafMarkers.length) return;
 
-      const finishSpiderfy = () => applyClusterSpiderfy(clusterId, coords, leafMarkers, map);
+      const meta = summarizeClusterMarkers(leafMarkers, mapStateRef.current);
+      meta.count = leafMarkers.length;
 
-      if (currentZoom < SPIDERFY_CLICK_ZOOM) {
+      if (isDev) {
+        console.debug('[QuestoryMap]', { clusterClicked: { count: meta.count, clusterId } });
+      }
+
+      if (leafMarkers.length === 1) {
+        onAdventureClickRef.current?.(leafMarkers[0].adventure, leafMarkers[0]);
+        return;
+      }
+
+      const openPicker = () => {
+        onClusterOpenRef.current?.({ clusterId, coords, markers: leafMarkers, meta });
+      };
+
+      const currentZoom = map.getZoom();
+      if (currentZoom < CLUSTER_PICKER_ZOOM) {
         requestCameraMoveRef.current?.('cluster', (m) => {
-          easeMapTo(m, { center: coords, zoom: SPIDERFY_CLICK_ZOOM, duration: 600 });
+          easeMapTo(m, { center: coords, zoom: CLUSTER_PICKER_ZOOM, duration: 600 });
         });
-        map.once('moveend', finishSpiderfy);
+        map.once('moveend', openPicker);
       } else {
-        finishSpiderfy();
+        openPicker();
       }
     });
-  }, [applyClusterSpiderfy]);
+  }, []);
 
-  clearSpiderfyRef.current = clearSpiderfy;
   handleClusterClickRef.current = handleClusterClick;
 
   const syncHtmlMarkers = useCallback(() => {
@@ -552,10 +439,8 @@ export function QuestoryMap({
     if (!map || !map.getSource(ADVENTURE_SOURCE)) return;
 
     const markers = adventureMarkersRef.current;
-    const zoom = map.getZoom();
     const nextIds = new Set();
     let clusterCount = 0;
-    let spiderGroupCount = 0;
 
     const reportStats = (pinCount) => {
       onVisiblePinCountChange?.(pinCount);
@@ -564,78 +449,73 @@ export function QuestoryMap({
         markerCount: markers.length,
         pinCount,
         clusterCount,
-        spiderfyGroupCount: spiderGroupCount,
+        spiderfyGroupCount: 0,
       });
     };
 
-    const activeSpider = activeSpiderfyRef.current;
+    let features = [];
+    try {
+      features = map.querySourceFeatures(ADVENTURE_SOURCE);
+    } catch {
+      features = [];
+    }
 
-    if (activeSpider && zoom >= SPIDERFY_CLICK_ZOOM) {
-      const { layout } = computeRadialSpiderfy(activeSpider.center, activeSpider.markers, map);
-      activeSpider.layout = layout;
-
-      const group = {
-        id: String(activeSpider.clusterId),
-        anchor: { longitude: activeSpider.center[0], latitude: activeSpider.center[1] },
-        markers: activeSpider.markers,
-      };
-      const layouts = new Map([[group.id, layout]]);
-      spiderGroupCount = 1;
-      updateSpiderLayers(map, [group], layouts);
-
-      for (const marker of activeSpider.markers) {
-        const coords = layout.get(marker.id);
-        if (coords) upsertAdventurePin(map, marker.id, coords, nextIds);
-      }
-    } else {
-      if (activeSpider && zoom < SPIDERFY_CLICK_ZOOM) {
-        clearSpiderfyRef.current?.('zoom');
-      }
-      clearSpiderLayers(map);
-      let features = [];
+    const clusterFeatures = (() => {
       try {
-        features = map.querySourceFeatures(ADVENTURE_SOURCE);
+        return map.queryRenderedFeatures({ layers: [MAP_LAYER_IDS.CLUSTERS] });
       } catch {
-        features = [];
+        return [];
       }
+    })();
+    clusterCount = clusterFeatures.length;
 
-      const clusterFeatures = (() => {
-        try {
-          return map.queryRenderedFeatures({ layers: [MAP_LAYER_IDS.CLUSTERS] });
-        } catch {
-          return [];
-        }
-      })();
-      clusterCount = clusterFeatures.length;
+    for (const feature of clusterFeatures) {
+      const props = parseFeatureProps(feature.properties);
+      const coords = feature.geometry?.coordinates;
+      if (!coords || props.cluster_id == null) continue;
+      const count = props.point_count || 0;
+      upsertClusterMarker(
+        map,
+        props.cluster_id,
+        coords,
+        count,
+        { dominant: { icon: '📍', label: 'Adventure' } },
+        nextIds
+      );
+      map.getSource(ADVENTURE_SOURCE).getClusterLeaves(props.cluster_id, 50, 0, (err, leaves) => {
+        if (err || !leaves?.length) return;
+        const leafMarkers = leaves
+          .map((f) => markerLookupRef.current.get(f.properties?.id ?? f.id))
+          .filter(Boolean);
+        if (!leafMarkers.length) return;
+        const meta = summarizeClusterMarkers(leafMarkers, mapStateRef.current);
+        meta.count = count;
+        upsertClusterMarker(map, props.cluster_id, coords, count, meta, nextIds);
+      });
+    }
 
-      for (const feature of clusterFeatures) {
-        const props = parseFeatureProps(feature.properties);
-        const coords = feature.geometry?.coordinates;
-        if (!coords || props.cluster_id == null) continue;
-        const count = props.point_count || 0;
-        upsertClusterMarker(
+    const useDirectMarkers = features.length === 0 && markers.length > 0;
+
+    if (useDirectMarkers) {
+      for (const markerData of markers) {
+        upsertAdventurePin(
           map,
-          props.cluster_id,
-          coords,
-          count,
-          { dominant: { icon: '📍', label: 'Adventure' } },
+          markerData.id,
+          [markerData.longitude, markerData.latitude],
           nextIds
         );
-        map.getSource(ADVENTURE_SOURCE).getClusterLeaves(props.cluster_id, 50, 0, (err, leaves) => {
-          if (err || !leaves?.length) return;
-          const leafMarkers = leaves
-            .map((f) => markerLookupRef.current.get(f.properties?.id ?? f.id))
-            .filter(Boolean);
-          if (!leafMarkers.length) return;
-          const meta = summarizeClusterMarkers(leafMarkers, mapStateRef.current);
-          meta.count = count;
-          upsertClusterMarker(map, props.cluster_id, coords, count, meta, nextIds);
-        });
+      }
+    } else {
+      for (const feature of features) {
+        const props = parseFeatureProps(feature.properties);
+        const coords = feature.geometry?.coordinates;
+        if (!coords || isClusterFeature(props)) continue;
+        const id = props.id ?? feature.id;
+        if (!id) continue;
+        upsertAdventurePin(map, id, coords, nextIds);
       }
 
-      const useDirectMarkers = features.length === 0 && markers.length > 0;
-
-      if (useDirectMarkers) {
+      if (!nextIds.size && markers.length > 0 && clusterCount === 0) {
         for (const markerData of markers) {
           upsertAdventurePin(
             map,
@@ -643,26 +523,6 @@ export function QuestoryMap({
             [markerData.longitude, markerData.latitude],
             nextIds
           );
-        }
-      } else {
-        for (const feature of features) {
-          const props = parseFeatureProps(feature.properties);
-          const coords = feature.geometry?.coordinates;
-          if (!coords || isClusterFeature(props)) continue;
-          const id = props.id ?? feature.id;
-          if (!id) continue;
-          upsertAdventurePin(map, id, coords, nextIds);
-        }
-
-        if (!nextIds.size && markers.length > 0 && clusterCount === 0) {
-          for (const markerData of markers) {
-            upsertAdventurePin(
-              map,
-              markerData.id,
-              [markerData.longitude, markerData.latitude],
-              nextIds
-            );
-          }
         }
       }
     }
@@ -831,24 +691,16 @@ export function QuestoryMap({
       });
 
       addAdventureClusterLayers(map);
-      addSpiderLayers(map);
       setupAdventureLayerInteractions(map, {
         getMarkerById: (id) => markerLookupRef.current.get(id),
         getMapState: () => mapStateRef.current,
-        onAdventureSelect: (markerData) => {
-          if (markerData?.adventure) onAdventureClickRef.current?.(markerData.adventure, markerData);
-        },
-        onClusterClick: (clusterId, coords) => handleClusterClickRef.current?.(clusterId, coords),
       });
 
-      map.on('click', (e) => {
-        const hits = map.queryRenderedFeatures(e.point, {
-          layers: [MAP_LAYER_IDS.CLUSTERS, MAP_LAYER_IDS.UNCLUSTERED],
-        });
-        if (!hits.length && activeSpiderfyRef.current) {
-          clearSpiderfyRef.current?.('mapClick');
-          syncHtmlMarkers();
+      map.on('click', () => {
+        if (isDev) {
+          console.debug('[QuestoryMap]', { mapBackgroundClicked: true });
         }
+        onMapBackgroundClickRef.current?.();
       });
 
       map.on('moveend', syncHtmlMarkers);
@@ -864,7 +716,6 @@ export function QuestoryMap({
       cancelled = true;
       detachCameraHandlers?.();
       mapReadyRef.current = false;
-      activeSpiderfyRef.current = null;
       Object.values(markersOnScreenRef.current).forEach((m) => m.remove());
       markersOnScreenRef.current = {};
       userMarkerRef.current?.remove();
@@ -1020,6 +871,7 @@ export function QuestoryMap({
 export function MapScreen({ adventures, nav, state, setState, isAdmin = false, userId = null }) {
   const [activeFilter, setActiveFilter] = useState(MAP_FILTERS.ALL);
   const [selectedMarker, setSelectedMarker] = useState(null);
+  const [clusterPicker, setClusterPicker] = useState(null);
   const [focusedAdventure, setFocusedAdventure] = useState(null);
   const [findMeSignal, setFindMeSignal] = useState(0);
   const [visiblePinCount, setVisiblePinCount] = useState(null);
@@ -1100,6 +952,16 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     : null;
   const pinVisual = selectedAdventure ? resolvePinVisual(selectedAdventure, state) : null;
 
+  const clusterDistanceM =
+    clusterPicker?.coords && location?.latitude != null
+      ? haversineDistanceMeters(
+          location.latitude,
+          location.longitude,
+          clusterPicker.coords[1],
+          clusterPicker.coords[0]
+        )
+      : null;
+
   const filterCounts = useMemo(() => {
     const counts = { all: adventures.length };
     [
@@ -1122,7 +984,23 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     return counts;
   }, [adventures, state, location, follows]);
 
+  function handleClusterOpen(payload) {
+    setSelectedMarker(null);
+    setClusterPicker(payload);
+  }
+
+  function handleClusterAdventureSelect(marker) {
+    setClusterPicker(null);
+    handleAdventureClick(marker.adventure, marker);
+  }
+
+  function handleMapBackgroundClick() {
+    setClusterPicker(null);
+    setSelectedMarker(null);
+  }
+
   function handleAdventureClick(adventure, marker) {
+    setClusterPicker(null);
     setHoveredPinId(null);
     setSelectedMarker(marker || { adventure, id: adventure.id });
     setFocusedAdventure(null);
@@ -1208,6 +1086,8 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           clueMarkers={clueMarkers}
           onAdventureClick={handleAdventureClick}
           onClueClick={(marker) => handleViewClues(marker.adventure)}
+          onClusterOpen={handleClusterOpen}
+          onMapBackgroundClick={handleMapBackgroundClick}
           showUserLocation
           userLocation={location}
           mapExploration={state?.mapExploration}
@@ -1231,6 +1111,18 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           <MapPinFallbackList
             adventureMarkers={adventureMarkers}
             onAdventureClick={handleAdventureClick}
+          />
+        )}
+
+        {clusterPicker && (
+          <ClusterAdventurePicker
+            meta={clusterPicker.meta}
+            markers={clusterPicker.markers}
+            mapState={state}
+            accessOptions={accessOptions}
+            clusterDistanceM={clusterDistanceM}
+            onClose={() => setClusterPicker(null)}
+            onSelectAdventure={handleClusterAdventureSelect}
           />
         )}
 

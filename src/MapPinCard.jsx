@@ -1,7 +1,9 @@
 import React from 'react';
 import { ChevronRight, Eye, Globe, Play, X } from 'lucide-react';
 import { AccessStatusBanner, AccessTypeBadge } from './AccessRulesUI';
-import { formatPinDistanceImperial, MAP_FILTER_OPTIONS } from './mapDiscovery';
+import { evaluateAccessContext } from './accessRules';
+import { isDev } from './config/env';
+import { formatPinDistanceImperial, MAP_FILTER_OPTIONS, resolvePinVisual } from './mapDiscovery';
 import { getSponsorInfo } from './seed';
 
 export function MapPinCard({
@@ -111,6 +113,121 @@ export function MapPinCard({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function pinAccessLabel(pinAccess, access) {
+  if (pinAccess === 'virtual') return 'Virtual only';
+  if (access?.tooFar || pinAccess === 'preview') return 'Preview';
+  if (pinAccess === 'local') return 'Local';
+  return 'Playable';
+}
+
+export function ClusterAdventurePicker({
+  meta,
+  markers = [],
+  mapState = null,
+  accessOptions = {},
+  clusterDistanceM = null,
+  onClose,
+  onSelectAdventure,
+}) {
+  if (!markers.length) return null;
+
+  const count = meta?.count ?? markers.length;
+  const categorySummary = meta?.categories?.length
+    ? meta.categories.map((c) => c.replace(/\s*\(\d+\)$/, '')).join(' · ')
+    : meta?.dominant?.label || 'Adventures';
+
+  function handleClose(e) {
+    e.stopPropagation();
+    onClose?.();
+  }
+
+  function handleRowClick(marker) {
+    if (isDev) {
+      console.debug('[QuestoryMap]', {
+        pinClicked: { adventureId: marker.id, title: marker.title },
+        fromClusterPicker: true,
+      });
+    }
+    onSelectAdventure?.(marker);
+  }
+
+  return (
+    <div
+      className="cluster-adventure-picker"
+      role="dialog"
+      aria-label={`${count} adventures nearby`}
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+    >
+      <button type="button" className="cluster-picker-close ghost" onClick={handleClose} aria-label="Close">
+        <X size={16} />
+      </button>
+
+      <div className="cluster-picker-head">
+        <span className="cluster-picker-icon">{meta?.dominant?.icon || '📍'}</span>
+        <div>
+          <h3>{count === 1 ? '1 adventure nearby' : `${count} adventures nearby`}</h3>
+          <p className="cluster-picker-summary">{categorySummary}</p>
+          {clusterDistanceM != null && (
+            <p className="cluster-picker-distance">{formatPinDistanceImperial(clusterDistanceM)} away</p>
+          )}
+        </div>
+      </div>
+
+      <ul className="cluster-picker-list">
+        {markers.map((marker) => {
+          const visual = resolvePinVisual(marker.adventure, mapState);
+          const access = marker.access || evaluateAccessContext(marker.adventure, accessOptions);
+          const accessLabel = pinAccessLabel(marker.pinAccess, access);
+
+          return (
+            <li key={marker.id}>
+              <button
+                type="button"
+                className={`cluster-picker-row pin-${marker.pinAccess || 'playable'}`}
+                onClick={() => handleRowClick(marker)}
+              >
+                <span
+                  className={`cluster-picker-row-icon ${visual?.animated ? 'pin-animated' : ''}`}
+                  style={{ '--pin-color': visual?.color || visual?.base?.color }}
+                >
+                  {visual?.icon || visual?.base?.icon || '📍'}
+                </span>
+                <span className="cluster-picker-row-body">
+                  <strong>{marker.title}</strong>
+                  <span className="cluster-picker-row-meta">
+                    {visual?.label || visual?.base?.label || 'Adventure'}
+                    {marker.distanceM != null && (
+                      <> · {formatPinDistanceImperial(marker.distanceM)}</>
+                    )}
+                  </span>
+                  <span className="cluster-picker-row-badges">
+                    <span className={`badge map-pin-badge pin-${marker.pinAccess || 'playable'}`}>
+                      {accessLabel}
+                    </span>
+                    {marker.adventure?.prize && (
+                      <span className="badge cluster-picker-reward">{marker.adventure.prize}</span>
+                    )}
+                    {visual?.heatLevel === 'hot' && <span className="badge map-heat-badge">🔥 Hot</span>}
+                    {visual?.overlays?.some((o) => o.id === 'featured') && (
+                      <span className="badge cluster-picker-featured">⭐ Featured</span>
+                    )}
+                    {visual?.overlays?.some((o) => o.id === 'event') && (
+                      <span className="badge cluster-picker-event">📅 Event</span>
+                    )}
+                  </span>
+                </span>
+                <ChevronRight size={16} className="cluster-picker-row-chevron" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
