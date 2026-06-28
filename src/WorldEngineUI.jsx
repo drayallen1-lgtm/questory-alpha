@@ -14,6 +14,7 @@ import {
   Wind,
 } from 'lucide-react';
 import { formatUserErrorMessage } from './claimSystem';
+import { computeCreatorAnalytics } from './experience';
 import {
   CREATOR_TITLES,
   HIDDEN_DISCOVERIES,
@@ -546,8 +547,8 @@ export function BranchChoicePanel({ clue, progress, onSelect, adventure }) {
 }
 
 export function NpcPlayCard({ adventure, state, setState, clueIndex, progress, eventContext }) {
-  const directorCtx = getDirectorNpcContext(adventure, clueIndex, state, progress, resolvedEventContext);
   const resolvedEventContext = eventContext || safeGetWorldEventContext(state, []);
+  const directorCtx = getDirectorNpcContext(adventure, clueIndex, state, progress, resolvedEventContext);
 
   if (directorCtx?.presentation) {
     return (
