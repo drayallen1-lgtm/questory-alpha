@@ -78,6 +78,7 @@ export function CinematicTimelinePlayer({
     JSON.stringify(rawScene?.particleLayers || []),
     rawScene?.cinematicEntityId,
     rawScene?.safeForKids,
+    rawScene?.cinematicEntityLabel,
   ]);
   const [cameraStream, setCameraStream] = useState(null);
   const [cameraFallback, setCameraFallback] = useState(!useCamera);
@@ -189,6 +190,12 @@ export function CinematicTimelinePlayer({
         <div className="cinematic-ar-entity-layer" aria-hidden={!playback.entity?.visible}>
           <ARAnimatedEntity scene={scene} entity={playback.entity} />
         </div>
+
+        {scene.cinematicEntityLabel && playback.entity?.visible && playback.elapsed > 0.5 ? (
+          <div className="cinematic-entity-badge" aria-hidden="true">
+            {scene.cinematicEntityLabel}
+          </div>
+        ) : null}
 
         <div className="cinematic-ar-content">
           {shortDesc && playback.elapsed > 0.4 && playback.elapsed < 2.8 ? (

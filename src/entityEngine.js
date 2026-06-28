@@ -18,6 +18,8 @@ export const ENTITY_ANIMATIONS = {
   ROTATE: 'rotate',
   PULSE: 'pulse',
   LOOK_AT_PLAYER: 'lookAtPlayer',
+  ATTACK: 'attack',
+  GLOW_BURST: 'glowBurst',
 };
 
 const SHOW_ACTIONS = new Set(['showGhost', 'showAsset', 'appear']);
@@ -38,6 +40,10 @@ const PERSISTENT_ANIM_ACTIONS = new Set([
   'rotate',
   'pulse',
   'lookAtPlayer',
+  ENTITY_ANIMATIONS.ATTACK,
+  ENTITY_ANIMATIONS.GLOW_BURST,
+  'attack',
+  'glowBurst',
 ]);
 
 const POSITION_ALIASES = {
@@ -115,6 +121,8 @@ function animClassFor(action) {
     rotate: 'anim-rotate',
     pulse: 'anim-pulse',
     lookAtPlayer: 'anim-look-at-player',
+    attack: 'anim-attack',
+    glowBurst: 'anim-glow-burst',
   };
   return map[action] || '';
 }

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Phoenix Feather">
+  <rect width="400" height="400" fill="#0a0505"/>
+  <defs>
+    <linearGradient id="feather-grad" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="35%" stop-color="#f97316"/>
+      <stop offset="70%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#7f1d1d"/>
+    </linearGradient>
+    <radialGradient id="feather-glow" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#fb923c" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#0a0505" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="200" cy="200" rx="90" ry="110" fill="url(#feather-glow)"/>
+  <path d="M200 90 C160 130 150 200 175 280 C185 310 200 320 200 320 C200 320 215 310 225 280 C250 200 240 130 200 90 Z" fill="url(#feather-grad)" stroke="#fdba74" stroke-width="2"/>
+  <path d="M200 110 L200 300" stroke="#fef3c7" stroke-width="2" opacity="0.4"/>
+  <path d="M200 140 Q170 180 185 230 M200 150 Q230 190 215 240" stroke="#fff" stroke-width="1" opacity="0.25" fill="none"/>
+  <ellipse cx="200" cy="330" rx="45" ry="8" fill="#000" opacity="0.35"/>
+  <text x="200" y="378" text-anchor="middle" fill="#fb923c" font-family="serif" font-size="14">Phoenix Feather</text>
+</svg>

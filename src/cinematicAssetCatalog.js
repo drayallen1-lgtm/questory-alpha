@@ -1,6 +1,6 @@
 /**
- * Sweep 15.1–15.2 — Cinematic Asset Catalog
- * Named entities with keywords, distinct library bindings, particle presets, and family/education categories.
+ * Sweep 15.1–15.3 — Cinematic Asset Catalog
+ * Named entities with keywords, distinct library bindings, particle presets, tone filtering, and family/education categories.
  */
 export const CINEMATIC_CATEGORIES = {
   CHARACTERS: 'characters',
@@ -67,7 +67,7 @@ export const CINEMATIC_ENTITIES = [
     animPreviewId: 'anim-ghost',
     sceneType: 'ghost',
     keywords: ['plague doctor', 'beaked mask', 'pestilence', 'doctor', 'crow mask'],
-    preset: { position: 'bottom-right', idleAnimation: 'approach', silhouette: true, atmosphere: 'darkness', particleLayers: ['shadow_aura', 'fog', 'embers'] },
+    preset: { position: 'bottom-right', idleAnimation: 'approach', silhouette: true, atmosphere: 'darkness', particleLayers: ['shadow_aura', 'fog', 'embers'], exit: 'attack' },
   },
   {
     id: 'shadow_figure',
@@ -195,7 +195,7 @@ export const CINEMATIC_ENTITIES = [
     animPreviewId: 'anim-ghost',
     sceneType: 'ghost',
     keywords: ['skeleton knight', 'skeleton', 'knight', 'armored bones'],
-    preset: { position: 'center', idleAnimation: 'approach', silhouette: true, particleLayers: ['shadow_aura', 'fog'] },
+    preset: { position: 'center', idleAnimation: 'approach', silhouette: true, particleLayers: ['shadow_aura', 'fog'], exit: 'attack' },
   },
   {
     id: 'pirate_captain',
@@ -273,6 +273,37 @@ export const CINEMATIC_ENTITIES = [
     keywords: ['history scroll', 'scroll', 'ancient text', 'historical document', 'timeline'],
     preset: { position: 'center', idleAnimation: 'float', particleLayers: ['glow'] },
   },
+  {
+    id: 'ufo',
+    label: 'UFO',
+    desc: 'Silent disc hovering with a cold blue beam',
+    category: CINEMATIC_CATEGORIES.PORTALS,
+    libraryAssetId: 'portal-ufo',
+    sceneType: 'portal',
+    keywords: ['ufo', 'flying saucer', 'alien ship', 'disc', 'abduction', 'lights in sky'],
+    preset: { position: 'far', idleAnimation: 'pulse', atmosphere: 'static', particleLayers: ['glow', 'sparks', 'fog'] },
+  },
+  {
+    id: 'dragon_egg',
+    label: 'Dragon Egg',
+    desc: 'Warm shell pulsing with hidden fire',
+    category: CINEMATIC_CATEGORIES.RELICS,
+    libraryAssetId: 'relic-dragon-egg',
+    sceneType: 'object',
+    safeForKids: true,
+    keywords: ['dragon egg', 'egg', 'hatching egg', 'dragon treasure', 'nested egg'],
+    preset: { position: 'center', idleAnimation: 'breathe', particleLayers: ['glow', 'embers'], reveal: 'glow' },
+  },
+  {
+    id: 'phoenix_feather',
+    label: 'Phoenix Feather',
+    desc: 'Ember-bright plume trailing golden sparks',
+    category: CINEMATIC_CATEGORIES.RELICS,
+    libraryAssetId: 'relic-phoenix-feather',
+    sceneType: 'object',
+    keywords: ['phoenix feather', 'phoenix', 'feather', 'flame feather', 'rebirth relic'],
+    preset: { position: 'center', idleAnimation: 'float', atmosphere: 'flash', particleLayers: ['glow', 'sparks', 'embers'] },
+  },
 ];
 
 const ENTITY_BY_ID = Object.fromEntries(CINEMATIC_ENTITIES.map((e) => [e.id, e]));
@@ -302,12 +333,24 @@ export function listFamilySafeEntities() {
   return CINEMATIC_ENTITIES.filter((e) => e.safeForKids);
 }
 
-export function matchCinematicEntities(text, limit = 3) {
-  const normalized = normalizeMatchText(text);
-  if (!normalized) return [];
+/** Tones that should only use family/education-safe cinematic entities */
+export function isFamilySafeTone(tone) {
+  return ['warm', 'curious', 'reverent'].includes(String(tone || '').toLowerCase());
+}
 
+export function filterEntitiesForTone(entities, { tone, safeForKids } = {}) {
+  if (safeForKids || isFamilySafeTone(tone)) {
+    return entities.filter((e) => e.safeForKids);
+  }
+  if (String(tone || '').toLowerCase() === 'mild') {
+    return entities.filter((e) => !e.preset?.silhouette);
+  }
+  return entities;
+}
+
+function rankEntityMatches(normalized, entities) {
   const hits = [];
-  for (const entity of CINEMATIC_ENTITIES) {
+  for (const entity of entities) {
     let bestScore = 0;
     let matchedKeyword = '';
     for (const kw of entity.keywords) {
@@ -320,11 +363,21 @@ export function matchCinematicEntities(text, limit = 3) {
       hits.push({ entity, score: bestScore, matchedKeyword });
     }
   }
-
   return hits
     .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
     .map((h) => ({ ...h.entity, matchedKeyword: h.matchedKeyword, score: h.score }));
+}
+
+export function matchCinematicEntities(text, limit = 3, toneOptions = {}) {
+  const normalized = normalizeMatchText(text);
+  if (!normalized) return [];
+
+  const pool = filterEntitiesForTone(CINEMATIC_ENTITIES, toneOptions);
+  return rankEntityMatches(normalized, pool).slice(0, limit);
+}
+
+export function matchCinematicEntitiesForTone(text, toneOptions = {}) {
+  return matchCinematicEntities(text, toneOptions.limit ?? 3, toneOptions);
 }
 
 /** Legacy dictionary shape for aiSceneGenerator compatibility */
@@ -366,7 +419,7 @@ export function toHorrorDictionaryShape() {
 }
 
 export const CINEMATIC_ASSET_ENGINE = {
-  version: '1.1',
+  version: '1.2',
   entityCount: CINEMATIC_ENTITIES.length,
   label: 'Cinematic Asset Catalog',
 };

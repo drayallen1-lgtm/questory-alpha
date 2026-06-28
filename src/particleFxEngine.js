@@ -45,6 +45,9 @@ export const ENTITY_PARTICLE_PRESETS = {
   star_compass: ['glow', 'sparks'],
   garden_fairy: ['glow', 'fog', 'sparks'],
   history_scroll: ['glow'],
+  ufo: ['glow', 'sparks', 'fog'],
+  dragon_egg: ['glow', 'embers'],
+  phoenix_feather: ['glow', 'sparks', 'embers'],
 };
 
 export function normalizeParticleLayers(raw) {

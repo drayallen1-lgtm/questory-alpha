@@ -49,6 +49,8 @@ export const TIMELINE_ACTIONS = {
   SCREAM: 'scream',
   SHAKE: 'shake',
   TELEPORT: 'teleport',
+  ATTACK: 'attack',
+  GLOW_BURST: 'glowBurst',
 };
 
 export const PERSISTENT_FX = new Set([

@@ -8,6 +8,8 @@ import {
   applyCinematicEntityToScene,
   autoPickEntitiesForPrompt,
   enhanceSceneWithCinematicAssets,
+  resolveCinematicToneOptions,
+  summarizeClueCinematicEntities,
 } from './cinematicAssetEngine';
 import { emptyArScene, normalizeArScene } from './arEngine';
 import { FINALE_THEMES } from './finaleThemes';
@@ -181,7 +183,7 @@ const FAMILY_BACKYARD_BASE = {
     template: ADVENTURE_TEMPLATES.FAMILY_FUN,
     scale: 'backyard',
     claimMethod: CLAIM_METHOD.TAP_MEDALLION,
-    finderMode: FINDER_MODES.FINDER,
+    finderMode: FINDER_MODES.AR_ENHANCED,
     arAssetType: 'family_treasure',
     title: 'Grandpa\'s Backyard Treasure',
     location: 'Your Backyard',
@@ -222,27 +224,31 @@ const FAMILY_BACKYARD_BASE = {
       text: 'Where laughter swings highest, look beneath the seat. Grandpa carved a number there.',
       clueType: CLUE_TYPES.TEXT_RIDDLE,
       npcLine: 'Start at the swing — that\'s where the hunt begins!',
+      arPrompt: 'A friendly dragon floats beside the swing set, sparks trailing behind its wings.',
     },
     {
       title: 'Flower Bed Finder',
       text: 'Petals hide a number — count the red ones in the flower bed.',
       clueType: CLUE_TYPES.TEXT_RIDDLE,
       npcLine: 'Sunny says: the flowers know the way!',
+      arPrompt: 'A garden fairy drifts above the flower bed with a soft golden glow.',
     },
     {
       title: 'Birdhouse Bonus',
       text: 'Feathered friends know — check the post with the blue roof.',
       clueType: CLUE_TYPES.TEXT_RIDDLE,
       bonusRewardText: 'Bonus sticker! You found Sunny\'s acorn cache.',
+      arPrompt: 'A warm dragon egg pulses with ember light near the birdhouse post.',
     },
     {
       title: 'Cake Table Clue',
       text: 'The treasure waits where birthday cakes are always cut. Look under the picnic table!',
       clueType: CLUE_TYPES.TEXT_RIDDLE,
       npcLine: 'You did it! Tap the medallion when Finder Mode finds it.',
+      arPrompt: 'A treasure chest glows under the picnic table with sparkles and golden light.',
     },
   ],
-  finalePrompt: null,
+  finalePrompt: 'The friendly dragon circles the treasure chest as golden sparks rain down. Celebration finale!',
   finaleThemeId: null,
   twists: [],
   audioMood: {
@@ -267,7 +273,7 @@ const CHURCH_TRAIL_BASE = {
     template: ADVENTURE_TEMPLATES.CHURCH,
     scale: 'neighborhood',
     claimMethod: CLAIM_METHOD.SECRET_CODE,
-    finderMode: FINDER_MODES.FINDER,
+    finderMode: FINDER_MODES.AR_ENHANCED,
     arAssetType: 'faith_trail',
     title: 'Scripture Scavenger Hunt',
     location: 'Your Neighborhood',
@@ -308,26 +314,31 @@ const CHURCH_TRAIL_BASE = {
       text: 'Psalm 119:105 — where does the lamp guide your feet? Find the path marker.',
       clueType: CLUE_TYPES.TEXT_RIDDLE,
       npcLine: 'The lamp guides our feet — start where the sidewalk turns east.',
+      arPrompt: 'A wise owl perches on the path marker, glowing with a gentle golden light.',
     },
     {
       title: 'Steeple Path',
       text: 'Follow the path the bell once rang. Count the steps to the garden gate.',
       clueType: CLUE_TYPES.TEXT_RIDDLE,
       npcLine: 'Listen for the echo — Marcus hid the next clue near the garden.',
+      arPrompt: 'A history scroll unfurls in golden light beside the garden gate.',
     },
     {
       title: 'Community Bench',
       text: 'Where neighbors rest and pray together — look under the memorial bench plaque.',
       clueType: CLUE_TYPES.TEXT_RIDDLE,
       npcLine: 'Faith grows in community. The plaque year is your hint.',
+      arPrompt: 'A star compass spins slowly above the memorial bench, pointing east.',
       pathVariants: {
         sanctuary: {
           title: 'Sanctuary Steps',
           text: 'You chose the sanctuary path. Count the front steps — that number opens the next clue.',
+          arPrompt: 'A history scroll glows on the sanctuary steps with a verse of scripture.',
         },
         garden: {
           title: 'Garden Walk',
           text: 'You chose the garden path. Find the rose bed with the white cross marker.',
+          arPrompt: 'A garden fairy sparkles above the rose bed cross marker.',
         },
       },
     },
@@ -336,9 +347,10 @@ const CHURCH_TRAIL_BASE = {
       text: 'The final marker bears a single word from Pastor Grace. Find the cornerstone.',
       clueType: CLUE_TYPES.TEXT_RIDDLE,
       npcLine: 'You walked the path of faith — claim your blessing!',
+      arPrompt: 'A glowing relic rises from the cornerstone with warm light and sparks.',
     },
   ],
-  finalePrompt: null,
+  finalePrompt: 'The wise owl spreads its wings as a history scroll unfurls — faith trail complete.',
   finaleThemeId: null,
   twists: [],
   audioMood: {
@@ -385,7 +397,7 @@ const EDUCATIONAL_TRAIL_BASE = {
     template: ADVENTURE_TEMPLATES.EDUCATIONAL,
     scale: 'city',
     claimMethod: CLAIM_METHOD.SECRET_CODE,
-    finderMode: FINDER_MODES.FINDER,
+    finderMode: FINDER_MODES.AR_ENHANCED,
     arAssetType: 'learning_trail',
     title: 'Learning Trail Quest',
     location: 'Downtown',
@@ -427,26 +439,31 @@ const EDUCATIONAL_TRAIL_BASE = {
       clueType: CLUE_TYPES.MULTIPLE_CHOICE,
       choices: ['1876', '1903', '1924'],
       npcLine: 'Start at the square — history is the first lesson.',
+      arPrompt: 'A magic book opens in mid-air, pages glowing with discovery clues.',
     },
     {
       title: 'Science Stop',
       text: 'Name the tree species on the interpretive sign near the park entrance.',
       clueType: CLUE_TYPES.TEXT_RIDDLE,
       npcLine: 'Sam says: botany counts! Read the sign carefully.',
+      arPrompt: 'A wise owl perches on the interpretive sign, nodding wisely.',
     },
     {
       title: 'Museum Steps',
       text: 'Count the museum steps — multiply by two for the locker combination hint.',
       clueType: CLUE_TYPES.TEXT_RIDDLE,
       npcLine: 'The museum holds more than artifacts — look at the architecture.',
+      arPrompt: 'A star compass spins above the museum steps, pointing toward the archives.',
       pathVariants: {
         historian: {
           title: 'Archives Wing',
           text: 'You chose the archives. Find the display case labeled "Founding Year."',
+          arPrompt: 'A history scroll unfurls beside the archives display case.',
         },
         exhibit: {
           title: 'Main Exhibit',
           text: 'You chose the main hall. Locate the dinosaur footprint cast.',
+          arPrompt: 'A phoenix feather floats above the exhibit hall, trailing golden sparks.',
         },
       },
     },
@@ -455,9 +472,10 @@ const EDUCATIONAL_TRAIL_BASE = {
       text: 'The scholar medallion code is carved into the bench by the fountain.',
       clueType: CLUE_TYPES.TEXT_RIDDLE,
       npcLine: 'Excellent work — you earned the Scholar Badge!',
+      arPrompt: 'A crystal shard hums with trapped light above the fountain bench.',
     },
   ],
-  finalePrompt: null,
+  finalePrompt: 'Professor Ellis appears as a magic book and star compass merge — scholar trail complete!',
   finaleThemeId: null,
   twists: [],
   audioMood: {
@@ -780,24 +798,57 @@ export function generateAdventureBlueprint(prompt, options = {}) {
   return { ok: true, blueprint };
 }
 
-function generateArSceneFromPrompt(prompt) {
+function directorMetaFromBlueprint(blueprint) {
+  const meta = blueprint?.meta || {};
+  return {
+    tone: meta.tone,
+    template: meta.template,
+    safeForKids: [
+      ADVENTURE_TEMPLATES.FAMILY_FUN,
+      ADVENTURE_TEMPLATES.EDUCATIONAL,
+      ADVENTURE_TEMPLATES.CHURCH,
+    ].includes(meta.template),
+  };
+}
+
+function generateArSceneFromPrompt(prompt, directorMeta = {}) {
   if (!prompt) return emptyArScene();
+  const toneOptions = resolveCinematicToneOptions(directorMeta);
   const result = generateSceneFromPrompt(prompt);
   if (result?.ok && result.scene) {
-    const { scene } = enhanceSceneWithCinematicAssets(result.scene, prompt);
+    const { scene } = enhanceSceneWithCinematicAssets(result.scene, prompt, toneOptions);
     return normalizeArScene(scene);
   }
-  const matches = autoPickEntitiesForPrompt(prompt, 1);
+  const matches = autoPickEntitiesForPrompt(prompt, 1, toneOptions);
   if (matches.length) {
-    return applyCinematicEntityToScene({ enabled: true, title: matches[0].label }, matches[0].id);
+    return applyCinematicEntityToScene(
+      { enabled: true, title: matches[0].label, overlayText: prompt.slice(0, 120) },
+      matches[0].id
+    );
   }
   return emptyArScene();
 }
 
+function buildPathVariantScenes(pathVariants, useAr, directorMeta = {}) {
+  if (!pathVariants || typeof pathVariants !== 'object') return pathVariants;
+  const next = {};
+  for (const [key, variant] of Object.entries(pathVariants)) {
+    next[key] = {
+      ...variant,
+      arScene:
+        useAr && variant.arPrompt
+          ? generateArSceneFromPrompt(variant.arPrompt, directorMeta)
+          : emptyArScene(),
+    };
+  }
+  return next;
+}
+
 function resolveFinaleScene(blueprint) {
   const { finale, meta } = blueprint;
+  const directorMeta = directorMetaFromBlueprint(blueprint);
   if (finale?.arPrompt) {
-    const scene = generateArSceneFromPrompt(finale.arPrompt);
+    const scene = generateArSceneFromPrompt(finale.arPrompt, directorMeta);
     if (scene?.enabled) return scene;
   }
   const theme = finale?.themeId ? FINALE_THEMES[finale.themeId] : null;
@@ -853,22 +904,6 @@ function buildCharacterNpcs(blueprint) {
   });
 }
 
-function buildPathVariantScenes(pathVariants, useAr) {
-  if (!pathVariants || typeof pathVariants !== 'object') return undefined;
-  const result = {};
-  for (const [pathId, variant] of Object.entries(pathVariants)) {
-    result[pathId] = {
-      title: variant.title,
-      text: variant.text,
-      arScene:
-        useAr && variant.arPrompt
-          ? generateArSceneFromPrompt(variant.arPrompt)
-          : emptyArScene(),
-    };
-  }
-  return result;
-}
-
 /**
  * Convert blueprint → Create Adventure form draft (compatible with applyDirectorDraft).
  */
@@ -915,11 +950,12 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
   };
 
   const useAr = bpMeta.finderMode === FINDER_MODES.AR_ENHANCED;
+  const directorMeta = directorMetaFromBlueprint(blueprint);
 
   const clues = blueprint.clues.map((c, i) => {
     const [dLat, dLng] = GPS_OFFSETS[i % GPS_OFFSETS.length];
     const arScene =
-      useAr && c.arPrompt ? generateArSceneFromPrompt(c.arPrompt) : emptyArScene();
+      useAr && c.arPrompt ? generateArSceneFromPrompt(c.arPrompt, directorMeta) : emptyArScene();
 
     return {
       id: `dir-clue-${i + 1}-${Date.now()}`,
@@ -935,7 +971,7 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
       videoUrl: c.videoUrl || '',
       imageUrl: c.imageUrl || '',
       branchOptions: c.branchOptions || [],
-      pathVariants: buildPathVariantScenes(c.pathVariants, useAr),
+      pathVariants: buildPathVariantScenes(c.pathVariants, useAr, directorMeta),
       arScene,
     };
   });
@@ -957,6 +993,14 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
 
   const arFinale =
     bpMeta.finderMode === FINDER_MODES.AR_ENHANCED ? resolveFinaleScene(blueprint) : emptyArScene();
+  const cinematicEntityLabels = summarizeClueCinematicEntities(clues);
+  if (arFinale?.cinematicEntityLabel) {
+    cinematicEntityLabels.push(arFinale.cinematicEntityLabel);
+  }
+  const experienceSettingsWithCinematic = {
+    ...experienceSettings,
+    cinematicEntities: [...new Set(cinematicEntityLabels)],
+  };
   const arTheme =
     bpMeta.template === ADVENTURE_TEMPLATES.HORROR ? 'horror' : 'none';
 
@@ -1006,7 +1050,7 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
       finderCaptureBaseM: config.finderCaptureBaseM,
       finderMode: bpMeta.finderMode,
       arAssetType: bpMeta.arAssetType,
-      experienceSettings,
+      experienceSettings: experienceSettingsWithCinematic,
     },
     clues,
     rewards,

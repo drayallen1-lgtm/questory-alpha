@@ -1,13 +1,17 @@
 /**
- * Sweep 15.1 — Cinematic Asset Engine
- * Applies catalog entities to AR scenes with timeline choreography presets.
+ * Sweep 15.1–15.3 — Cinematic Asset Engine
+ * Applies catalog entities to AR scenes with timeline choreography and tone-aware matching.
  */
 import { normalizeArScene, AR_SCENE_TYPES, AR_ATMOSPHERES } from './arEngine';
 import { findLibraryAsset, insertAssetIntoScene } from './mediaStudio';
 import { libraryAssetForInsert } from './horrorAssets/catalog';
 import { buildDefaultHorrorTimeline, isGhostAssetId } from './horrorTimelineDefaults';
 import { TIMELINE_ACTIONS, normalizeTimeline } from './timelineEngine';
-import { matchCinematicEntities, getCinematicEntity } from './cinematicAssetCatalog';
+import {
+  matchCinematicEntities,
+  getCinematicEntity,
+  isFamilySafeTone,
+} from './cinematicAssetCatalog';
 import { resolveParticleLayers } from './particleFxEngine';
 
 const IDLE_TO_ACTION = {
@@ -33,6 +37,25 @@ function libraryAssetForEntity(entity) {
   return asset ? libraryAssetForInsert({ ...asset, source: 'library' }) : null;
 }
 
+function appendEntityLifecycle(timeline, entity, scene, durationSeconds) {
+  const preset = entity.preset || {};
+  const beats = [...timeline];
+  const dur = durationSeconds || scene.durationSeconds || 8;
+
+  if (preset.reveal === 'glow' || entity.safeForKids) {
+    beats.push({ time: Math.min(2.8, dur * 0.35), action: TIMELINE_ACTIONS.GLOW_BURST, duration: 1.4 });
+  }
+
+  if (preset.exit === 'attack' || (scene.jumpScare && !entity.safeForKids)) {
+    beats.push({ time: Math.max(1, dur - 2.2), action: TIMELINE_ACTIONS.ATTACK, duration: 0.85 });
+    beats.push({ time: Math.max(1.2, dur - 1.3), action: TIMELINE_ACTIONS.DISAPPEAR, duration: 0.7 });
+  } else if (preset.exit === 'disappear') {
+    beats.push({ time: Math.max(1, dur - 1.5), action: TIMELINE_ACTIONS.FADE_ENTITY_OUT, duration: 1 });
+  }
+
+  return beats;
+}
+
 function buildTimelineForEntity(entity, scene) {
   const preset = entity.preset || {};
   const isGhost =
@@ -51,7 +74,7 @@ function buildTimelineForEntity(entity, scene) {
     silhouette: preset.silhouette ?? scene.silhouette,
   });
 
-  const withIdle = [
+  let withIdle = [
     ...timeline,
     { time: 3, action: idleAction, duration: 2.5 },
   ];
@@ -60,10 +83,21 @@ function buildTimelineForEntity(entity, scene) {
     withIdle.push({ time: 1.8, action: TIMELINE_ACTIONS.APPROACH, duration: 1.2 });
   }
 
+  withIdle = appendEntityLifecycle(withIdle, entity, scene, durationSeconds);
+
   return {
     timeline: normalizeTimeline(withIdle),
     durationSeconds,
   };
+}
+
+export function resolveCinematicToneOptions(directorMeta = {}) {
+  const tone = directorMeta.tone || directorMeta.atmosphere;
+  const safeForKids =
+    Boolean(directorMeta.safeForKids) ||
+    isFamilySafeTone(tone) ||
+    ['family_fun', 'educational', 'church'].includes(directorMeta.template);
+  return { tone, safeForKids };
 }
 
 export function applyCinematicEntityToScene(scene, entityId) {
@@ -104,8 +138,8 @@ export function applyCinematicEntityToScene(scene, entityId) {
   });
 }
 
-export function enhanceSceneWithCinematicAssets(scene, prompt) {
-  const matches = matchCinematicEntities(prompt, 2);
+export function enhanceSceneWithCinematicAssets(scene, prompt, toneOptions = {}) {
+  const matches = matchCinematicEntities(prompt, 2, toneOptions);
   if (!matches.length) {
     return { scene: normalizeArScene(scene), matched: [] };
   }
@@ -116,11 +150,14 @@ export function enhanceSceneWithCinematicAssets(scene, prompt) {
   if (!next.assetUrl && !next.mediaAssetId) {
     next = applyCinematicEntityToScene(next, primary.id);
   } else if (primary.id && !next.cinematicEntityId) {
+    const entity = getCinematicEntity(primary.id);
     next = normalizeArScene({
       ...next,
       cinematicEntityId: primary.id,
       cinematicEntityLabel: primary.label,
       title: next.title || primary.label,
+      particleLayers: resolveParticleLayers(entity, next.particleLayers),
+      safeForKids: Boolean(entity?.safeForKids || toneOptions.safeForKids),
     });
   }
 
@@ -134,8 +171,8 @@ export function enhanceSceneWithCinematicAssets(scene, prompt) {
   };
 }
 
-export function autoPickEntitiesForPrompt(prompt, count = 2) {
-  return matchCinematicEntities(prompt, count);
+export function autoPickEntitiesForPrompt(prompt, count = 2, toneOptions = {}) {
+  return matchCinematicEntities(prompt, count, toneOptions);
 }
 
 export function cinematicEntityAsMediaAsset(entityId) {
@@ -155,4 +192,11 @@ export function cinematicEntityAsMediaAsset(entityId) {
 export function summarizeCinematicMatch(matched) {
   if (!matched?.length) return null;
   return matched.map((m) => m.label).join(' · ');
+}
+
+export function summarizeClueCinematicEntities(clues = []) {
+  const labels = clues
+    .map((c) => c.arScene?.cinematicEntityLabel || c.arScene?.title)
+    .filter(Boolean);
+  return [...new Set(labels)];
 }

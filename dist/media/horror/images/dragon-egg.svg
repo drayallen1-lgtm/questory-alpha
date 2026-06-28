@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Dragon Egg">
+  <rect width="400" height="400" fill="#1a0a08"/>
+  <defs>
+    <radialGradient id="egg-glow" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#fb923c" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#1a0a08" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="200" cy="210" rx="85" ry="95" fill="url(#egg-glow)"/>
+  <ellipse cx="200" cy="220" rx="62" ry="78" fill="#7c2d12" stroke="#ea580c" stroke-width="3"/>
+  <path d="M170 180 Q200 140 230 180" fill="#9a3412" opacity="0.6"/>
+  <path d="M175 230 Q200 250 225 230" stroke="#fdba74" stroke-width="2" fill="none" opacity="0.5"/>
+  <ellipse cx="200" cy="200" rx="18" ry="24" fill="#fed7aa" opacity="0.35"/>
+  <path d="M185 195 L200 210 L215 195" stroke="#fb923c" stroke-width="2" fill="none" opacity="0.7"/>
+  <ellipse cx="200" cy="330" rx="50" ry="10" fill="#000" opacity="0.4"/>
+  <text x="200" y="378" text-anchor="middle" fill="#fb923c" font-family="serif" font-size="14">Dragon Egg</text>
+</svg>

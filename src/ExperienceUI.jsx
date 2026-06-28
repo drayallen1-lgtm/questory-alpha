@@ -292,6 +292,11 @@ export function AdventureDirectorPanel({ onApplyDraft }) {
               Characters: {draft.blueprint.characters.map((c) => c.name).join(', ')}
             </p>
           )}
+          {draft.meta?.experienceSettings?.cinematicEntities?.length > 0 && (
+            <p className="director-cinematic-entities">
+              Cinematic entities: {draft.meta.experienceSettings.cinematicEntities.join(' · ')}
+            </p>
+          )}
           {draft.blueprint?.storyArc && (
             <details className="director-arc-preview">
               <summary>Story arc preview</summary>

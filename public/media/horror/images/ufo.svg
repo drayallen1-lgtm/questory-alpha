@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="UFO">
+  <rect width="400" height="400" fill="#030308"/>
+  <defs>
+    <radialGradient id="ufo-beam" cx="50%" cy="100%" r="60%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#030308" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="200" cy="320" rx="55" ry="90" fill="url(#ufo-beam)" opacity="0.7"/>
+  <ellipse cx="200" cy="175" rx="95" ry="28" fill="#64748b" stroke="#94a3b8" stroke-width="3"/>
+  <ellipse cx="200" cy="158" rx="48" ry="32" fill="#475569" stroke="#cbd5e1" stroke-width="2"/>
+  <circle cx="170" cy="172" r="8" fill="#38bdf8" opacity="0.9"/>
+  <circle cx="200" cy="165" r="10" fill="#22d3ee" opacity="0.95"/>
+  <circle cx="230" cy="172" r="8" fill="#38bdf8" opacity="0.9"/>
+  <ellipse cx="200" cy="350" rx="40" ry="8" fill="#000" opacity="0.35"/>
+  <text x="200" y="384" text-anchor="middle" fill="#94a3b8" font-family="serif" font-size="14">UFO</text>
+</svg>
