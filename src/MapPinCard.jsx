@@ -6,6 +6,23 @@ import { isDev } from './config/env';
 import { formatPinDistanceImperial, MAP_FILTER_OPTIONS, resolvePinVisual } from './mapDiscovery';
 import { getSponsorInfo } from './seed';
 
+function difficultyLabel(level) {
+  const n = Number(level) || 2;
+  const labels = ['Easy', 'Easy', 'Moderate', 'Challenging', 'Expert', 'Legendary'];
+  return labels[Math.min(Math.max(n, 1), 5)] || 'Moderate';
+}
+
+function estimateDuration(adventure) {
+  const clues = adventure?.clues?.length || 0;
+  if (clues <= 2) return '~30 min';
+  if (clues <= 5) return '~1 hr';
+  return '~2+ hrs';
+}
+
+function resolveHeroImage(adventure, visual) {
+  return adventure?.coverUrl || adventure?.heroUrl || adventure?.imageUrl || null;
+}
+
 export function MapPinCard({
   adventure,
   access,
@@ -18,10 +35,14 @@ export function MapPinCard({
   if (!adventure) return null;
 
   const tooFar = access?.tooFar;
-  const ctaLabel = access?.ctaLabel || (tooFar ? 'Preview Adventure' : 'Play Adventure');
+  const ctaPrimary = tooFar ? 'Preview Adventure' : 'Start Adventure';
+  const ctaLabel = access?.ctaLabel || ctaPrimary;
   const pinIcon = visual?.icon || visual?.base?.icon || '📍';
   const pinLabel = visual?.label || visual?.base?.label || 'Adventure';
   const pinColor = visual?.color || visual?.base?.color;
+  const heroImage = resolveHeroImage(adventure, visual);
+  const difficulty = difficultyLabel(adventure?.difficulty);
+  const duration = estimateDuration(adventure);
 
   function handleCardPointer(e) {
     e.stopPropagation();
@@ -58,22 +79,26 @@ export function MapPinCard({
         <X size={16} />
       </button>
 
-      <div className="map-pin-card-head">
-        <span
-          className={`map-pin-card-icon ${visual?.animated ? 'pin-animated' : ''}`}
-          style={{ '--pin-color': pinColor }}
-        >
-          {pinIcon}
-        </span>
-        <div>
+      <div
+        className="map-pin-card-hero"
+        style={{ '--pin-hero-color': pinColor || '#14b8a6' }}
+      >
+        {heroImage ? (
+          <img src={heroImage} alt="" className="map-pin-card-hero-img" />
+        ) : (
+          <span className="map-pin-card-hero-icon">{pinIcon}</span>
+        )}
+        <div className="map-pin-card-hero-scrim" />
+        <div className="map-pin-card-hero-text">
           <h3>{adventure.title}</h3>
-          <p className="map-pin-card-category">
-            {pinLabel}
-            {distanceM != null && (
-              <span className="map-pin-card-distance"> · {formatPinDistanceImperial(distanceM)}</span>
-            )}
-          </p>
+          <p>{pinLabel}</p>
         </div>
+      </div>
+
+      <div className="map-pin-card-meta-row">
+        <span>{difficulty}</span>
+        {distanceM != null && <span>{formatPinDistanceImperial(distanceM)}</span>}
+        <span>{duration}</span>
       </div>
 
       <div className="map-pin-card-badges">
@@ -90,6 +115,12 @@ export function MapPinCard({
           )}
         </span>
         {visual?.heatLevel === 'hot' && <span className="badge map-heat-badge">🔥 Hot</span>}
+        {visual?.overlays?.some((o) => o.id === 'featured') && (
+          <span className="badge cluster-picker-featured">⭐ Featured</span>
+        )}
+        {visual?.overlays?.some((o) => o.id === 'event') && (
+          <span className="badge cluster-picker-event">📅 Event</span>
+        )}
       </div>
 
       <AccessStatusBanner access={access} />
@@ -97,9 +128,9 @@ export function MapPinCard({
       <p className="story-preview map-pin-card-story">{adventure.story}</p>
       <p className="sponsor-inline">Sponsored by {getSponsorInfo(adventure).name}</p>
 
-      <div className="chips">
+      <div className="chips map-pin-card-chips">
         <span>{adventure.clues?.length || 0} clues</span>
-        <span>{adventure.prize}</span>
+        {adventure.prize && <span className="map-pin-card-reward">{adventure.prize}</span>}
         <span>{adventure.location}</span>
       </div>
 

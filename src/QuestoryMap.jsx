@@ -22,9 +22,7 @@ import {
   MAP_FILTERS,
   MAP_LAYER_IDS,
   MAP_SOURCE_IDS,
-  NEAR_ME_PULSE_RADIUS_M,
   adventureMatchesFilter,
-  circlePolygon,
   createAdventurePinElement,
   createClusterElement,
   filterMapAdventures,
@@ -267,6 +265,9 @@ export function QuestoryMap({
   onSpatialStatsChange,
   onClusterOpen,
   onMapBackgroundClick,
+  suppressedClusterId = null,
+  soloPinId = null,
+  pickerOpen = false,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -282,6 +283,10 @@ export function QuestoryMap({
   const handleClusterClickRef = useRef(null);
   const onClusterOpenRef = useRef(onClusterOpen);
   const onMapBackgroundClickRef = useRef(onMapBackgroundClick);
+  const suppressedClusterIdRef = useRef(suppressedClusterId);
+  const soloPinIdRef = useRef(soloPinId);
+  const pickerOpenRef = useRef(pickerOpen);
+  const lastSoloPinCameraRef = useRef(null);
   const cameraRef = useRef(null);
   const onAdventureClickRef = useRef(onAdventureClick);
   const onPinHoverChangeRef = useRef(onPinHoverChange);
@@ -297,6 +302,9 @@ export function QuestoryMap({
   onSpatialStatsChangeRef.current = onSpatialStatsChange;
   onClusterOpenRef.current = onClusterOpen;
   onMapBackgroundClickRef.current = onMapBackgroundClick;
+  suppressedClusterIdRef.current = suppressedClusterId;
+  soloPinIdRef.current = soloPinId;
+  pickerOpenRef.current = pickerOpen;
   const token = getMapboxToken();
 
   if (!cameraRef.current) {
@@ -347,23 +355,25 @@ export function QuestoryMap({
   }, []);
 
   const upsertAdventurePin = useCallback(
-    (map, id, coords, nextIds) => {
+    (map, id, coords, nextIds, options = {}) => {
       nextIds.add(id);
       const markerData = markerLookup.get(id);
       if (!markerData) return;
       const visual = resolvePinVisual(markerData.adventure, mapStateRef.current);
       const selected = selectedAdventureIdRef.current === id;
+      const soloActive = Boolean(options.soloActive);
       let entry = markersOnScreenRef.current[id];
 
       if (!entry) {
         const el = createAdventurePinElement(visual, {
-          selected,
+          selected: selected || soloActive,
           pinAccess: markerData.pinAccess,
+          soloActive,
         });
         wireAdventurePinElement(el, {
           markerData,
           visual,
-          selected,
+          selected: selected || soloActive,
           onSelect: (data) => {
             if (data?.adventure) onAdventureClickRef.current?.(data.adventure, data);
           },
@@ -377,10 +387,12 @@ export function QuestoryMap({
         entry.setLngLat(coords);
         const el = entry.getElement();
         if (el) {
+          el.classList.toggle('pin-solo-active', soloActive);
+          el.classList.toggle('pin-selected', selected || soloActive);
           wireAdventurePinElement(el, {
             markerData,
             visual,
-            selected,
+            selected: selected || soloActive,
             onSelect: (data) => {
               if (data?.adventure) onAdventureClickRef.current?.(data.adventure, data);
             },
@@ -411,11 +423,6 @@ export function QuestoryMap({
         console.debug('[QuestoryMap]', { clusterClicked: { count: meta.count, clusterId } });
       }
 
-      if (leafMarkers.length === 1) {
-        onAdventureClickRef.current?.(leafMarkers[0].adventure, leafMarkers[0]);
-        return;
-      }
-
       const openPicker = () => {
         onClusterOpenRef.current?.({ clusterId, coords, markers: leafMarkers, meta });
       };
@@ -441,6 +448,9 @@ export function QuestoryMap({
     const markers = adventureMarkersRef.current;
     const nextIds = new Set();
     let clusterCount = 0;
+    const suppressedId = suppressedClusterIdRef.current;
+    const soloPin = soloPinIdRef.current;
+    const isPickerOpen = pickerOpenRef.current;
 
     const reportStats = (pinCount) => {
       onVisiblePinCountChange?.(pinCount);
@@ -449,7 +459,6 @@ export function QuestoryMap({
         markerCount: markers.length,
         pinCount,
         clusterCount,
-        spiderfyGroupCount: 0,
       });
     };
 
@@ -473,6 +482,8 @@ export function QuestoryMap({
       const props = parseFeatureProps(feature.properties);
       const coords = feature.geometry?.coordinates;
       if (!coords || props.cluster_id == null) continue;
+      if (suppressedId != null && props.cluster_id === suppressedId) continue;
+
       const count = props.point_count || 0;
       upsertClusterMarker(
         map,
@@ -494,28 +505,21 @@ export function QuestoryMap({
       });
     }
 
-    const useDirectMarkers = features.length === 0 && markers.length > 0;
-
-    if (useDirectMarkers) {
-      for (const markerData of markers) {
+    if (soloPin) {
+      const markerData = markerLookupRef.current.get(soloPin);
+      if (markerData) {
         upsertAdventurePin(
           map,
-          markerData.id,
+          soloPin,
           [markerData.longitude, markerData.latitude],
-          nextIds
+          nextIds,
+          { soloActive: true }
         );
       }
-    } else {
-      for (const feature of features) {
-        const props = parseFeatureProps(feature.properties);
-        const coords = feature.geometry?.coordinates;
-        if (!coords || isClusterFeature(props)) continue;
-        const id = props.id ?? feature.id;
-        if (!id) continue;
-        upsertAdventurePin(map, id, coords, nextIds);
-      }
+    } else if (!isPickerOpen) {
+      const useDirectMarkers = features.length === 0 && markers.length > 0;
 
-      if (!nextIds.size && markers.length > 0 && clusterCount === 0) {
+      if (useDirectMarkers) {
         for (const markerData of markers) {
           upsertAdventurePin(
             map,
@@ -523,6 +527,26 @@ export function QuestoryMap({
             [markerData.longitude, markerData.latitude],
             nextIds
           );
+        }
+      } else {
+        for (const feature of features) {
+          const props = parseFeatureProps(feature.properties);
+          const coords = feature.geometry?.coordinates;
+          if (!coords || isClusterFeature(props)) continue;
+          const id = props.id ?? feature.id;
+          if (!id) continue;
+          upsertAdventurePin(map, id, coords, nextIds);
+        }
+
+        if (!nextIds.size && markers.length > 0 && clusterCount === 0) {
+          for (const markerData of markers) {
+            upsertAdventurePin(
+              map,
+              markerData.id,
+              [markerData.longitude, markerData.latitude],
+              nextIds
+            );
+          }
         }
       }
     }
@@ -628,55 +652,6 @@ export function QuestoryMap({
         },
       });
 
-      if (showUserLocation && userLocation?.latitude != null) {
-        map.addSource(MAP_SOURCE_IDS.ACCURACY, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: circlePolygon(
-              userLocation.latitude,
-              userLocation.longitude,
-              Math.max(userLocation.accuracy || 25, 15)
-            ),
-          },
-        });
-        map.addLayer({
-          id: 'accuracy-fill',
-          type: 'fill',
-          source: MAP_SOURCE_IDS.ACCURACY,
-          paint: { 'fill-color': '#60a5fa', 'fill-opacity': 0.12 },
-        });
-
-        map.addSource(MAP_SOURCE_IDS.NEAR_ME, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: circlePolygon(
-              userLocation.latitude,
-              userLocation.longitude,
-              NEAR_ME_PULSE_RADIUS_M
-            ),
-          },
-        });
-        map.addLayer({
-          id: 'near-me-fill',
-          type: 'fill',
-          source: MAP_SOURCE_IDS.NEAR_ME,
-          paint: { 'fill-color': '#5eead4', 'fill-opacity': 0.06 },
-        });
-        map.addLayer({
-          id: 'near-me-line',
-          type: 'line',
-          source: MAP_SOURCE_IDS.NEAR_ME,
-          paint: {
-            'line-color': '#5eead4',
-            'line-opacity': 0.35,
-            'line-width': 1.5,
-            'line-dasharray': [2, 2],
-          },
-        });
-      }
-
       map.addSource(ADVENTURE_SOURCE, {
         type: 'geojson',
         data: geoJson,
@@ -766,29 +741,6 @@ export function QuestoryMap({
     } else {
       userMarkerRef.current.setLngLat([userLocation.longitude, userLocation.latitude]);
     }
-
-    const accuracySrc = map.getSource(MAP_SOURCE_IDS.ACCURACY);
-    if (accuracySrc) {
-      accuracySrc.setData({
-        type: 'Feature',
-        geometry: circlePolygon(
-          userLocation.latitude,
-          userLocation.longitude,
-          Math.max(userLocation.accuracy || 25, 15)
-        ),
-      });
-    }
-    const nearSrc = map.getSource(MAP_SOURCE_IDS.NEAR_ME);
-    if (nearSrc) {
-      nearSrc.setData({
-        type: 'Feature',
-        geometry: circlePolygon(
-          userLocation.latitude,
-          userLocation.longitude,
-          NEAR_ME_PULSE_RADIUS_M
-        ),
-      });
-    }
   }, [userLocation, showUserLocation, mini]);
 
   useEffect(() => {
@@ -827,7 +779,26 @@ export function QuestoryMap({
   useEffect(() => {
     if (mini || !mapRef.current) return;
     syncHtmlMarkers();
-  }, [selectedAdventureId, syncHtmlMarkers, mini]);
+  }, [selectedAdventureId, suppressedClusterId, soloPinId, pickerOpen, syncHtmlMarkers, mini]);
+
+  useEffect(() => {
+    if (mini || !soloPinId || soloPinId === lastSoloPinCameraRef.current) return;
+    const map = mapRef.current;
+    const marker = markerLookupRef.current.get(soloPinId);
+    if (!map || !marker) return;
+    lastSoloPinCameraRef.current = soloPinId;
+    requestCameraMoveRef.current?.('pinSelect', (m) => {
+      easeMapTo(m, {
+        center: [marker.longitude, marker.latitude],
+        zoom: Math.max(m.getZoom(), CLUSTER_PICKER_ZOOM),
+        duration: 500,
+      });
+    });
+  }, [soloPinId, mini]);
+
+  useEffect(() => {
+    if (!soloPinId) lastSoloPinCameraRef.current = null;
+  }, [soloPinId]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -931,7 +902,8 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       markerCount: adventureMarkers.length,
       filteredCount: filteredAdventures.length,
       clusterCount: spatialStats?.clusterCount ?? 0,
-      spiderfyGroupCount: spatialStats?.spiderfyGroupCount ?? 0,
+      mapMode: clusterPicker ? 'PICKER_OPEN' : selectedMarker?.fromCluster ? 'ADVENTURE_ACTIVE' : 'CLUSTER_VIEW',
+      suppressedClusterId: clusterPicker?.clusterId ?? (selectedMarker?.fromCluster ? selectedMarker.clusterId : null),
       missingCoords: pinStats.missingCoords,
       accessFiltered: pinStats.accessFiltered,
     });
@@ -962,6 +934,11 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         )
       : null;
 
+  const suppressedClusterId =
+    clusterPicker?.clusterId ??
+    (selectedMarker?.fromCluster ? selectedMarker.clusterId : null);
+  const soloPinId = selectedMarker?.fromCluster ? selectedMarker.id : null;
+
   const filterCounts = useMemo(() => {
     const counts = { all: adventures.length };
     [
@@ -990,11 +967,23 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   }
 
   function handleClusterAdventureSelect(marker) {
+    if (!clusterPicker) return;
     setClusterPicker(null);
-    handleAdventureClick(marker.adventure, marker);
+    handleAdventureClick(marker.adventure, {
+      ...marker,
+      fromCluster: true,
+      clusterId: clusterPicker.clusterId,
+    });
+  }
+
+  function handlePickerClose() {
+    setClusterPicker(null);
   }
 
   function handleMapBackgroundClick() {
+    if (isDev) {
+      console.debug('[QuestoryMap]', { mapBackgroundClicked: true });
+    }
     setClusterPicker(null);
     setSelectedMarker(null);
   }
@@ -1007,6 +996,10 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     if (setState) {
       setState((s) => recordMapReveal(s, adventure));
     }
+  }
+
+  function handleCardClose() {
+    setSelectedMarker(null);
   }
 
   function handleViewClues(adventure, access) {
@@ -1088,6 +1081,9 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           onClueClick={(marker) => handleViewClues(marker.adventure)}
           onClusterOpen={handleClusterOpen}
           onMapBackgroundClick={handleMapBackgroundClick}
+          suppressedClusterId={suppressedClusterId}
+          soloPinId={soloPinId}
+          pickerOpen={Boolean(clusterPicker)}
           showUserLocation
           userLocation={location}
           mapExploration={state?.mapExploration}
@@ -1121,7 +1117,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
             mapState={state}
             accessOptions={accessOptions}
             clusterDistanceM={clusterDistanceM}
-            onClose={() => setClusterPicker(null)}
+            onClose={handlePickerClose}
             onSelectAdventure={handleClusterAdventureSelect}
           />
         )}
@@ -1132,7 +1128,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
             access={previewAccess}
             visual={pinVisual}
             distanceM={selectedMarker?.distanceM}
-            onClose={() => setSelectedMarker(null)}
+            onClose={handleCardClose}
             onPlay={handleMapCardPlay}
             onViewClues={handleViewClues}
           />

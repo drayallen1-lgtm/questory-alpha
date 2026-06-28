@@ -390,7 +390,11 @@ export function renderPinStackHtml(visual) {
   `;
 }
 
-export function applyPinVisualToElement(el, visual, { selected = false, pinAccess = 'playable' } = {}) {
+export function applyPinVisualToElement(
+  el,
+  visual,
+  { selected = false, pinAccess = 'playable', soloActive = false } = {}
+) {
   if (!el || !visual?.base) return;
 
   el.className = [
@@ -398,6 +402,7 @@ export function applyPinVisualToElement(el, visual, { selected = false, pinAcces
     `pin-base-${visual.base.id}`,
     `pin-access-${pinAccess}`,
     selected ? 'pin-selected' : '',
+    soloActive ? 'pin-solo-active' : '',
     visual.sponsorBorder ? 'pin-sponsor-border' : '',
     visual.heatLevel === 'hot' ? 'pin-heat-hot' : '',
     ...visual.animations.map((a) => `pin-anim-${a}`),
@@ -707,10 +712,13 @@ export function wireAdventurePinElement(
   });
 }
 
-export function createAdventurePinElement(visual, { selected = false, pinAccess = 'playable' } = {}) {
+export function createAdventurePinElement(
+  visual,
+  { selected = false, pinAccess = 'playable', soloActive = false } = {}
+) {
   const el = document.createElement('button');
   el.type = 'button';
-  applyPinVisualToElement(el, visual, { selected, pinAccess });
+  applyPinVisualToElement(el, visual, { selected, pinAccess, soloActive });
   return el;
 }
 
@@ -735,11 +743,6 @@ export function createClusterElement(meta = {}) {
   `;
   return el;
 }
-
-export const MAP_SPATIAL_SOURCE_IDS = {
-  SPIDER_LINES: 'questory-spider-lines',
-  SPIDER_ANCHORS: 'questory-spider-anchors',
-};
 
 export const MAP_SOURCE_IDS = {
   ADVENTURES: 'questory-adventures',
