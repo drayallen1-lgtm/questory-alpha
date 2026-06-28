@@ -12,7 +12,8 @@ const GHOST_IDS = new Set([
 ]);
 
 export function isGhostAssetId(assetId) {
-  return GHOST_IDS.has(assetId) || String(assetId || '').startsWith('ghost-');
+  const id = String(assetId || '');
+  return GHOST_IDS.has(id) || id.startsWith('ghost-') || id.startsWith('char-');
 }
 
 function audioAliasFromUrl(url) {

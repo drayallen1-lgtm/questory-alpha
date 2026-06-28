@@ -27,6 +27,7 @@ function EntityTile({ entity, onSelect, onPreview }) {
         )}
       </div>
       <strong>{entity.label}</strong>
+      {entity.safeForKids && <span className="cinematic-entity-safe-badge">Family safe</span>}
       <small>{entity.desc}</small>
       <button
         type="button"
@@ -96,7 +97,7 @@ export function CinematicAssetBrowser({ onInsertScene, insertTargetLabel }) {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search ghost bride, floating lantern, cursed doll..."
+          placeholder="Search ghost bride, friendly dragon, glowing relic..."
         />
       </div>
 
@@ -127,7 +128,7 @@ export function CinematicAssetBrowser({ onInsertScene, insertTargetLabel }) {
       </div>
 
       {entities.length === 0 && (
-        <p className="admin-meta">No entities match — try ghost, lantern, doll, or portal.</p>
+        <p className="admin-meta">No entities match — try ghost, dragon, lantern, or portal.</p>
       )}
 
       <p className="admin-meta cinematic-asset-tip">

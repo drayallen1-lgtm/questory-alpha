@@ -75,6 +75,9 @@ export function CinematicTimelinePlayer({
     rawScene?.mediaAssetId,
     rawScene?.durationSeconds,
     JSON.stringify(rawScene?.timeline || []),
+    JSON.stringify(rawScene?.particleLayers || []),
+    rawScene?.cinematicEntityId,
+    rawScene?.safeForKids,
   ]);
   const [cameraStream, setCameraStream] = useState(null);
   const [cameraFallback, setCameraFallback] = useState(!useCamera);

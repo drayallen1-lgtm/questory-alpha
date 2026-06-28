@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="History Scroll">
+  <rect width="400" height="400" fill="#fefce8"/>
+  <ellipse cx="200" cy="330" rx="80" ry="10" fill="#000" opacity="0.08"/>
+  <rect x="95" y="120" width="30" height="180" rx="15" fill="#a16207"/>
+  <rect x="275" y="120" width="30" height="180" rx="15" fill="#a16207"/>
+  <rect x="120" y="130" width="160" height="160" fill="#fef9c3" stroke="#ca8a04" stroke-width="2"/>
+  <path d="M140 160 L260 160 M140 185 L240 185 M140 210 L250 210 M140 235 L220 235" stroke="#854d0e" stroke-width="2"/>
+  <circle cx="200" cy="265" r="8" fill="#ca8a04"/>
+  <path d="M200 100 L210 130 L200 125 L190 130 Z" fill="#eab308"/>
+  <text x="200" y="378" text-anchor="middle" fill="#854d0e" font-family="sans-serif" font-size="14" font-weight="600">History Scroll</text>
+</svg>

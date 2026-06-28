@@ -7,6 +7,7 @@ import {
   normalizeArScene,
 } from './arEngine';
 import { HORROR_AUDIO, HORROR_IMAGES, libraryAssetForInsert } from './horrorAssets/catalog';
+import { FAMILY_IMAGES } from './familyAssets/catalog';
 import { buildPackSceneTimeline } from './horrorTimelineDefaults.js';
 
 export const MEDIA_BUCKET = 'questory-media';
@@ -23,13 +24,21 @@ export const HORROR_ASSET_LIBRARY = {
     { id: 'ghost-shadow', title: 'Shadow Figure', type: 'image', icon: '👤', category: 'ghosts', offline: true, previewUrl: HORROR_IMAGES.shadowFigure, assetUrl: HORROR_IMAGES.shadowFigure },
     { id: 'ghost-woman-white', title: 'Woman in White', type: 'image', icon: '👻', category: 'ghosts', offline: true, previewUrl: HORROR_IMAGES.womanInWhite, assetUrl: HORROR_IMAGES.womanInWhite },
     { id: 'ghost-hooded', title: 'Hooded Watcher', type: 'image', icon: '🕴️', category: 'ghosts', offline: true, previewUrl: HORROR_IMAGES.hoodedWatcher, assetUrl: HORROR_IMAGES.hoodedWatcher },
+    { id: 'char-plague-doctor', title: 'Plague Doctor', type: 'image', icon: '🐦', category: 'ghosts', offline: true, previewUrl: HORROR_IMAGES.plagueDoctor, assetUrl: HORROR_IMAGES.plagueDoctor },
+    { id: 'char-skeleton-knight', title: 'Skeleton Knight', type: 'image', icon: '💀', category: 'ghosts', offline: true, previewUrl: HORROR_IMAGES.skeletonKnight, assetUrl: HORROR_IMAGES.skeletonKnight },
+    { id: 'char-pirate-captain', title: 'Pirate Captain', type: 'image', icon: '🏴‍☠️', category: 'ghosts', offline: true, previewUrl: HORROR_IMAGES.pirateCaptain, assetUrl: HORROR_IMAGES.pirateCaptain },
   ],
   objects: [
     { id: 'obj-diary', title: 'Diary Page', type: 'image', icon: '📖', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.diaryPage, assetUrl: HORROR_IMAGES.diaryPage },
     { id: 'obj-swing', title: 'Abandoned Swing', type: 'image', icon: '🛝', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.abandonedSwing, assetUrl: HORROR_IMAGES.abandonedSwing },
     { id: 'obj-lantern', title: 'Black Lantern', type: 'image', icon: '🏮', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.blackLantern, assetUrl: HORROR_IMAGES.blackLantern },
     { id: 'obj-dead-tree', title: 'Dead Tree', type: 'image', icon: '🌳', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.deadTree, assetUrl: HORROR_IMAGES.deadTree },
-    { id: 'obj-doll', title: 'Broken Doll', type: 'image', icon: '🪆', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.littleGirl, assetUrl: HORROR_IMAGES.littleGirl },
+    { id: 'obj-doll', title: 'Cursed Doll', type: 'image', icon: '🪆', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.cursedDoll, assetUrl: HORROR_IMAGES.cursedDoll },
+    { id: 'relic-glow', title: 'Glowing Relic', type: 'image', icon: '💎', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.glowingRelic, assetUrl: HORROR_IMAGES.glowingRelic },
+    { id: 'relic-crystal', title: 'Crystal Shard', type: 'image', icon: '🔮', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.crystalShard, assetUrl: HORROR_IMAGES.crystalShard },
+    { id: 'relic-chest', title: 'Treasure Chest', type: 'image', icon: '📦', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.treasureChest, assetUrl: HORROR_IMAGES.treasureChest },
+    { id: 'portal-ancient', title: 'Ancient Portal', type: 'image', icon: '🌀', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.ancientPortal, assetUrl: HORROR_IMAGES.ancientPortal },
+    { id: 'creature-forest-spirit', title: 'Forest Spirit', type: 'image', icon: '🌿', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.forestSpirit, assetUrl: HORROR_IMAGES.forestSpirit },
     { id: 'obj-musicbox', title: 'Music Box', type: 'image', icon: '🎵', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.blackLantern, assetUrl: HORROR_IMAGES.blackLantern },
     { id: 'obj-photo', title: 'Old Photograph', type: 'image', icon: '🖼️', category: 'objects', offline: true, previewUrl: HORROR_IMAGES.diaryPage, assetUrl: HORROR_IMAGES.diaryPage },
   ],
@@ -55,6 +64,20 @@ export const HORROR_ASSET_LIBRARY = {
     { id: 'aud-static', title: 'Static / Radio', type: 'audio', icon: '📻', category: 'audio', offline: true, audioUrl: HORROR_AUDIO.radioStatic, previewUrl: HORROR_AUDIO.radioStatic },
     { id: 'aud-swing', title: 'Swing Creak', type: 'audio', icon: '🛝', category: 'audio', offline: true, audioUrl: HORROR_AUDIO.swingCreak, previewUrl: HORROR_AUDIO.swingCreak },
     { id: 'aud-breath', title: 'Breathing', type: 'audio', icon: '😮‍💨', category: 'audio', offline: true, audioUrl: HORROR_AUDIO.whisperingVoices, previewUrl: HORROR_AUDIO.whisperingVoices },
+  ],
+};
+
+/** Family / education-safe asset library — bundled local media */
+export const FAMILY_ASSET_LIBRARY = {
+  guides: [
+    { id: 'family-dragon', title: 'Friendly Dragon', type: 'image', icon: '🐉', category: 'family', offline: true, previewUrl: FAMILY_IMAGES.friendlyDragon, assetUrl: FAMILY_IMAGES.friendlyDragon, safeForKids: true },
+    { id: 'family-fairy', title: 'Garden Fairy', type: 'image', icon: '🧚', category: 'family', offline: true, previewUrl: FAMILY_IMAGES.gardenFairy, assetUrl: FAMILY_IMAGES.gardenFairy, safeForKids: true },
+  ],
+  education: [
+    { id: 'edu-owl', title: 'Wise Owl', type: 'image', icon: '🦉', category: 'education', offline: true, previewUrl: FAMILY_IMAGES.wiseOwl, assetUrl: FAMILY_IMAGES.wiseOwl, safeForKids: true },
+    { id: 'edu-book', title: 'Magic Book', type: 'image', icon: '📚', category: 'education', offline: true, previewUrl: FAMILY_IMAGES.magicBook, assetUrl: FAMILY_IMAGES.magicBook, safeForKids: true },
+    { id: 'edu-compass', title: 'Star Compass', type: 'image', icon: '🧭', category: 'education', offline: true, previewUrl: FAMILY_IMAGES.starCompass, assetUrl: FAMILY_IMAGES.starCompass, safeForKids: true },
+    { id: 'edu-scroll', title: 'History Scroll', type: 'image', icon: '📜', category: 'education', offline: true, previewUrl: FAMILY_IMAGES.historyScroll, assetUrl: FAMILY_IMAGES.historyScroll, safeForKids: true },
   ],
 };
 
@@ -205,7 +228,10 @@ export const MARKETPLACE_ASSETS_SCAFFOLD = [
 ];
 
 export function flattenLibraryAssets() {
-  return Object.values(HORROR_ASSET_LIBRARY).flat();
+  return [
+    ...Object.values(HORROR_ASSET_LIBRARY).flat(),
+    ...Object.values(FAMILY_ASSET_LIBRARY).flat(),
+  ];
 }
 
 export function findLibraryAsset(assetId) {

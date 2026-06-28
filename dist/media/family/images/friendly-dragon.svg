@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Friendly Dragon">
+  <rect width="400" height="400" fill="#e8f4fc"/>
+  <ellipse cx="200" cy="340" rx="70" ry="10" fill="#000" opacity="0.12"/>
+  <ellipse cx="200" cy="220" rx="90" ry="70" fill="#7dd3fc"/>
+  <ellipse cx="200" cy="200" rx="55" ry="50" fill="#38bdf8"/>
+  <circle cx="175" cy="185" r="12" fill="#fff"/>
+  <circle cx="225" cy="185" r="12" fill="#fff"/>
+  <circle cx="178" cy="188" r="6" fill="#0c4a6e"/>
+  <circle cx="228" cy="188" r="6" fill="#0c4a6e"/>
+  <path d="M185 215 Q200 228 215 215" stroke="#0c4a6e" stroke-width="3" fill="none"/>
+  <path d="M145 210 L110 180 L130 230 Z" fill="#7dd3fc"/>
+  <path d="M255 210 L290 180 L270 230 Z" fill="#7dd3fc"/>
+  <path d="M160 270 L140 310 M240 270 L260 310" stroke="#38bdf8" stroke-width="12" stroke-linecap="round"/>
+  <path d="M200 155 L200 115 L230 130 L200 145 L170 130 Z" fill="#fbbf24"/>
+  <text x="200" y="378" text-anchor="middle" fill="#0369a1" font-family="sans-serif" font-size="14" font-weight="600">Friendly Dragon</text>
+</svg>

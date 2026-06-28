@@ -8,6 +8,7 @@ import { libraryAssetForInsert } from './horrorAssets/catalog';
 import { buildDefaultHorrorTimeline, isGhostAssetId } from './horrorTimelineDefaults';
 import { TIMELINE_ACTIONS, normalizeTimeline } from './timelineEngine';
 import { matchCinematicEntities, getCinematicEntity } from './cinematicAssetCatalog';
+import { resolveParticleLayers } from './particleFxEngine';
 
 const IDLE_TO_ACTION = {
   float: TIMELINE_ACTIONS.FLOAT,
@@ -79,6 +80,8 @@ export function applyCinematicEntityToScene(scene, entityId) {
     ? ATMOSPHERE_MAP[entity.preset.atmosphere] || next.atmosphere
     : next.atmosphere;
 
+  const particleLayers = resolveParticleLayers(entity, next.particleLayers);
+
   next = normalizeArScene({
     ...next,
     enabled: true,
@@ -89,6 +92,8 @@ export function applyCinematicEntityToScene(scene, entityId) {
     atmosphere,
     cinematicEntityId: entity.id,
     cinematicEntityLabel: entity.label,
+    particleLayers,
+    safeForKids: Boolean(entity.safeForKids),
   });
 
   const { timeline, durationSeconds } = buildTimelineForEntity(entity, next);

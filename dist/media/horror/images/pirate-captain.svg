@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Pirate Captain">
+  <rect width="400" height="400" fill="#0a0c10"/>
+  <ellipse cx="200" cy="358" rx="85" ry="12" fill="#000" opacity="0.45"/>
+  <path d="M200 75 C140 75 105 130 110 190 L98 335 L148 335 L162 215 L178 335 L222 335 L238 215 L252 335 L302 335 L290 190 C295 130 260 75 200 75 Z" fill="#1a2030"/>
+  <path d="M130 110 Q200 55 270 110 L265 145 Q200 95 135 145 Z" fill="#111820"/>
+  <ellipse cx="200" cy="145" rx="52" ry="42" fill="#c4a882"/>
+  <circle cx="182" cy="138" r="5" fill="#111"/>
+  <circle cx="218" cy="138" r="5" fill="#111"/>
+  <path d="M188 158 Q200 168 212 158" stroke="#5a4030" stroke-width="2" fill="none"/>
+  <path d="M155 95 Q200 70 245 95" stroke="#111" stroke-width="8" fill="none"/>
+  <circle cx="218" cy="92" r="8" fill="#111"/>
+  <path d="M120 175 L280 175" stroke="#8b4513" stroke-width="3"/>
+  <path d="M250 160 L290 140 L285 155 L250 170 Z" fill="#ddd" opacity="0.9"/>
+  <text x="200" y="384" text-anchor="middle" fill="#8b7355" font-family="serif" font-size="14">Pirate Captain</text>
+</svg>

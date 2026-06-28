@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Glowing Relic">
+  <rect width="400" height="400" fill="#050508"/>
+  <defs>
+    <radialGradient id="relic-glow" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#7df9ff" stop-opacity="0.9"/>
+      <stop offset="40%" stop-color="#2a6a8a" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#050508" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="relic-blur"><feGaussianBlur stdDeviation="8"/></filter>
+  </defs>
+  <ellipse cx="200" cy="195" rx="100" ry="100" fill="url(#relic-glow)" filter="url(#relic-blur)" opacity="0.85"/>
+  <path d="M200 110 L240 170 L220 250 L180 250 L160 170 Z" fill="#1a2a3a" stroke="#5eead4" stroke-width="3"/>
+  <path d="M200 130 L225 175 L210 235 L190 235 L175 175 Z" fill="#0d1820" stroke="#2dd4bf" stroke-width="1.5"/>
+  <circle cx="200" cy="185" r="18" fill="#2dd4bf" opacity="0.85"/>
+  <circle cx="200" cy="185" r="8" fill="#ecfdf5"/>
+  <path d="M200 250 L200 290" stroke="#4a6a7a" stroke-width="6"/>
+  <ellipse cx="200" cy="300" rx="35" ry="8" fill="#222"/>
+  <text x="200" y="378" text-anchor="middle" fill="#5eead4" font-family="serif" font-size="14">Glowing Relic</text>
+</svg>

@@ -1,6 +1,6 @@
 /**
- * Sweep 15.1 — Cinematic Asset Catalog
- * Named entities with keywords, library bindings, and animation presets.
+ * Sweep 15.1–15.2 — Cinematic Asset Catalog
+ * Named entities with keywords, distinct library bindings, particle presets, and family/education categories.
  */
 export const CINEMATIC_CATEGORIES = {
   CHARACTERS: 'characters',
@@ -8,6 +8,8 @@ export const CINEMATIC_CATEGORIES = {
   RELICS: 'relics',
   PORTALS: 'portals',
   CREATURES: 'creatures',
+  FAMILY: 'family',
+  EDUCATION: 'education',
 };
 
 export const CINEMATIC_CATEGORY_LABELS = {
@@ -16,6 +18,8 @@ export const CINEMATIC_CATEGORY_LABELS = {
   relics: 'Relics',
   portals: 'Portals & FX',
   creatures: 'Creatures',
+  family: 'Family Safe',
+  education: 'Education',
 };
 
 /** @typedef {object} CinematicEntity */
@@ -30,7 +34,7 @@ export const CINEMATIC_ENTITIES = [
     animPreviewId: 'anim-ghost',
     sceneType: 'ghost',
     keywords: ['ghost bride', 'woman in white', 'bride', 'widow', 'pale woman', 'white lady'],
-    preset: { position: 'bottom-left', idleAnimation: 'float', silhouette: false, atmosphere: 'fog' },
+    preset: { position: 'bottom-left', idleAnimation: 'float', silhouette: false, atmosphere: 'fog', particleLayers: ['glow', 'fog'] },
   },
   {
     id: 'shadow_child',
@@ -41,7 +45,7 @@ export const CINEMATIC_ENTITIES = [
     animPreviewId: 'anim-ghost',
     sceneType: 'ghost',
     keywords: ['shadow child', 'ghost girl', 'little girl', 'child spirit', 'daughter', 'kid'],
-    preset: { position: 'bottom-left', idleAnimation: 'float', silhouette: false },
+    preset: { position: 'bottom-left', idleAnimation: 'float', silhouette: false, particleLayers: ['shadow_aura', 'fog'] },
   },
   {
     id: 'hooded_watcher',
@@ -52,18 +56,18 @@ export const CINEMATIC_ENTITIES = [
     animPreviewId: 'anim-ghost',
     sceneType: 'ghost',
     keywords: ['hooded man', 'hooded figure', 'watcher', 'stalker', 'robed figure', 'shadow priest'],
-    preset: { position: 'center', idleAnimation: 'drift', silhouette: true, atmosphere: 'darkness' },
+    preset: { position: 'center', idleAnimation: 'drift', silhouette: true, atmosphere: 'darkness', particleLayers: ['shadow_aura', 'fog'] },
   },
   {
     id: 'plague_doctor',
     label: 'Plague Doctor',
     desc: 'Beaked silhouette from the old world',
     category: CINEMATIC_CATEGORIES.CHARACTERS,
-    libraryAssetId: 'ghost-hooded',
+    libraryAssetId: 'char-plague-doctor',
     animPreviewId: 'anim-ghost',
     sceneType: 'ghost',
     keywords: ['plague doctor', 'beaked mask', 'pestilence', 'doctor', 'crow mask'],
-    preset: { position: 'bottom-right', idleAnimation: 'approach', silhouette: true, atmosphere: 'darkness' },
+    preset: { position: 'bottom-right', idleAnimation: 'approach', silhouette: true, atmosphere: 'darkness', particleLayers: ['shadow_aura', 'fog', 'embers'] },
   },
   {
     id: 'shadow_figure',
@@ -74,18 +78,18 @@ export const CINEMATIC_ENTITIES = [
     animPreviewId: 'anim-ghost',
     sceneType: 'ghost',
     keywords: ['shadow figure', 'shadow man', 'dark figure', 'silhouette', 'the shadow'],
-    preset: { position: 'center', idleAnimation: 'blink', silhouette: true },
+    preset: { position: 'center', idleAnimation: 'blink', silhouette: true, particleLayers: ['shadow_aura'] },
   },
   {
     id: 'forest_spirit',
     label: 'Forest Spirit',
     desc: 'Ethereal guardian of the old woods',
     category: CINEMATIC_CATEGORIES.CREATURES,
-    libraryAssetId: 'ghost-woman-white',
+    libraryAssetId: 'creature-forest-spirit',
     animPreviewId: 'anim-tree',
     sceneType: 'ghost',
     keywords: ['forest spirit', 'wood spirit', 'nature ghost', 'dryad', 'tree spirit'],
-    preset: { position: 'far', idleAnimation: 'breathe', atmosphere: 'fog' },
+    preset: { position: 'far', idleAnimation: 'breathe', atmosphere: 'fog', particleLayers: ['glow', 'fog', 'embers'] },
   },
   {
     id: 'floating_lantern',
@@ -96,7 +100,7 @@ export const CINEMATIC_ENTITIES = [
     animPreviewId: 'anim-lantern',
     sceneType: 'object',
     keywords: ['floating lantern', 'black lantern', 'lantern', 'flame', 'torch', 'flickering light'],
-    preset: { position: 'center', idleAnimation: 'pulse', atmosphere: 'lantern' },
+    preset: { position: 'center', idleAnimation: 'pulse', atmosphere: 'lantern', particleLayers: ['glow', 'embers'] },
   },
   {
     id: 'cursed_doll',
@@ -107,7 +111,7 @@ export const CINEMATIC_ENTITIES = [
     animPreviewId: 'anim-ghost',
     sceneType: 'object',
     keywords: ['cursed doll', 'broken doll', 'porcelain doll', 'doll'],
-    preset: { position: 'bottom-left', idleAnimation: 'blink' },
+    preset: { position: 'bottom-left', idleAnimation: 'blink', particleLayers: ['shadow_aura'] },
   },
   {
     id: 'diary_page',
@@ -117,7 +121,7 @@ export const CINEMATIC_ENTITIES = [
     libraryAssetId: 'obj-diary',
     sceneType: 'diary',
     keywords: ['diary', 'journal', 'torn page', 'diary page', 'old book'],
-    preset: { position: 'center', idleAnimation: 'float', atmosphere: 'lantern' },
+    preset: { position: 'center', idleAnimation: 'float', atmosphere: 'lantern', particleLayers: ['glow'] },
   },
   {
     id: 'dead_tree',
@@ -128,7 +132,7 @@ export const CINEMATIC_ENTITIES = [
     animPreviewId: 'anim-tree',
     sceneType: 'object',
     keywords: ['dead tree', 'oak tree', 'old tree', 'branches', 'woods', 'forest'],
-    preset: { position: 'center', idleAnimation: 'drift', atmosphere: 'darkness' },
+    preset: { position: 'center', idleAnimation: 'drift', atmosphere: 'darkness', particleLayers: ['fog', 'shadow_aura'] },
   },
   {
     id: 'abandoned_swing',
@@ -139,69 +143,135 @@ export const CINEMATIC_ENTITIES = [
     animPreviewId: 'anim-swing',
     sceneType: 'object',
     keywords: ['swing set', 'swing', 'playground', 'porch swing', 'yard'],
-    preset: { position: 'center', idleAnimation: 'float' },
+    preset: { position: 'center', idleAnimation: 'float', particleLayers: ['fog'] },
   },
   {
     id: 'glowing_relic',
     label: 'Glowing Relic',
     desc: 'Artifact pulsing with cold light',
     category: CINEMATIC_CATEGORIES.RELICS,
-    libraryAssetId: 'obj-lantern',
+    libraryAssetId: 'relic-glow',
     animPreviewId: 'anim-lantern',
     sceneType: 'object',
     keywords: ['glowing relic', 'relic', 'artifact', 'ancient relic', 'crystal glow'],
-    preset: { position: 'center', idleAnimation: 'pulse', atmosphere: 'flash' },
+    preset: { position: 'center', idleAnimation: 'pulse', atmosphere: 'flash', particleLayers: ['glow', 'sparks'] },
   },
   {
     id: 'crystal_shard',
     label: 'Crystal Shard',
     desc: 'Shard humming with trapped light',
     category: CINEMATIC_CATEGORIES.RELICS,
-    libraryAssetId: 'obj-diary',
+    libraryAssetId: 'relic-crystal',
     sceneType: 'object',
     keywords: ['crystal shard', 'crystal', 'shard', 'gem', 'phoenix feather'],
-    preset: { position: 'center', idleAnimation: 'pulse', atmosphere: 'flash' },
+    preset: { position: 'center', idleAnimation: 'pulse', atmosphere: 'flash', particleLayers: ['glow', 'sparks'] },
   },
   {
     id: 'treasure_chest',
     label: 'Treasure Chest',
     desc: 'Weathered chest half-buried in moss',
     category: CINEMATIC_CATEGORIES.RELICS,
-    libraryAssetId: 'obj-musicbox',
+    libraryAssetId: 'relic-chest',
     sceneType: 'object',
     keywords: ['treasure chest', 'chest', 'loot', 'dragon egg', 'buried treasure'],
-    preset: { position: 'bottom-left', idleAnimation: 'breathe' },
+    preset: { position: 'bottom-left', idleAnimation: 'breathe', particleLayers: ['glow', 'embers'] },
   },
   {
     id: 'ancient_portal',
     label: 'Ancient Portal',
     desc: 'Static rift between worlds',
     category: CINEMATIC_CATEGORIES.PORTALS,
-    libraryAssetId: 'atm-static',
+    libraryAssetId: 'portal-ancient',
     sceneType: 'portal',
     keywords: ['portal', 'gateway', 'rift', 'ancient portal', 'door opens', 'ufo'],
-    preset: { position: 'center', idleAnimation: 'pulse', atmosphere: 'static' },
+    preset: { position: 'center', idleAnimation: 'pulse', atmosphere: 'static', particleLayers: ['glow', 'sparks', 'fog'] },
   },
   {
     id: 'skeleton_knight',
     label: 'Skeleton Knight',
     desc: 'Armored bones in the mist',
     category: CINEMATIC_CATEGORIES.CREATURES,
-    libraryAssetId: 'ghost-hooded',
+    libraryAssetId: 'char-skeleton-knight',
     animPreviewId: 'anim-ghost',
     sceneType: 'ghost',
     keywords: ['skeleton knight', 'skeleton', 'knight', 'armored bones'],
-    preset: { position: 'center', idleAnimation: 'approach', silhouette: true },
+    preset: { position: 'center', idleAnimation: 'approach', silhouette: true, particleLayers: ['shadow_aura', 'fog'] },
   },
   {
     id: 'pirate_captain',
     label: 'Pirate Captain',
     desc: 'Salt-stained ghost of the deck',
     category: CINEMATIC_CATEGORIES.CHARACTERS,
-    libraryAssetId: 'ghost-hooded',
+    libraryAssetId: 'char-pirate-captain',
     sceneType: 'ghost',
     keywords: ['pirate captain', 'pirate', 'captain', 'ship ghost', 'buccaneer'],
-    preset: { position: 'bottom-right', idleAnimation: 'drift', silhouette: true },
+    preset: { position: 'bottom-right', idleAnimation: 'drift', silhouette: true, particleLayers: ['fog', 'shadow_aura'] },
+  },
+  {
+    id: 'friendly_dragon',
+    label: 'Friendly Dragon',
+    desc: 'Warm guardian for family adventures',
+    category: CINEMATIC_CATEGORIES.FAMILY,
+    libraryAssetId: 'family-dragon',
+    sceneType: 'object',
+    safeForKids: true,
+    keywords: ['friendly dragon', 'dragon', 'family dragon', 'cute dragon', 'dragon guide'],
+    preset: { position: 'center', idleAnimation: 'float', atmosphere: 'flash', particleLayers: ['glow', 'sparks'] },
+  },
+  {
+    id: 'garden_fairy',
+    label: 'Garden Fairy',
+    desc: 'Sparkling guide through the garden trail',
+    category: CINEMATIC_CATEGORIES.FAMILY,
+    libraryAssetId: 'family-fairy',
+    sceneType: 'object',
+    safeForKids: true,
+    keywords: ['garden fairy', 'fairy', 'pixie', 'nature fairy', 'sparkle fairy'],
+    preset: { position: 'bottom-left', idleAnimation: 'float', particleLayers: ['glow', 'fog', 'sparks'] },
+  },
+  {
+    id: 'wise_owl',
+    label: 'Wise Owl',
+    desc: 'Patient teacher perched on a branch',
+    category: CINEMATIC_CATEGORIES.EDUCATION,
+    libraryAssetId: 'edu-owl',
+    sceneType: 'object',
+    safeForKids: true,
+    keywords: ['wise owl', 'owl', 'teacher owl', 'learning owl', 'school owl'],
+    preset: { position: 'center', idleAnimation: 'breathe', particleLayers: ['glow'] },
+  },
+  {
+    id: 'magic_book',
+    label: 'Magic Book',
+    desc: 'Pages glow with discovery clues',
+    category: CINEMATIC_CATEGORIES.EDUCATION,
+    libraryAssetId: 'edu-book',
+    sceneType: 'diary',
+    safeForKids: true,
+    keywords: ['magic book', 'story book', 'learning book', 'spell book', 'textbook'],
+    preset: { position: 'center', idleAnimation: 'pulse', particleLayers: ['glow', 'sparks'] },
+  },
+  {
+    id: 'star_compass',
+    label: 'Star Compass',
+    desc: 'Points toward the next learning clue',
+    category: CINEMATIC_CATEGORIES.EDUCATION,
+    libraryAssetId: 'edu-compass',
+    sceneType: 'object',
+    safeForKids: true,
+    keywords: ['star compass', 'compass', 'navigation', 'map compass', 'direction'],
+    preset: { position: 'center', idleAnimation: 'pulse', particleLayers: ['glow', 'sparks'] },
+  },
+  {
+    id: 'history_scroll',
+    label: 'History Scroll',
+    desc: 'Ancient facts unfurl in golden light',
+    category: CINEMATIC_CATEGORIES.EDUCATION,
+    libraryAssetId: 'edu-scroll',
+    sceneType: 'diary',
+    safeForKids: true,
+    keywords: ['history scroll', 'scroll', 'ancient text', 'historical document', 'timeline'],
+    preset: { position: 'center', idleAnimation: 'float', particleLayers: ['glow'] },
   },
 ];
 
@@ -226,6 +296,10 @@ export function getCinematicCategories() {
 export function listEntitiesByCategory(category) {
   if (!category) return [...CINEMATIC_ENTITIES];
   return CINEMATIC_ENTITIES.filter((e) => e.category === category);
+}
+
+export function listFamilySafeEntities() {
+  return CINEMATIC_ENTITIES.filter((e) => e.safeForKids);
 }
 
 export function matchCinematicEntities(text, limit = 3) {
@@ -277,7 +351,9 @@ export function toHorrorDictionaryShape() {
       }
     } else if (
       entity.category === CINEMATIC_CATEGORIES.OBJECTS ||
-      entity.category === CINEMATIC_CATEGORIES.RELICS
+      entity.category === CINEMATIC_CATEGORIES.RELICS ||
+      entity.category === CINEMATIC_CATEGORIES.FAMILY ||
+      entity.category === CINEMATIC_CATEGORIES.EDUCATION
     ) {
       if (!seenLoc.has(entity.libraryAssetId)) {
         locations.push(entry);
@@ -290,7 +366,7 @@ export function toHorrorDictionaryShape() {
 }
 
 export const CINEMATIC_ASSET_ENGINE = {
-  version: '1.0',
+  version: '1.1',
   entityCount: CINEMATIC_ENTITIES.length,
   label: 'Cinematic Asset Catalog',
 };

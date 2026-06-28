@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Plague Doctor">
+  <rect width="400" height="400" fill="#060608"/>
+  <ellipse cx="200" cy="358" rx="90" ry="14" fill="#000" opacity="0.5"/>
+  <defs>
+    <radialGradient id="pd-glow" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#1a3a2a" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#060608" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="200" cy="180" rx="120" ry="140" fill="url(#pd-glow)"/>
+  <path d="M200 70 C145 70 115 120 118 175 L105 340 L155 340 L168 220 L178 340 L222 340 L232 220 L245 340 L295 340 L282 175 C285 120 255 70 200 70 Z" fill="#1a1f1c"/>
+  <path d="M160 95 Q200 55 240 95 L235 130 Q200 105 165 130 Z" fill="#0f1412"/>
+  <ellipse cx="200" cy="138" rx="62" ry="48" fill="#121816"/>
+  <path d="M148 145 Q200 195 252 145 L248 168 Q200 210 152 168 Z" fill="#0a0e0c" stroke="#2a4a3a" stroke-width="2"/>
+  <circle cx="178" cy="132" r="5" fill="#3d5a48" opacity="0.9"/>
+  <circle cx="222" cy="132" r="5" fill="#3d5a48" opacity="0.9"/>
+  <path d="M185 178 L215 178" stroke="#2a4a3a" stroke-width="3"/>
+  <path d="M130 200 L270 200" stroke="#1a1f1c" stroke-width="18" stroke-linecap="round"/>
+  <text x="200" y="384" text-anchor="middle" fill="#4a6a5a" font-family="serif" font-size="14">Plague Doctor</text>
+</svg>

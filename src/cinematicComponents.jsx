@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Camera, Sparkles } from 'lucide-react';
+import { buildParticleLayerClassList, resolveParticleLayers } from './particleFxEngine';
+import { getCinematicEntity } from './cinematicAssetCatalog';
 
 export function ARCameraFrame({ stream, fallback = false, className = '' }) {
   const videoRef = useRef(null);
@@ -82,20 +84,62 @@ export function ARAssetPreview({ scene, playback = false }) {
   return <div className="cinematic-ar-asset icon-asset">{icon}</div>;
 }
 
+const GHOST_ASSET_IDS = [
+  'ghost-little-girl',
+  'ghost-shadow',
+  'ghost-woman-white',
+  'ghost-hooded',
+  'char-plague-doctor',
+  'char-skeleton-knight',
+  'char-pirate-captain',
+];
+
+const FAMILY_ASSET_PREFIXES = ['family-', 'edu-'];
+
+function isFamilyAssetId(assetId) {
+  const id = String(assetId || '');
+  return FAMILY_ASSET_PREFIXES.some((prefix) => id.startsWith(prefix));
+}
+
+export function ARParticleLayers({ scene, entityVisible = true }) {
+  const entity = getCinematicEntity(scene?.cinematicEntityId);
+  const layers = resolveParticleLayers(entity || scene?.cinematicEntityId, scene?.particleLayers);
+  if (!layers.length || !entityVisible) return null;
+
+  const classList = buildParticleLayerClassList(layers);
+
+  return (
+    <div className={`cinematic-particle-stack ${scene?.safeForKids ? 'particle-family-safe' : ''}`} aria-hidden="true">
+      {classList.map((className) => (
+        <div key={className} className={`cinematic-particle-layer ${className}`}>
+          <span className="particle-core" />
+          <span className="particle-core particle-core-b" />
+          <span className="particle-core particle-core-c" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ARAnimatedEntity({ scene, entity }) {
   if (!entity) return null;
 
   const assetId = scene?.mediaAssetId || '';
-  const ghostIds = ['ghost-little-girl', 'ghost-shadow', 'ghost-woman-white', 'ghost-hooded'];
-  const isGhost = scene?.sceneType === 'ghost' || ghostIds.includes(assetId);
-  const ghostKind = ghostIds.find((id) => assetId === id) || (isGhost ? 'ghost' : '');
+  const isGhost =
+    scene?.sceneType === 'ghost' ||
+    GHOST_ASSET_IDS.includes(assetId) ||
+    assetId.startsWith('char-');
+  const isFamily = scene?.safeForKids || isFamilyAssetId(assetId);
+  const ghostKind = GHOST_ASSET_IDS.find((id) => assetId === id) || (isGhost ? 'ghost' : '');
+  const entitySlug = assetId ? `entity-${assetId}` : '';
 
   return (
     <div
-      className={`cinematic-ar-entity-wrap ${entity.wrapClass || ''} ${isGhost ? 'entity-horror' : ''} ${ghostKind ? `entity-${ghostKind}` : ''} ${scene?.silhouette ? 'entity-silhouette' : ''}`}
+      className={`cinematic-ar-entity-wrap ${entity.wrapClass || ''} ${isFamily ? 'entity-family-safe' : isGhost ? 'entity-horror' : ''} ${ghostKind ? `entity-${ghostKind}` : ''} ${entitySlug} ${scene?.silhouette ? 'entity-silhouette' : ''}`}
       style={entity.style}
       aria-hidden={!entity.visible}
     >
+      <ARParticleLayers scene={scene} entityVisible={entity.visible} />
       <div className={`cinematic-ar-entity-inner ${entity.innerClass || ''}`}>
         <div className="cinematic-ar-entity-glow" aria-hidden="true" />
         <div className="cinematic-ar-entity-shadow" aria-hidden="true" />

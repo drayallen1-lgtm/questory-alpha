@@ -116,6 +116,10 @@ export function normalizeArScene(raw = {}) {
     mediaAssetId: sceneFields.mediaAssetId || null,
     silhouette: Boolean(sceneFields.silhouette),
     durationSeconds: Math.max(3, Number(sceneFields.durationSeconds) || DEFAULT_AR_SCENE.durationSeconds),
+    cinematicEntityId: sceneFields.cinematicEntityId || null,
+    cinematicEntityLabel: String(sceneFields.cinematicEntityLabel || ''),
+    particleLayers: Array.isArray(sceneFields.particleLayers) ? sceneFields.particleLayers : [],
+    safeForKids: Boolean(sceneFields.safeForKids),
   };
   const customTimeline = normalizeTimeline(sceneFields.timeline);
   const timeline = customTimeline.length ? customTimeline : resolveSceneTimeline(baseScene);

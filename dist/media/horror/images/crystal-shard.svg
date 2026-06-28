@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Crystal Shard">
+  <rect width="400" height="400" fill="#06060e"/>
+  <defs>
+    <linearGradient id="shard-grad" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#c4b5fd"/>
+      <stop offset="50%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+    <radialGradient id="shard-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#06060e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="200" cy="200" rx="90" ry="110" fill="url(#shard-glow)"/>
+  <path d="M200 95 L255 175 L230 290 L170 290 L145 175 Z" fill="url(#shard-grad)" stroke="#e9d5ff" stroke-width="2"/>
+  <path d="M200 115 L235 175 L220 265 L180 265 L165 175 Z" fill="none" stroke="#fff" stroke-width="1" opacity="0.35"/>
+  <line x1="200" y1="115" x2="200" y2="265" stroke="#fff" stroke-width="1" opacity="0.2"/>
+  <line x1="165" y1="175" x2="235" y2="175" stroke="#fff" stroke-width="1" opacity="0.2"/>
+  <text x="200" y="378" text-anchor="middle" fill="#a78bfa" font-family="serif" font-size="14">Crystal Shard</text>
+</svg>
