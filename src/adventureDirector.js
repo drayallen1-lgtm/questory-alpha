@@ -23,7 +23,7 @@ import {
   CLUE_TYPES,
 } from './templates';
 import { normalizeWorldConfig } from './worldEngine';
-import { getActiveEventDirectorHints, getWorldEventContext } from './worldEventEngine';
+import { getActiveEventDirectorHints, safeGetWorldEventContext } from './worldEventEngine';
 
 function defaultEventSupportForTemplate(template) {
   if (template === ADVENTURE_TEMPLATES.HORROR) {
@@ -1089,7 +1089,7 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
     storyArc,
     collectionLore: blueprint.collectionLore,
     eventSupport: blueprint.meta.eventSupport || defaultEventSupportForTemplate(bpMeta.template),
-    activeEventTheme: getActiveEventDirectorHints(getWorldEventContext(null, [])),
+    activeEventTheme: getActiveEventDirectorHints(safeGetWorldEventContext(null, [])),
   };
 
   const useAr = bpMeta.finderMode === FINDER_MODES.AR_ENHANCED;

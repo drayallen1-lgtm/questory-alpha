@@ -220,9 +220,9 @@ import {
   normalizeWorldConfig,
 } from './worldEngine';
 import {
-  applyWorldEventToAdventure,
-  getWorldEventContext,
   initWorldEventEngine,
+  safeApplyWorldEventToAdventure,
+  safeGetWorldEventContext,
 } from './worldEventEngine';
 import { WorldEventAtmosphereOverlay, ActiveWorldEventBadge } from './WorldEventUI';
 import { ADVENTURE_TEMPLATES, SCALE_PRESETS, buildTemplateClues, buildTemplateRewards, buildTemplateStory, getTemplateMeta } from './templates';
@@ -1522,11 +1522,11 @@ function AdventurePlay({
   onClueAdvanced,
 }) {
   const eventContext = useMemo(
-    () => getWorldEventContext(state, state.adventures || []),
+    () => safeGetWorldEventContext(state, state.adventures || []),
     [state]
   );
   const adventure = useMemo(
-    () => applyWorldEventToAdventure(baseAdventure, eventContext),
+    () => safeApplyWorldEventToAdventure(baseAdventure, eventContext),
     [baseAdventure, eventContext]
   );
   const clues = Array.isArray(adventure?.clues) ? adventure.clues : [];

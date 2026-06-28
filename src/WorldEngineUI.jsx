@@ -57,7 +57,7 @@ import {
 } from './livingNpcEngine';
 import { CollectionLoreHub } from './CollectionLoreUI';
 import { LiveEventDashboard } from './WorldEventUI';
-import { getWorldEventContext } from './worldEventEngine';
+import { safeGetWorldEventContext } from './worldEventEngine';
 
 export function WorldEngineHub({ state, setState, adventures, nav }) {
   const [tab, setTab] = useState('events');
@@ -547,7 +547,7 @@ export function BranchChoicePanel({ clue, progress, onSelect, adventure }) {
 
 export function NpcPlayCard({ adventure, state, setState, clueIndex, progress, eventContext }) {
   const directorCtx = getDirectorNpcContext(adventure, clueIndex, state, progress, resolvedEventContext);
-  const resolvedEventContext = eventContext || getWorldEventContext(state, []);
+  const resolvedEventContext = eventContext || safeGetWorldEventContext(state, []);
 
   if (directorCtx?.presentation) {
     return (

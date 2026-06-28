@@ -1,4 +1,4 @@
-import { getEventCoinBonus, getEventCoinMultiplier, getWorldEventContext } from './worldEventEngine';
+import { getEventCoinBonus, getEventCoinMultiplier, safeGetWorldEventContext } from './worldEventEngine';
 import { getAdventureProgress } from './seed';
 
 export const COIN_REWARDS = {
@@ -376,7 +376,7 @@ export function applyAdventureCompletion(state, adventure, adventures) {
   if (isFounder) coins += COIN_REWARDS.FOUNDER_HUNT;
   if (isFirstFinder) coins += COIN_REWARDS.FIRST_FINDER;
 
-  const eventContext = getWorldEventContext(state, adventures);
+  const eventContext = safeGetWorldEventContext(state, adventures);
   coins = Math.round(coins * getEventCoinMultiplier(eventContext)) + getEventCoinBonus(eventContext);
 
   const adventuresCompleted = engagement.adventuresCompleted + 1;

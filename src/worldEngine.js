@@ -1,14 +1,10 @@
 import { getAdventureProgress } from './seed';
 import { computeCreatorAnalytics, DEFAULT_CREATOR_ANALYTICS } from './experience';
 import { recordNpcDialogueSeen as recordLivingNpcDialogueSeen } from './livingNpcEngine';
+import { WEATHER_TYPES } from './weatherTypes';
+import { getEffectiveWeather, safeGetWorldEventContext } from './worldEventEngine';
 
-export const WEATHER_TYPES = {
-  CLEAR: 'clear',
-  RAIN: 'rain',
-  FOG: 'fog',
-  SNOW: 'snow',
-  NIGHT: 'night',
-};
+export { WEATHER_TYPES };
 
 export const WEATHER_META = {
   clear: { label: 'Clear Skies', icon: '☀️', coinBonus: 0, radiusMultiplier: 1 },
@@ -281,8 +277,6 @@ export function mergeAdventureWorld(adventure) {
   };
 }
 
-import { getEffectiveWeather, getWorldEventContext } from './worldEventEngine';
-
 export function getDemoWeather(state, adventures = []) {
   const world = normalizeWorld(state?.world);
   if (world.weatherOverride) return world.weatherOverride;
@@ -295,8 +289,12 @@ export function getDemoWeather(state, adventures = []) {
     else if (day % 5 === 0) base = WEATHER_TYPES.RAIN;
     else if (day % 11 === 0) base = WEATHER_TYPES.SNOW;
   }
-  const context = getWorldEventContext(state, adventures);
-  return getEffectiveWeather(state, base, context);
+  try {
+    const context = safeGetWorldEventContext(state, adventures);
+    return getEffectiveWeather(state, base, context);
+  } catch {
+    return base;
+  }
 }
 
 export function getWeatherEffects(weather) {

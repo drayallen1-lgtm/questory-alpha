@@ -18,15 +18,16 @@ import {
   getForcedWorldEventId,
   getParticipatingAdventures,
   getPendingWorldNotifications,
-  getWorldEventContext,
   markWorldNotificationSeen,
+  safeApplyWorldEventToAdventure,
+  safeGetWorldEventContext,
   setForcedWorldEventId,
   WORLD_EVENTS,
 } from './worldEventEngine';
 import { joinCityEvent } from './worldEngine';
 
 export function WorldEventNotificationBar({ state, setState, adventures }) {
-  const context = getWorldEventContext(state, adventures);
+  const context = safeGetWorldEventContext(state, adventures);
   const notes = getPendingWorldNotifications(state, context);
   if (!notes.length) return null;
 
@@ -50,7 +51,7 @@ export function WorldEventNotificationBar({ state, setState, adventures }) {
 }
 
 export function TodaysWorldPanel({ state, adventures, nav, setState }) {
-  const context = getWorldEventContext(state, adventures);
+  const context = safeGetWorldEventContext(state, adventures);
   const published = getPublishedAdventures(adventures);
   const primary = context.primaryEvent;
   const newAdventures = published
@@ -218,7 +219,7 @@ export function WorldEventAtmosphereOverlay({ context }) {
 }
 
 export function LiveEventDashboard({ state, setState, adventures }) {
-  const context = getWorldEventContext(state, adventures);
+  const context = safeGetWorldEventContext(state, adventures);
   const participating = getParticipatingAdventures(adventures, context);
   const earnedRelics = state?.world?.eventRelicsEarned || [];
   const completions = state?.world?.eventCompletions || {};
@@ -300,7 +301,7 @@ export function LiveEventDashboard({ state, setState, adventures }) {
             <Globe size={18} /> Participating Adventures
           </h3>
           {participating.slice(0, 6).map((adv) => {
-            const advEvent = applyWorldEventToAdventure(adv, context);
+            const advEvent = safeApplyWorldEventToAdventure(adv, context);
             const creator = getCreatorForAdventure(adv);
             return (
               <div key={adv.id} className="participating-adventure-row">

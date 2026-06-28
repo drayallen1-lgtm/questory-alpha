@@ -2,7 +2,7 @@
  * Alpha 1.0 — Milestone 20: Dynamic World Events
  * Evaluates recurring/limited-time events once per session day and injects modifiers.
  */
-import { WEATHER_TYPES } from './worldEngine';
+import { WEATHER_TYPES } from './weatherTypes';
 
 export const WORLD_EVENT_TYPES = {
   HALLOWEEN: 'halloween',
@@ -398,6 +398,72 @@ export const WORLD_EVENTS = [
 let _cache = null;
 let _cacheKey = null;
 
+export const EMPTY_WORLD_EVENT_CONTEXT = Object.freeze({
+  now: new Date(0),
+  activeEvents: [],
+  primaryEvent: null,
+  activeWorldEvent: null,
+  modifiers: {},
+  worldEventModifiers: {},
+  endingSoon: [],
+  upcoming: [],
+  coinMultiplier: 1,
+  coinBonus: 0,
+  limitedRelicsAvailable: [],
+  notifications: [],
+  communityMilestones: [],
+  featuredCreator: null,
+  featuredSponsor: null,
+  participatingCount: 0,
+});
+
+function normalizeWorldEventContext(context, now = new Date()) {
+  const activeEvents = Array.isArray(context?.activeEvents) ? context.activeEvents : [];
+  const modifiers =
+    context?.modifiers && typeof context.modifiers === 'object' ? context.modifiers : {};
+  const primaryEvent = context?.primaryEvent ?? activeEvents[0] ?? null;
+
+  return {
+    ...EMPTY_WORLD_EVENT_CONTEXT,
+    ...context,
+    now: context?.now || now,
+    activeEvents,
+    primaryEvent,
+    activeWorldEvent: primaryEvent,
+    modifiers,
+    worldEventModifiers: modifiers,
+    endingSoon: Array.isArray(context?.endingSoon) ? context.endingSoon : [],
+    upcoming: Array.isArray(context?.upcoming) ? context.upcoming : [],
+    limitedRelicsAvailable: Array.isArray(context?.limitedRelicsAvailable)
+      ? context.limitedRelicsAvailable
+      : [],
+    notifications: Array.isArray(context?.notifications) ? context.notifications : [],
+    communityMilestones: Array.isArray(context?.communityMilestones)
+      ? context.communityMilestones
+      : [],
+  };
+}
+
+export function safeGetWorldEventContext(state, adventures = [], now = new Date()) {
+  try {
+    return normalizeWorldEventContext(getWorldEventContext(state, adventures, now), now);
+  } catch (error) {
+    console.warn('[WorldEvents] Context evaluation failed; continuing without active event.', error);
+    return normalizeWorldEventContext(null, now);
+  }
+}
+
+export function safeApplyWorldEventToAdventure(adventure, context) {
+  if (!adventure) return adventure ?? null;
+  try {
+    const next = applyWorldEventToAdventure(adventure, context);
+    return next || adventure;
+  } catch (error) {
+    console.warn('[WorldEvents] Adventure override failed; using base adventure.', error);
+    return adventure;
+  }
+}
+
 export function getForcedWorldEventId() {
   try {
     if (typeof window !== 'undefined') {
@@ -616,9 +682,11 @@ export function getParticipatingAdventures(adventures, context) {
 }
 
 export function applyWorldEventToAdventure(adventure, context) {
-  if (!adventure || !context?.activeEvents?.length) return adventure;
+  if (!adventure) return adventure ?? null;
+  const activeEvents = Array.isArray(context?.activeEvents) ? context.activeEvents : [];
+  if (!activeEvents.length) return adventure;
 
-  const applicable = context.activeEvents.filter((e) => adventureSupportsEvent(adventure, e));
+  const applicable = activeEvents.filter((e) => adventureSupportsEvent(adventure, e));
   if (!applicable.length) return adventure;
 
   let next = { ...adventure };
@@ -626,6 +694,8 @@ export function applyWorldEventToAdventure(adventure, context) {
   let eventFinaleOverlay = null;
   let eventBadgeId = null;
   let eventAudioMood = null;
+  const eventModifiers =
+    context?.modifiers && typeof context.modifiers === 'object' ? context.modifiers : {};
 
   for (const event of applicable) {
     const advOverride = event.adventureOverrides?.[adventure.id];
@@ -657,8 +727,8 @@ export function applyWorldEventToAdventure(adventure, context) {
     primaryEventTitle: applicable[0].title,
     primaryEventIcon: applicable[0].icon,
     badgeId: eventBadgeId,
-    audioMood: eventAudioMood || context.modifiers?.audioMoodOverride,
-    modifiers: context.modifiers,
+    audioMood: eventAudioMood || eventModifiers.audioMoodOverride || null,
+    modifiers: eventModifiers,
     overrides,
   };
 
@@ -751,10 +821,12 @@ export function markWorldNotificationSeen(state, noteId) {
 }
 
 export function getLimitedRelicsForContext(context, state) {
-  const earned = state?.world?.eventRelicsEarned || [];
+  const earned = Array.isArray(state?.world?.eventRelicsEarned) ? state.world.eventRelicsEarned : [];
   const relics = [];
-  for (const event of context?.activeEvents || []) {
-    for (const relicId of event.exclusiveRelics || []) {
+  const activeEvents = Array.isArray(context?.activeEvents) ? context.activeEvents : [];
+  for (const event of activeEvents) {
+    const exclusiveRelics = Array.isArray(event.exclusiveRelics) ? event.exclusiveRelics : [];
+    for (const relicId of exclusiveRelics) {
       const relic = LIMITED_EVENT_RELICS[relicId];
       if (relic && !earned.includes(relicId)) relics.push(relic);
     }
@@ -763,15 +835,16 @@ export function getLimitedRelicsForContext(context, state) {
 }
 
 export function recordWorldEventVictory(state, adventure, context) {
-  if (!context?.activeEvents?.length) return state;
+  const activeEvents = Array.isArray(context?.activeEvents) ? context.activeEvents : [];
+  if (!activeEvents.length || !adventure) return state;
 
   let next = state;
   const world = { ...(next.world || {}) };
   const completions = { ...(world.eventCompletions || {}) };
-  const relics = [...(world.eventRelicsEarned || [])];
-  const badges = [...(world.limitedBadgesEarned || [])];
+  const relics = Array.isArray(world.eventRelicsEarned) ? [...world.eventRelicsEarned] : [];
+  const badges = Array.isArray(world.limitedBadgesEarned) ? [...world.limitedBadgesEarned] : [];
 
-  for (const event of context.activeEvents) {
+  for (const event of activeEvents) {
     if (!adventureSupportsEvent(adventure, event)) continue;
 
     const key = `${event.id}-${new Date().getFullYear()}`;
@@ -781,7 +854,8 @@ export function recordWorldEventVictory(state, adventure, context) {
       eventTitle: event.title,
     };
 
-    for (const relicId of event.exclusiveRelics || []) {
+    const exclusiveRelics = Array.isArray(event.exclusiveRelics) ? event.exclusiveRelics : [];
+    for (const relicId of exclusiveRelics) {
       if (!relics.includes(relicId)) relics.push(relicId);
     }
 
@@ -837,7 +911,9 @@ export function getFeaturedSponsorForEvent(context, adventures) {
 export function getWorldEventContext(state, adventures = [], now = new Date()) {
   const dayKey = now.toISOString().slice(0, 10);
   const forced = getForcedWorldEventId() || 'none';
-  const joined = (state?.world?.joinedEventIds || []).join(',');
+  const joined = Array.isArray(state?.world?.joinedEventIds)
+    ? state.world.joinedEventIds.join(',')
+    : '';
   const cacheKey = `${dayKey}|${forced}|${joined}`;
 
   if (_cache && _cacheKey === cacheKey) return _cache;
@@ -854,22 +930,25 @@ export function getWorldEventContext(state, adventures = [], now = new Date()) {
     }))
     .filter((e) => e.endDate - now < 3 * 86400000);
 
-  const context = {
-    now,
-    activeEvents,
-    primaryEvent,
-    modifiers,
-    endingSoon,
-    upcoming: getUpcomingWorldEvents(now),
-    coinMultiplier: modifiers.coinMultiplier,
-    coinBonus: modifiers.coinBonus,
-    limitedRelicsAvailable: [],
-    notifications: [],
-    communityMilestones: [],
-    featuredCreator: null,
-    featuredSponsor: null,
-    participatingCount: getParticipatingAdventures(adventures, { activeEvents }).length,
-  };
+  const context = normalizeWorldEventContext(
+    {
+      now,
+      activeEvents,
+      primaryEvent,
+      modifiers,
+      endingSoon,
+      upcoming: getUpcomingWorldEvents(now),
+      coinMultiplier: modifiers.coinMultiplier,
+      coinBonus: modifiers.coinBonus,
+      limitedRelicsAvailable: [],
+      notifications: [],
+      communityMilestones: [],
+      featuredCreator: null,
+      featuredSponsor: null,
+      participatingCount: getParticipatingAdventures(adventures, { activeEvents }).length,
+    },
+    now
+  );
 
   context.limitedRelicsAvailable = getLimitedRelicsForContext(context, state);
   context.communityMilestones = getCommunityMilestones(state);
@@ -883,7 +962,7 @@ export function getWorldEventContext(state, adventures = [], now = new Date()) {
 }
 
 export function initWorldEventEngine(adventures = [], state = null) {
-  return getWorldEventContext(state, adventures);
+  return safeGetWorldEventContext(state, adventures);
 }
 
 export const WORLD_EVENT_ENGINE = {

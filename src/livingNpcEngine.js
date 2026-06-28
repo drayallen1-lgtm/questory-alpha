@@ -3,7 +3,24 @@
  * Memory, trust, return-visitor lines, and choice-driven dialogue resolution.
  */
 import { normalizeWorld } from './worldEngine';
-import { resolveEventNpcDialogue } from './worldEventEngine';
+
+function applyEventNpcSchedule(npc, dialogue, dialogueId, eventContext) {
+  const activeEvents = Array.isArray(eventContext?.activeEvents) ? eventContext.activeEvents : [];
+  if (!activeEvents.length || !npc || !dialogue) return dialogue;
+
+  for (const event of activeEvents) {
+    const schedule = event?.npcSchedules?.[npc.id];
+    const line = schedule?.[dialogueId] || schedule?.[dialogue.id];
+    if (line) {
+      return {
+        ...dialogue,
+        text: line,
+        mood: event?.modifiers?.darkerAtmosphere ? 'warning' : dialogue.mood,
+      };
+    }
+  }
+  return dialogue;
+}
 
 export const NPC_MOODS = {
   GUIDE: 'guide',
@@ -254,7 +271,7 @@ export function resolveLivingNpcPresentation({
 
   let activeDialogue = dialogue;
   if (eventContext) {
-    activeDialogue = resolveEventNpcDialogue(npc, dialogue, eventContext);
+    activeDialogue = applyEventNpcSchedule(npc, dialogue, dialogueId, eventContext);
   }
 
   const record = getNpcProgressRecord(state, npc.id);
