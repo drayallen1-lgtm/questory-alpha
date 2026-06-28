@@ -173,6 +173,7 @@ export function markersToGeoJSON(markers, state = null) {
       const visual = resolvePinVisual(m.adventure, state);
       return {
         type: 'Feature',
+        id: m.id,
         geometry: {
           type: 'Point',
           coordinates: [m.longitude, m.latitude],
@@ -299,6 +300,12 @@ export const MAP_SOURCE_IDS = {
   REVEALED: 'questory-revealed',
   ACCURACY: 'questory-accuracy',
   NEAR_ME: 'questory-near-me',
+};
+
+export const MAP_LAYER_IDS = {
+  CLUSTERS: 'questory-clusters',
+  CLUSTER_COUNT: 'questory-cluster-count',
+  UNCLUSTERED: 'questory-unclustered-hit',
 };
 
 export const NEAR_ME_PULSE_RADIUS_M = 152.4; // ~500 ft

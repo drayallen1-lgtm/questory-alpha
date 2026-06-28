@@ -9,6 +9,7 @@ import {
   getMapboxToken,
   buildAdventureMarkers,
   buildClueMarkers,
+  computeMapPinStats,
   getMapBounds,
   hasMapboxToken,
 } from './mapUtils';
@@ -16,12 +17,12 @@ import { AccessStatusBanner, usePlayerLocation } from './AccessRulesUI';
 import { evaluateAccessContext } from './accessRules';
 import {
   MAP_FILTERS,
+  MAP_LAYER_IDS,
   MAP_SOURCE_IDS,
   NEAR_ME_PULSE_RADIUS_M,
   adventureMatchesFilter,
   circlePolygon,
   createAdventurePinElement,
-  createClusterElement,
   filterMapAdventures,
   markersToGeoJSON,
   resolvePinVisual,
@@ -31,6 +32,111 @@ import {
 import { MapFilterBar, MapPinCard } from './MapPinCard';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
+
+function parseFeatureProps(props) {
+  if (!props) return {};
+  const out = { ...props };
+  if (out.point_count != null) out.point_count = Number(out.point_count);
+  if (out.cluster_id != null) out.cluster_id = Number(out.cluster_id);
+  return out;
+}
+
+function isClusterFeature(props) {
+  return props.point_count != null && Number.isFinite(Number(props.point_count));
+}
+
+function addAdventureClusterLayers(map) {
+  if (map.getLayer(MAP_LAYER_IDS.CLUSTERS)) return;
+
+  map.addLayer({
+    id: MAP_LAYER_IDS.CLUSTERS,
+    type: 'circle',
+    source: ADVENTURE_SOURCE,
+    filter: ['has', 'point_count'],
+    paint: {
+      'circle-color': '#14b8a6',
+      'circle-radius': ['step', ['get', 'point_count'], 22, 5, 28, 15, 34],
+      'circle-opacity': 0.88,
+      'circle-stroke-width': 2,
+      'circle-stroke-color': '#0f766e',
+    },
+  });
+
+  map.addLayer({
+    id: MAP_LAYER_IDS.CLUSTER_COUNT,
+    type: 'symbol',
+    source: ADVENTURE_SOURCE,
+    filter: ['has', 'point_count'],
+    layout: {
+      'text-field': ['get', 'point_count_abbreviated'],
+      'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+      'text-size': 13,
+    },
+    paint: { 'text-color': '#ffffff' },
+  });
+
+  map.addLayer({
+    id: MAP_LAYER_IDS.UNCLUSTERED,
+    type: 'circle',
+    source: ADVENTURE_SOURCE,
+    filter: ['!', ['has', 'point_count']],
+    paint: {
+      'circle-radius': 10,
+      'circle-opacity': 0,
+    },
+  });
+
+  map.on('click', MAP_LAYER_IDS.CLUSTERS, (e) => {
+    const features = map.queryRenderedFeatures(e.point, { layers: [MAP_LAYER_IDS.CLUSTERS] });
+    if (!features.length) return;
+    const clusterId = features[0].properties?.cluster_id;
+    if (clusterId == null) return;
+    map.getSource(ADVENTURE_SOURCE).getClusterExpansionZoom(clusterId, (err, zoom) => {
+      if (err) return;
+      map.easeTo({
+        center: features[0].geometry.coordinates,
+        zoom: Math.min(zoom, 16),
+        duration: 500,
+      });
+    });
+  });
+
+  map.on('mouseenter', MAP_LAYER_IDS.CLUSTERS, () => {
+    map.getCanvas().style.cursor = 'pointer';
+  });
+  map.on('mouseleave', MAP_LAYER_IDS.CLUSTERS, () => {
+    map.getCanvas().style.cursor = '';
+  });
+}
+
+function MapPinFallbackList({ adventureMarkers, onAdventureClick }) {
+  if (!adventureMarkers.length) return null;
+
+  return (
+    <div className="map-pin-fallback-list">
+      <p className="map-pin-fallback-title">Adventures near you</p>
+      <div className="fallback-marker-list compact">
+        {adventureMarkers.slice(0, 8).map((marker) => {
+          const visual = resolvePinVisual(marker.adventure);
+          return (
+            <button
+              key={marker.id}
+              type="button"
+              className={`fallback-marker adventure pin-${marker.pinAccess || 'playable'}`}
+              onClick={() => onAdventureClick?.(marker.adventure, marker)}
+            >
+              <span className="questory-pin-icon">{visual.icon}</span>
+              <span>
+                <b>{marker.title}</b>
+                <small>{visual.label}</small>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function FallbackMap({
   adventureMarkers = [],
@@ -115,12 +221,15 @@ export function QuestoryMap({
   selectedAdventureId = null,
   onFindMe,
   findMeSignal = 0,
+  onVisiblePinCountChange,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersOnScreenRef = useRef({});
   const userMarkerRef = useRef(null);
   const mapReadyRef = useRef(false);
+  const adventureMarkersRef = useRef(adventureMarkers);
+  adventureMarkersRef.current = adventureMarkers;
   const token = getMapboxToken();
 
   const markerLookup = useMemo(() => {
@@ -134,68 +243,83 @@ export function QuestoryMap({
     [adventureMarkers]
   );
 
+  const upsertAdventurePin = useCallback(
+    (map, id, coords, nextIds) => {
+      nextIds.add(id);
+      const markerData = markerLookup.get(id);
+      const visual = resolvePinVisual(markerData?.adventure);
+      const selected = selectedAdventureId === id;
+      let entry = markersOnScreenRef.current[id];
+
+      if (!entry) {
+        const el = createAdventurePinElement(visual, {
+          selected,
+          pinAccess: markerData?.pinAccess,
+        });
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (markerData?.adventure) onAdventureClick?.(markerData.adventure, markerData);
+        });
+        entry = new mapboxgl.Marker({ element: el, anchor: 'center' })
+          .setLngLat(coords)
+          .addTo(map);
+        markersOnScreenRef.current[id] = entry;
+      } else {
+        entry.setLngLat(coords);
+        entry.getElement()?.classList.toggle('pin-selected', selected);
+      }
+    },
+    [markerLookup, onAdventureClick, selectedAdventureId]
+  );
+
   const syncHtmlMarkers = useCallback(() => {
     const map = mapRef.current;
     if (!map || !map.getSource(ADVENTURE_SOURCE)) return;
 
-    const features = map.querySourceFeatures(ADVENTURE_SOURCE);
+    const markers = adventureMarkersRef.current;
     const nextIds = new Set();
+    let features = [];
 
-    for (const feature of features) {
-      const props = feature.properties || {};
-      const coords = feature.geometry.coordinates;
-      const isCluster = props.cluster;
+    try {
+      features = map.querySourceFeatures(ADVENTURE_SOURCE);
+    } catch {
+      features = [];
+    }
 
-      if (isCluster) {
-        const clusterId = props.cluster_id;
-        const id = `cluster-${clusterId}`;
-        nextIds.add(id);
-        let entry = markersOnScreenRef.current[id];
-        if (!entry) {
-          const el = createClusterElement(props.point_count);
-          el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            map.getSource(ADVENTURE_SOURCE).getClusterExpansionZoom(clusterId, (err, zoom) => {
-              if (err) return;
-              map.easeTo({ center: coords, zoom: Math.min(zoom, 16), duration: 500 });
-            });
-          });
-          entry = new mapboxgl.Marker({ element: el, anchor: 'center' })
-            .setLngLat(coords)
-            .addTo(map);
-          markersOnScreenRef.current[id] = entry;
-        } else {
-          entry.setLngLat(coords);
-          const countEl = entry.getElement()?.querySelector('.questory-cluster-count');
-          if (countEl) countEl.textContent = props.point_count;
-        }
-      } else {
-        const id = props.id;
+    const useDirectMarkers = features.length === 0 && markers.length > 0;
+
+    if (useDirectMarkers) {
+      for (const markerData of markers) {
+        upsertAdventurePin(
+          map,
+          markerData.id,
+          [markerData.longitude, markerData.latitude],
+          nextIds
+        );
+      }
+    } else {
+      const hasClusters = features.some((feature) =>
+        isClusterFeature(parseFeatureProps(feature.properties))
+      );
+
+      for (const feature of features) {
+        const props = parseFeatureProps(feature.properties);
+        const coords = feature.geometry?.coordinates;
+        if (!coords || isClusterFeature(props)) continue;
+
+        const id = props.id ?? feature.id;
         if (!id) continue;
-        nextIds.add(id);
-        const markerData = markerLookup.get(id);
-        const visual = resolvePinVisual(markerData?.adventure);
-        let entry = markersOnScreenRef.current[id];
-        const selected = selectedAdventureId === id;
-        if (!entry) {
-          const el = createAdventurePinElement(visual, {
-            selected,
-            pinAccess: markerData?.pinAccess,
-          });
-          el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (markerData?.adventure) onAdventureClick?.(markerData.adventure, markerData);
-          });
-          entry = new mapboxgl.Marker({ element: el, anchor: 'center' })
-            .setLngLat(coords)
-            .addTo(map);
-          markersOnScreenRef.current[id] = entry;
-        } else {
-          entry.setLngLat(coords);
-          const el = entry.getElement();
-          if (el) {
-            el.classList.toggle('pin-selected', selected);
-          }
+        upsertAdventurePin(map, id, coords, nextIds);
+      }
+
+      if (!nextIds.size && markers.length > 0 && !hasClusters) {
+        for (const markerData of markers) {
+          upsertAdventurePin(
+            map,
+            markerData.id,
+            [markerData.longitude, markerData.latitude],
+            nextIds
+          );
         }
       }
     }
@@ -206,7 +330,16 @@ export function QuestoryMap({
         delete markersOnScreenRef.current[id];
       }
     });
-  }, [markerLookup, onAdventureClick, selectedAdventureId]);
+
+    let pinCount = nextIds.size;
+    const hasVisibleClusters = features.some((feature) =>
+      isClusterFeature(parseFeatureProps(feature.properties))
+    );
+    if (!pinCount && hasVisibleClusters && markers.length > 0) {
+      pinCount = markers.length;
+    }
+    onVisiblePinCountChange?.(pinCount);
+  }, [upsertAdventurePin, onVisiblePinCountChange]);
 
   useEffect(() => {
     if (!token || !containerRef.current || mapRef.current || mini) return;
@@ -311,6 +444,8 @@ export function QuestoryMap({
         clusterMaxZoom: 14,
         clusterRadius: 52,
       });
+
+      addAdventureClusterLayers(map);
 
       map.on('moveend', syncHtmlMarkers);
       map.on('zoomend', syncHtmlMarkers);
@@ -455,6 +590,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [focusedAdventure, setFocusedAdventure] = useState(null);
   const [findMeSignal, setFindMeSignal] = useState(0);
+  const [visiblePinCount, setVisiblePinCount] = useState(null);
   const { location } = usePlayerLocation();
   const presence = state?.social?.mapPresence || {
     explorersNearby: 12,
@@ -485,6 +621,19 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
 
   const adventureMarkers = buildAdventureMarkers(filteredAdventures, accessOptions);
   const clueMarkers = focusedAdventure ? buildClueMarkers(focusedAdventure) : [];
+
+  const pinStats = useMemo(
+    () => computeMapPinStats(adventures, adventureMarkers, accessOptions),
+    [adventures, adventureMarkers, accessOptions]
+  );
+
+  const showPinDebugLine = hasMapboxToken() && pinStats.pinCount === 0;
+  const showMapFallbackList =
+    hasMapboxToken() &&
+    !focusedAdventure &&
+    adventureMarkers.length > 0 &&
+    visiblePinCount === 0 &&
+    pinStats.pinCount > 0;
 
   const selectedAdventure = selectedMarker?.adventure || null;
   const previewAccess = selectedAdventure
@@ -581,7 +730,23 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           mapExploration={state?.mapExploration}
           selectedAdventureId={selectedAdventure?.id}
           findMeSignal={findMeSignal}
+          onVisiblePinCountChange={setVisiblePinCount}
         />
+
+        {showPinDebugLine && (
+          <p className="map-pin-debug-line">
+            {pinStats.pinCount} map pins · {pinStats.loaded} adventures loaded ·{' '}
+            {pinStats.missingCoords} missing coordinates · {pinStats.accessFiltered} filtered by
+            access
+          </p>
+        )}
+
+        {showMapFallbackList && (
+          <MapPinFallbackList
+            adventureMarkers={adventureMarkers}
+            onAdventureClick={handleAdventureClick}
+          />
+        )}
 
         {selectedAdventure && previewAccess && (
           <MapPinCard
