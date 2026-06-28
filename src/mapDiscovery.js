@@ -481,6 +481,7 @@ export function markersToGeoJSON(markers, state = null) {
     type: 'FeatureCollection',
     features: markers.map((m) => {
       const visual = resolvePinVisual(m.adventure, state);
+      const overlayIds = visual.overlayIds || [];
       return {
         type: 'Feature',
         id: m.id,
@@ -495,7 +496,10 @@ export function markersToGeoJSON(markers, state = null) {
           color: visual.base.color,
           categoryId: visual.base.id,
           categoryLabel: visual.base.label,
-          overlayIds: visual.overlayIds.join(','),
+          overlayIds: overlayIds.join(','),
+          hasEvent: overlayIds.includes('event') ? 1 : 0,
+          hasFeatured: overlayIds.includes('featured') || overlayIds.includes('legendary') ? 1 : 0,
+          hasLegendary: overlayIds.includes('legendary') ? 1 : 0,
           animated: visual.animated ? 1 : 0,
           heatLevel: visual.heatLevel,
           pinAccess: m.pinAccess || 'playable',
@@ -704,13 +708,32 @@ export function createAdventurePinElement(visual, { selected = false, pinAccess 
   return el;
 }
 
-export function createClusterElement(count) {
+export function createClusterElement(meta = {}) {
+  const count = meta.count ?? 0;
   const el = document.createElement('button');
   el.type = 'button';
-  el.className = 'questory-cluster';
-  el.innerHTML = `<span class="questory-cluster-count">${count}</span>`;
+  el.className = [
+    'questory-cluster',
+    meta.hasLegendary ? 'cluster-legendary' : '',
+    meta.hasEvent ? 'cluster-event' : '',
+    meta.hasFeatured ? 'cluster-featured' : '',
+    count >= 10 ? 'cluster-large' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  el.setAttribute('aria-label', `${count} adventures nearby`);
+  el.innerHTML = `
+    <span class="questory-cluster-glow" aria-hidden="true"></span>
+    <span class="questory-cluster-icon">${meta.dominant?.icon || '📍'}</span>
+    <span class="questory-cluster-count">${count}</span>
+  `;
   return el;
 }
+
+export const MAP_SPATIAL_SOURCE_IDS = {
+  SPIDER_LINES: 'questory-spider-lines',
+  SPIDER_ANCHORS: 'questory-spider-anchors',
+};
 
 export const MAP_SOURCE_IDS = {
   ADVENTURES: 'questory-adventures',

@@ -661,25 +661,83 @@ small.progress-label {
 }
 
 .questory-cluster {
-  width: 44px;
-  height: 44px;
+  position: relative;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.92);
   background: linear-gradient(145deg, #14b8a6, #0f766e);
   color: #fff;
   font-weight: 800;
-  font-size: 0.85rem;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
   transform: translate(-50%, -50%);
+  padding: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.questory-cluster:hover {
+  transform: translate(-50%, -50%) scale(1.08);
+  box-shadow: 0 6px 24px rgba(20, 184, 166, 0.45);
+}
+
+.questory-cluster-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(94, 234, 212, 0.35);
+  pointer-events: none;
+  animation: cluster-glow-pulse 2.2s ease-in-out infinite;
+}
+
+.questory-cluster.cluster-featured .questory-cluster-glow {
+  border-color: rgba(251, 191, 36, 0.65);
+}
+
+.questory-cluster.cluster-event .questory-cluster-glow {
+  border-color: rgba(249, 115, 22, 0.65);
+  animation: cluster-event-pulse 1.6s ease-in-out infinite;
+}
+
+.questory-cluster.cluster-legendary {
+  background: linear-gradient(145deg, #8b5cf6, #6d28d9);
+}
+
+.questory-cluster.cluster-large {
+  width: 58px;
+  height: 58px;
+}
+
+@keyframes cluster-glow-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.06); }
+}
+
+@keyframes cluster-event-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+.questory-cluster-icon {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.95rem;
+  line-height: 1;
+  z-index: 2;
 }
 
 .questory-cluster-count {
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
+  font-size: 0.82rem;
+  z-index: 2;
 }
 
 .questory-cluster-tooltip-popup .mapboxgl-popup-content {
@@ -699,6 +757,20 @@ small.progress-label {
   font-weight: 800;
   color: #ccfbf1;
   white-space: nowrap;
+  text-align: center;
+}
+
+.questory-cluster-tooltip strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.questory-cluster-tooltip-cats {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: normal;
 }
 
 .user-location-wrap {

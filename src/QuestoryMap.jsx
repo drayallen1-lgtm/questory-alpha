@@ -20,10 +20,12 @@ import {
   MAP_FILTERS,
   MAP_LAYER_IDS,
   MAP_SOURCE_IDS,
+  MAP_SPATIAL_SOURCE_IDS,
   NEAR_ME_PULSE_RADIUS_M,
   adventureMatchesFilter,
   circlePolygon,
   createAdventurePinElement,
+  createClusterElement,
   filterMapAdventures,
   markersToGeoJSON,
   resolvePinVisual,
@@ -31,6 +33,20 @@ import {
   recordMapReveal,
   wireAdventurePinElement,
 } from './mapDiscovery';
+import {
+  SPIDERFY_MIN_ZOOM,
+  anchorPointsGeoJSON,
+  buildClusterTooltipHtml,
+  centerOnPinWithCardPadding,
+  clusterVisualClasses,
+  computeSpiderfyLayout,
+  easeMapTo,
+  flyMapTo,
+  groupOverlappingMarkers,
+  shouldSpiderfyAtZoom,
+  spiderLinesGeoJSON,
+  summarizeClusterMarkers,
+} from './mapSpatial';
 import { MapFilterBar, MapPinCard } from './MapPinCard';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
@@ -47,45 +63,76 @@ function isClusterFeature(props) {
   return props.point_count != null && Number.isFinite(Number(props.point_count));
 }
 
-function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect, onClusterHover }) {
+function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect, getMapState, triggerSpiderfyRefresh }) {
   const clusterPopup = new mapboxgl.Popup({
     closeButton: false,
     closeOnClick: false,
     className: 'questory-cluster-tooltip-popup',
     offset: 14,
-    maxWidth: '240px',
+    maxWidth: '260px',
   });
 
-  map.on('click', MAP_LAYER_IDS.CLUSTERS, (e) => {
+  const handleClusterClick = (e) => {
     const features = map.queryRenderedFeatures(e.point, { layers: [MAP_LAYER_IDS.CLUSTERS] });
     if (!features.length) return;
-    const clusterId = features[0].properties?.cluster_id;
+    const feature = features[0];
+    const clusterId = feature.properties?.cluster_id;
     if (clusterId == null) return;
-    map.getSource(ADVENTURE_SOURCE).getClusterExpansionZoom(clusterId, (err, zoom) => {
+    const coords = feature.geometry.coordinates;
+    const source = map.getSource(ADVENTURE_SOURCE);
+
+    source.getClusterExpansionZoom(clusterId, (err, zoom) => {
       if (err) return;
-      map.easeTo({
-        center: features[0].geometry.coordinates,
-        zoom: Math.min(zoom, 16),
-        duration: 500,
-      });
+      const currentZoom = map.getZoom();
+      const targetZoom = Math.min(zoom, SPIDERFY_MIN_ZOOM + 1);
+
+      if (targetZoom <= currentZoom + 0.25) {
+        source.getClusterLeaves(clusterId, 100, 0, (leafErr, leaves) => {
+          if (leafErr || !leaves?.length) return;
+          const markerIds = leaves.map((f) => f.properties?.id ?? f.id).filter(Boolean);
+          const markers = markerIds.map((id) => getMarkerById?.(id)).filter(Boolean);
+          if (markers.length >= 2) {
+            easeMapTo(map, { center: coords, zoom: Math.max(currentZoom, SPIDERFY_MIN_ZOOM), duration: 600 });
+            triggerSpiderfyRefresh?.(markers, coords);
+          }
+        });
+        return;
+      }
+
+      easeMapTo(map, { center: coords, zoom: targetZoom, duration: 600 });
     });
-  });
+  };
+
+  map.on('click', MAP_LAYER_IDS.CLUSTERS, handleClusterClick);
 
   map.on('mouseenter', MAP_LAYER_IDS.CLUSTERS, (e) => {
     map.getCanvas().style.cursor = 'pointer';
     const count = Number(e.features?.[0]?.properties?.point_count) || 0;
-    if (count > 0) {
-      onClusterHover?.(count);
+    const clusterId = e.features?.[0]?.properties?.cluster_id;
+    if (count <= 0 || clusterId == null) return;
+
+    map.getSource(ADVENTURE_SOURCE).getClusterLeaves(clusterId, 50, 0, (err, leaves) => {
+      if (err || !leaves?.length) {
+        clusterPopup
+          .setLngLat(e.features[0].geometry.coordinates)
+          .setHTML(buildClusterTooltipHtml({ count }))
+          .addTo(map);
+        return;
+      }
+      const markers = leaves
+        .map((f) => getMarkerById?.(f.properties?.id ?? f.id))
+        .filter(Boolean);
+      const meta = summarizeClusterMarkers(markers, getMapState?.());
+      meta.count = count;
       clusterPopup
         .setLngLat(e.features[0].geometry.coordinates)
-        .setHTML(`<div class="questory-cluster-tooltip">${count} adventures</div>`)
+        .setHTML(buildClusterTooltipHtml(meta))
         .addTo(map);
-    }
+    });
   });
 
   map.on('mouseleave', MAP_LAYER_IDS.CLUSTERS, () => {
     map.getCanvas().style.cursor = '';
-    onClusterHover?.(null);
     clusterPopup.remove();
   });
 
@@ -110,6 +157,60 @@ function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect
   });
 }
 
+function addSpiderLayers(map) {
+  if (map.getSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_LINES)) return;
+
+  map.addSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_LINES, {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  });
+  map.addSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_ANCHORS, {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  });
+
+  map.addLayer({
+    id: 'spider-lines',
+    type: 'line',
+    source: MAP_SPATIAL_SOURCE_IDS.SPIDER_LINES,
+    paint: {
+      'line-color': '#5eead4',
+      'line-opacity': 0.35,
+      'line-width': 1.5,
+      'line-dasharray': [2, 3],
+    },
+  });
+
+  map.addLayer({
+    id: 'spider-anchors',
+    type: 'circle',
+    source: MAP_SPATIAL_SOURCE_IDS.SPIDER_ANCHORS,
+    paint: {
+      'circle-radius': 5,
+      'circle-color': '#14b8a6',
+      'circle-opacity': 0.55,
+      'circle-stroke-width': 2,
+      'circle-stroke-color': '#5eead4',
+      'circle-stroke-opacity': 0.75,
+    },
+  });
+}
+
+function updateSpiderLayers(map, spiderGroups, layouts) {
+  const lineSrc = map.getSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_LINES);
+  const anchorSrc = map.getSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_ANCHORS);
+  if (!lineSrc || !anchorSrc) return;
+  lineSrc.setData(spiderLinesGeoJSON(spiderGroups, layouts));
+  anchorSrc.setData(anchorPointsGeoJSON(spiderGroups));
+}
+
+function clearSpiderLayers(map) {
+  const lineSrc = map.getSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_LINES);
+  const anchorSrc = map.getSource(MAP_SPATIAL_SOURCE_IDS.SPIDER_ANCHORS);
+  if (lineSrc) lineSrc.setData({ type: 'FeatureCollection', features: [] });
+  if (anchorSrc) anchorSrc.setData({ type: 'FeatureCollection', features: [] });
+}
+
 function addAdventureClusterLayers(map) {
   if (map.getLayer(MAP_LAYER_IDS.CLUSTERS)) return;
 
@@ -119,11 +220,17 @@ function addAdventureClusterLayers(map) {
     source: ADVENTURE_SOURCE,
     filter: ['has', 'point_count'],
     paint: {
-      'circle-color': '#14b8a6',
-      'circle-radius': ['step', ['get', 'point_count'], 22, 5, 28, 15, 34],
-      'circle-opacity': 0.88,
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#0f766e',
+      'circle-color': [
+        'case',
+        ['==', ['get', 'hasLegendary'], 1],
+        '#a78bfa',
+        ['==', ['get', 'hasEvent'], 1],
+        '#f97316',
+        '#14b8a6',
+      ],
+      'circle-radius': ['step', ['get', 'point_count'], 24, 5, 30, 15, 36],
+      'circle-opacity': 0,
+      'circle-stroke-width': 0,
     },
   });
 
@@ -135,9 +242,9 @@ function addAdventureClusterLayers(map) {
     layout: {
       'text-field': ['get', 'point_count_abbreviated'],
       'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-      'text-size': 13,
+      'text-size': 12,
     },
-    paint: { 'text-color': '#ffffff' },
+    paint: { 'text-color': '#ffffff', 'text-opacity': 0 },
   });
 
   map.addLayer({
@@ -267,6 +374,7 @@ export function QuestoryMap({
   findMeSignal = 0,
   onVisiblePinCountChange,
   onPinHoverChange,
+  onSpatialStatsChange,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -275,11 +383,16 @@ export function QuestoryMap({
   const mapReadyRef = useRef(false);
   const adventureMarkersRef = useRef(adventureMarkers);
   const markerLookupRef = useRef(new Map());
+  const mapStateRef = useRef(mapState);
+  const syncHtmlMarkersRef = useRef(() => {});
   const onAdventureClickRef = useRef(onAdventureClick);
   const onPinHoverChangeRef = useRef(onPinHoverChange);
+  const onSpatialStatsChangeRef = useRef(onSpatialStatsChange);
   adventureMarkersRef.current = adventureMarkers;
+  mapStateRef.current = mapState;
   onAdventureClickRef.current = onAdventureClick;
   onPinHoverChangeRef.current = onPinHoverChange;
+  onSpatialStatsChangeRef.current = onSpatialStatsChange;
   const token = getMapboxToken();
 
   const markerLookup = useMemo(() => {
@@ -290,16 +403,64 @@ export function QuestoryMap({
   markerLookupRef.current = markerLookup;
 
   const geoJson = useMemo(
-    () => markersToGeoJSON(adventureMarkers),
-    [adventureMarkers]
+    () => markersToGeoJSON(adventureMarkers, mapState),
+    [adventureMarkers, mapState]
   );
+
+  const upsertClusterMarker = useCallback((map, clusterId, coords, count, meta, nextIds) => {
+    const id = `cluster-${clusterId}`;
+    nextIds.add(id);
+    let entry = markersOnScreenRef.current[id];
+    const mergedMeta = { ...meta, count };
+
+    const handleClusterTap = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const source = map.getSource(ADVENTURE_SOURCE);
+      source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+        if (err) return;
+        const currentZoom = map.getZoom();
+        const targetZoom = Math.min(zoom, SPIDERFY_MIN_ZOOM + 1);
+        if (targetZoom <= currentZoom + 0.25) {
+          source.getClusterLeaves(clusterId, 100, 0, (leafErr, leaves) => {
+            if (leafErr || !leaves?.length) return;
+            easeMapTo(map, {
+              center: coords,
+              zoom: Math.max(currentZoom, SPIDERFY_MIN_ZOOM),
+              duration: 600,
+            });
+            syncHtmlMarkersRef.current();
+          });
+          return;
+        }
+        easeMapTo(map, { center: coords, zoom: targetZoom, duration: 600 });
+      });
+    };
+
+    if (!entry) {
+      const el = createClusterElement(mergedMeta);
+      el.addEventListener('click', handleClusterTap);
+      entry = new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat(coords).addTo(map);
+      markersOnScreenRef.current[id] = entry;
+    } else {
+      entry.setLngLat(coords);
+      const el = entry.getElement();
+      if (el) {
+        el.className = clusterVisualClasses(mergedMeta);
+        const iconEl = el.querySelector('.questory-cluster-icon');
+        const countEl = el.querySelector('.questory-cluster-count');
+        if (iconEl) iconEl.textContent = mergedMeta.dominant?.icon || '📍';
+        if (countEl) countEl.textContent = String(count);
+      }
+    }
+  }, []);
 
   const upsertAdventurePin = useCallback(
     (map, id, coords, nextIds) => {
       nextIds.add(id);
       const markerData = markerLookup.get(id);
       if (!markerData) return;
-      const visual = resolvePinVisual(markerData.adventure, mapState);
+      const visual = resolvePinVisual(markerData.adventure, mapStateRef.current);
       const selected = selectedAdventureId === id;
       let entry = markersOnScreenRef.current[id];
 
@@ -345,42 +506,100 @@ export function QuestoryMap({
     if (!map || !map.getSource(ADVENTURE_SOURCE)) return;
 
     const markers = adventureMarkersRef.current;
+    const zoom = map.getZoom();
     const nextIds = new Set();
-    let features = [];
+    let clusterCount = 0;
+    let spiderGroupCount = 0;
 
-    try {
-      features = map.querySourceFeatures(ADVENTURE_SOURCE);
-    } catch {
-      features = [];
-    }
+    const reportStats = (pinCount) => {
+      onVisiblePinCountChange?.(pinCount);
+      onSpatialStatsChangeRef.current?.({
+        adventureCount: markers.length,
+        markerCount: markers.length,
+        pinCount,
+        clusterCount,
+        spiderfyGroupCount: spiderGroupCount,
+      });
+    };
 
-    const useDirectMarkers = features.length === 0 && markers.length > 0;
+    if (shouldSpiderfyAtZoom(zoom)) {
+      clearSpiderLayers(map);
+      const groups = groupOverlappingMarkers(markers);
+      const layouts = new Map();
+      const spiderGroups = [];
 
-    if (useDirectMarkers) {
-      for (const markerData of markers) {
-        upsertAdventurePin(
-          map,
-          markerData.id,
-          [markerData.longitude, markerData.latitude],
-          nextIds
-        );
+      for (const group of groups) {
+        if (group.markers.length >= 2) {
+          spiderGroups.push(group);
+          layouts.set(group.id, computeSpiderfyLayout(group, { zoom }));
+        }
+      }
+      spiderGroupCount = spiderGroups.length;
+
+      if (spiderGroups.length) {
+        updateSpiderLayers(map, spiderGroups, layouts);
+      } else {
+        clearSpiderLayers(map);
+      }
+
+      for (const group of groups) {
+        const layout = layouts.get(group.id);
+        if (layout) {
+          for (const marker of group.markers) {
+            const coords = layout.get(marker.id);
+            if (coords) upsertAdventurePin(map, marker.id, coords, nextIds);
+          }
+        } else if (group.markers.length === 1) {
+          const m = group.markers[0];
+          upsertAdventurePin(map, m.id, [m.longitude, m.latitude], nextIds);
+        }
       }
     } else {
-      const hasClusters = features.some((feature) =>
-        isClusterFeature(parseFeatureProps(feature.properties))
-      );
-
-      for (const feature of features) {
-        const props = parseFeatureProps(feature.properties);
-        const coords = feature.geometry?.coordinates;
-        if (!coords || isClusterFeature(props)) continue;
-
-        const id = props.id ?? feature.id;
-        if (!id) continue;
-        upsertAdventurePin(map, id, coords, nextIds);
+      clearSpiderLayers(map);
+      let features = [];
+      try {
+        features = map.querySourceFeatures(ADVENTURE_SOURCE);
+      } catch {
+        features = [];
       }
 
-      if (!nextIds.size && markers.length > 0 && !hasClusters) {
+      const clusterFeatures = (() => {
+        try {
+          return map.queryRenderedFeatures({ layers: [MAP_LAYER_IDS.CLUSTERS] });
+        } catch {
+          return [];
+        }
+      })();
+      clusterCount = clusterFeatures.length;
+
+      for (const feature of clusterFeatures) {
+        const props = parseFeatureProps(feature.properties);
+        const coords = feature.geometry?.coordinates;
+        if (!coords || props.cluster_id == null) continue;
+        const count = props.point_count || 0;
+        upsertClusterMarker(
+          map,
+          props.cluster_id,
+          coords,
+          count,
+          { dominant: { icon: '📍', label: 'Adventure' } },
+          nextIds
+        );
+        map.getSource(ADVENTURE_SOURCE).getClusterLeaves(props.cluster_id, 50, 0, (err, leaves) => {
+          if (err || !leaves?.length) return;
+          const leafMarkers = leaves
+            .map((f) => markerLookupRef.current.get(f.properties?.id ?? f.id))
+            .filter(Boolean);
+          if (!leafMarkers.length) return;
+          const meta = summarizeClusterMarkers(leafMarkers, mapStateRef.current);
+          meta.count = count;
+          upsertClusterMarker(map, props.cluster_id, coords, count, meta, nextIds);
+        });
+      }
+
+      const useDirectMarkers = features.length === 0 && markers.length > 0;
+
+      if (useDirectMarkers) {
         for (const markerData of markers) {
           upsertAdventurePin(
             map,
@@ -388,6 +607,26 @@ export function QuestoryMap({
             [markerData.longitude, markerData.latitude],
             nextIds
           );
+        }
+      } else {
+        for (const feature of features) {
+          const props = parseFeatureProps(feature.properties);
+          const coords = feature.geometry?.coordinates;
+          if (!coords || isClusterFeature(props)) continue;
+          const id = props.id ?? feature.id;
+          if (!id) continue;
+          upsertAdventurePin(map, id, coords, nextIds);
+        }
+
+        if (!nextIds.size && markers.length > 0 && clusterCount === 0) {
+          for (const markerData of markers) {
+            upsertAdventurePin(
+              map,
+              markerData.id,
+              [markerData.longitude, markerData.latitude],
+              nextIds
+            );
+          }
         }
       }
     }
@@ -399,15 +638,12 @@ export function QuestoryMap({
       }
     });
 
-    let pinCount = nextIds.size;
-    const hasVisibleClusters = features.some((feature) =>
-      isClusterFeature(parseFeatureProps(feature.properties))
-    );
-    if (!pinCount && hasVisibleClusters && markers.length > 0) {
-      pinCount = markers.length;
-    }
-    onVisiblePinCountChange?.(pinCount);
-  }, [upsertAdventurePin, onVisiblePinCountChange]);
+    let pinCount = [...nextIds].filter((id) => !String(id).startsWith('cluster-')).length;
+    if (!pinCount && clusterCount > 0) pinCount = markers.length;
+    reportStats(pinCount);
+  }, [upsertAdventurePin, upsertClusterMarker, onVisiblePinCountChange]);
+
+  syncHtmlMarkersRef.current = syncHtmlMarkers;
 
   useEffect(() => {
     if (!token || !containerRef.current || mapRef.current || mini) return;
@@ -510,16 +746,23 @@ export function QuestoryMap({
         data: geoJson,
         cluster: true,
         clusterMaxZoom: 14,
-        clusterRadius: 52,
+        clusterRadius: 48,
+        clusterProperties: {
+          hasEvent: ['max', ['get', 'hasEvent']],
+          hasFeatured: ['max', ['get', 'hasFeatured']],
+          hasLegendary: ['max', ['get', 'hasLegendary']],
+        },
       });
 
       addAdventureClusterLayers(map);
+      addSpiderLayers(map);
       setupAdventureLayerInteractions(map, {
         getMarkerById: (id) => markerLookupRef.current.get(id),
+        getMapState: () => mapStateRef.current,
         onAdventureSelect: (markerData) => {
           if (markerData?.adventure) onAdventureClickRef.current?.(markerData.adventure, markerData);
         },
-        onClusterHover: () => {},
+        triggerSpiderfyRefresh: () => syncHtmlMarkers(),
       });
 
       map.on('moveend', syncHtmlMarkers);
@@ -609,13 +852,22 @@ export function QuestoryMap({
     const map = mapRef.current;
     if (!map || mini || !findMeSignal) return;
     if (userLocation?.latitude == null) return;
-    map.flyTo({
+    flyMapTo(map, {
       center: [userLocation.longitude, userLocation.latitude],
       zoom: 14,
       duration: 900,
-      essential: true,
     });
   }, [findMeSignal, userLocation, mini]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || mini || !selectedAdventureId) return;
+    const marker = markerLookup.get(selectedAdventureId);
+    if (!marker) return;
+    centerOnPinWithCardPadding(map, [marker.longitude, marker.latitude], {
+      zoom: Math.max(map.getZoom(), SPIDERFY_MIN_ZOOM),
+    });
+  }, [selectedAdventureId, markerLookup, mini]);
 
   useEffect(() => {
     if (mini || !mapRef.current) return;
@@ -667,6 +919,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const [findMeSignal, setFindMeSignal] = useState(0);
   const [visiblePinCount, setVisiblePinCount] = useState(null);
   const [hoveredPinId, setHoveredPinId] = useState(null);
+  const [spatialStats, setSpatialStats] = useState(null);
   const { location } = usePlayerLocation();
   const presence = state?.social?.mapPresence || {
     explorersNearby: 12,
@@ -717,8 +970,24 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       renderedPins: visiblePinCount ?? adventureMarkers.length,
       selectedPinId: selectedMarker?.id ?? null,
       hoveredPinId,
+      adventureCount: adventures.length,
+      markerCount: adventureMarkers.length,
+      filteredCount: filteredAdventures.length,
+      clusterCount: spatialStats?.clusterCount ?? 0,
+      spiderfyGroupCount: spatialStats?.spiderfyGroupCount ?? 0,
+      missingCoords: pinStats.missingCoords,
+      accessFiltered: pinStats.accessFiltered,
     });
-  }, [visiblePinCount, adventureMarkers.length, selectedMarker?.id, hoveredPinId]);
+  }, [
+    visiblePinCount,
+    adventureMarkers.length,
+    selectedMarker?.id,
+    hoveredPinId,
+    adventures.length,
+    filteredAdventures.length,
+    spatialStats,
+    pinStats,
+  ]);
 
   const selectedAdventure = selectedMarker?.adventure || null;
   const previewAccess = selectedAdventure
@@ -819,6 +1088,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           findMeSignal={findMeSignal}
           onVisiblePinCountChange={setVisiblePinCount}
           onPinHoverChange={setHoveredPinId}
+          onSpatialStatsChange={setSpatialStats}
         />
 
         {showPinDebugLine && (
