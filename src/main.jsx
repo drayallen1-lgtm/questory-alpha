@@ -216,6 +216,7 @@ import { normalizeExperience } from './experience';
 import {
   isAdventureUnlocked,
   normalizeWorld,
+  normalizeWorldConfig,
   selectBranchPath,
 } from './worldEngine';
 import { ADVENTURE_TEMPLATES, SCALE_PRESETS, buildTemplateClues, buildTemplateRewards, buildTemplateStory, getTemplateMeta } from './templates';
@@ -225,6 +226,8 @@ import {
   SmartBuilderPanel,
   ToolkitPanel,
   QuestoryAssistant,
+  AdventureDirectorPanel,
+  AdventureDirectorStrip,
   ClueTypeFields,
   CluePlayContent,
   DynamicHintPanel,
@@ -2468,6 +2471,7 @@ function CreateAdventure({
     story: '',
     claimCode: generateClaimCode(),
     claimMethod: CLAIM_METHOD.SECRET_CODE,
+    claimHint: '',
     qrClaimValue: '',
     physicalMedallionCode: '',
     hintAfterTap: '',
@@ -2510,6 +2514,7 @@ function CreateAdventure({
   const [arFinale, setArFinale] = useState(emptyArScene());
   const [arTheme, setArTheme] = useState('none');
   const [mediaManifest, setMediaManifest] = useState([]);
+  const [worldConfig, setWorldConfig] = useState(() => normalizeWorldConfig({}));
   const showArMode = meta.finderMode === FINDER_MODES.AR_ENHANCED;
   const editingAdventure = editingAdventureId
     ? state.adventures.find((a) => a.id === editingAdventureId)
@@ -2535,6 +2540,7 @@ function CreateAdventure({
     setArFinale(form.arFinale);
     setArTheme(form.arTheme);
     setMediaManifest(form.mediaManifest || []);
+    setWorldConfig(normalizeWorldConfig(form.worldConfig || {}));
     setFormError('');
     setSaveFeedback(null);
     loadedEditIdRef.current = editingAdventureId;
@@ -2602,6 +2608,28 @@ function CreateAdventure({
     if (draft.meta.adventureTemplate) setAdventureTemplate(draft.meta.adventureTemplate);
     if (draft.meta.adventureScale) setAdventureScale(draft.meta.adventureScale);
     if (draft.meta.experienceSettings) setExperienceSettings(draft.meta.experienceSettings);
+    setFormError('');
+  }
+
+  function applyDirectorDraft(draft) {
+    if (!draft?.ok) return;
+    applyAssistantDraft(draft);
+    if (draft.arFinale) setArFinale(draft.arFinale);
+    if (draft.arTheme) setArTheme(draft.arTheme);
+    if (draft.worldConfig) setWorldConfig(normalizeWorldConfig(draft.worldConfig));
+    if (draft.meta?.finderMode) {
+      setMeta((m) => ({
+        ...m,
+        finderMode: draft.meta.finderMode,
+        claimMethod: draft.meta.claimMethod || m.claimMethod,
+        claimHint: draft.meta.claimHint || m.claimHint,
+        qrClaimValue: draft.meta.qrClaimValue || m.qrClaimValue,
+        hintAfterTap: draft.meta.hintAfterTap || m.hintAfterTap,
+        collectionName: draft.meta.collectionName || m.collectionName,
+        collectionId: draft.meta.collectionId || m.collectionId,
+        collectionBadge: draft.meta.collectionBadge || m.collectionBadge,
+      }));
+    }
     setFormError('');
   }
 
@@ -2801,6 +2829,7 @@ function CreateAdventure({
       qrClaimValue: claimFields.qrClaimValue,
       physicalMedallionCode: claimFields.physicalMedallionCode,
       hintAfterTap: claimFields.hintAfterTap,
+      claimHint: meta.claimHint?.trim() || '',
       finderSearchRadiusM: parseInt(meta.finderSearchRadiusM, 10) || 200,
       finderCaptureBaseM: parseInt(meta.finderCaptureBaseM, 10) || 25,
       adventureScale,
@@ -2824,6 +2853,7 @@ function CreateAdventure({
       arFinale: normalizeArScene(arFinale),
       arTheme: arTheme || 'none',
       mediaManifest,
+      worldConfig: normalizeWorldConfig(worldConfig),
       heatCategory: 'trending',
       tier: meta.tier || 'standard',
       premiumCoinCost: parseInt(meta.premiumCoinCost, 10) || 250,
@@ -2975,6 +3005,7 @@ function CreateAdventure({
       <CreationFeeBanner state={state} auth={auth} />
       {!state.accessibility?.simplifiedUI && (
         <>
+      <AdventureDirectorPanel onApplyDraft={applyDirectorDraft} />
       <QuestoryAssistant onApplyDraft={applyAssistantDraft} />
       <TemplatePicker selected={adventureTemplate} onSelect={handleTemplateSelect} />
       <ScaleSelector value={adventureScale} onChange={handleScaleChange} />
@@ -3089,6 +3120,7 @@ function CreateAdventure({
               onManifestChange={setMediaManifest}
               onInsertAsset={handleInsertMediaAsset}
               onGenerateScene={handleGenerateScene}
+              onApplyDirectorDraft={applyDirectorDraft}
               clues={clues}
               setClues={setClues}
               setArFinale={setArFinale}

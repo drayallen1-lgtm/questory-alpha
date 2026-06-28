@@ -3282,6 +3282,96 @@ nav button.active {
 .assistant-actions button:not(.ghost) {
   flex: 1.4;
   background: linear-gradient(135deg, #5eead4, #2dd4bf);
+}
+
+.adventure-director {
+  border-color: rgba(94, 234, 212, 0.35);
+  background: linear-gradient(165deg, rgba(15, 26, 40, 0.98), rgba(20, 35, 55, 0.95));
+}
+
+.adventure-director .director-badge {
+  margin-left: 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(94, 234, 212, 0.15);
+  color: #5eead4;
+  vertical-align: middle;
+}
+
+.director-presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.director-preset-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 26, 40, 0.85);
+  color: var(--xp-heading);
+  cursor: pointer;
+}
+
+.director-preset-btn:hover {
+  border-color: rgba(94, 234, 212, 0.45);
+}
+
+.director-preset-icon {
+  font-size: 1.4rem;
+}
+
+.director-preset-label {
+  font-weight: 600;
+}
+
+.director-preset-btn small {
+  color: var(--xp-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.director-characters {
+  font-size: 0.88rem;
+  color: var(--xp-muted);
+}
+
+.director-arc-preview {
+  margin: 8px 0;
+  font-size: 0.85rem;
+}
+
+.director-arc-preview ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.adventure-director-strip {
+  margin: 12px 0 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(94, 234, 212, 0.06);
+  border: 1px dashed rgba(94, 234, 212, 0.25);
+}
+
+.director-strip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.assistant-actions button:not(.ghost) {
   color: #042f2e;
 }
 

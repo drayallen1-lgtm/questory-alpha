@@ -165,6 +165,7 @@ export function metaFormFromAdventure(adventure) {
     qrClaimValue: adventure?.qrClaimValue || '',
     physicalMedallionCode: adventure?.physicalMedallionCode || '',
     hintAfterTap: adventure?.hintAfterTap || '',
+    claimHint: adventure?.claimHint || '',
     collectionName: adventure?.collectionName || '',
     collectionId: adventure?.collectionId || '',
     collectionBadge: adventure?.collectionBadge || '',
@@ -202,6 +203,7 @@ export function adventureToCreateFormState(adventure) {
     arFinale: normalizeArScene(adventure.arFinale),
     arTheme: adventure.arTheme || 'none',
     mediaManifest: normalizeMediaManifest(adventure.mediaManifest || []),
+    worldConfig: adventure.worldConfig || {},
   };
 }
 

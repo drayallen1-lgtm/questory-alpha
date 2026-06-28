@@ -1,0 +1,676 @@
+/**
+ * Sweep 14.1 — AI Adventure Director
+ * Generates a full Adventure Blueprint and converts it to Create-form draft data.
+ */
+import { generateClaimCode } from './seed';
+import { generateSceneFromPrompt } from './aiSceneGenerator';
+import { emptyArScene, normalizeArScene } from './arEngine';
+import { FINALE_THEMES } from './finaleThemes';
+import { CLAIM_METHOD } from './claimSystem';
+import { FINDER_MODES } from './expansion';
+import {
+  ADVENTURE_TEMPLATES,
+  applySmartBuilderConfig,
+  buildTemplateRewards,
+  getScalePreset,
+  CLUE_TYPES,
+} from './templates';
+import { normalizeWorldConfig } from './worldEngine';
+
+export const BLUEPRINT_VERSION = '1.0';
+
+export const DIRECTOR_PRESET_IDS = {
+  HORROR_BACKYARD: 'horror_backyard',
+  FAMILY_BACKYARD: 'family_backyard',
+};
+
+const GPS_OFFSETS = [
+  [0, 0],
+  [0.0003, 0.0002],
+  [-0.0002, 0.0003],
+  [0.0004, -0.0002],
+  [-0.0003, -0.0002],
+  [0.0002, 0.0004],
+  [-0.0004, 0.0001],
+  [0.0001, -0.0004],
+];
+
+/** @typedef {Object} AdventureBlueprint */
+
+const HORROR_BACKYARD_BASE = {
+  presetId: DIRECTOR_PRESET_IDS.HORROR_BACKYARD,
+  meta: {
+    tone: 'creepy',
+    template: ADVENTURE_TEMPLATES.HORROR,
+    scale: 'backyard',
+    claimMethod: CLAIM_METHOD.SECRET_CODE,
+    finderMode: FINDER_MODES.AR_ENHANCED,
+    arAssetType: 'ghost_lantern',
+    title: 'Whispers in the Backyard',
+    location: 'Your Backyard',
+    collectionId: 'lantern-keepers',
+    collectionName: 'Lantern Keepers',
+    collectionBadge: '🕯',
+  },
+  storyArc: {
+    hook: 'Something moved under the porch after dark.',
+    mystery: 'A ghost girl left whispers tied to the old swing and the dead oak.',
+    rising: 'Static crackles on the radio. Footsteps follow when you pause.',
+    reveals: 'The hooded watcher guards the black lantern — the final signal.',
+    finale: 'Face the lantern light, capture the crest, and escape the yard.',
+  },
+  characters: [
+    {
+      id: 'ghost-girl',
+      name: 'Lily',
+      role: 'Spirit Guide',
+      avatar: '👧',
+      personality: 'whispering, playful, unsettling',
+      voice: 'child',
+      memoryKeys: ['porch_seen', 'swing_found'],
+    },
+    {
+      id: 'watcher',
+      name: 'The Watcher',
+      role: 'Guardian',
+      avatar: '🖤',
+      personality: 'silent, ominous',
+      voice: 'whisper',
+      memoryKeys: ['lantern_seen'],
+    },
+  ],
+  clueBlueprints: [
+    {
+      title: 'Porch Whispers',
+      text: "Don't trust the whispers beneath the porch. Count the steps — that number opens the next clue.",
+      clueType: CLUE_TYPES.AUDIO,
+      arPrompt: 'A ghost girl appears beside the swing and whispers, "Don\'t look back."',
+      npcLine: 'She left something under the porch. Listen before you look.',
+    },
+    {
+      title: 'Shadow at the Shed',
+      text: 'Something moved behind the shed at dusk. Find where shadows cross the path.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      arPrompt: 'A shadow figure stands beneath the dead tree. Branches move above him.',
+      isFalseLead: true,
+      bonusRewardText: 'False trail — the real signal is east toward the lantern.',
+    },
+    {
+      title: 'Lantern Signal',
+      text: 'The ghost lantern flickers where roots tangle old. Follow the light.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      arPrompt: 'The hooded watcher flickers by the black lantern in the woods.',
+    },
+  ],
+  finalePrompt:
+    'The hooded watcher appears at the black lantern. Radio static crackles: "You found me." Jump scare finale.',
+  finaleThemeId: 'black_lantern',
+  twists: [{ afterClue: 1, type: 'false_clue', effect: 'bonus_hint' }],
+  audioMood: {
+    search: 'wind',
+    tension: 'heartbeat',
+    reveal: 'strings',
+    victory: 'fanfare',
+  },
+  branching: {
+    enabled: true,
+    branchOptions: [
+      { id: 'brave', label: 'Follow the whispers into the dark', pathId: 'brave' },
+      { id: 'cautious', label: 'Circle around the shed', pathId: 'cautious' },
+    ],
+    alternateEndings: [
+      {
+        id: 'brave',
+        pathId: 'brave',
+        title: 'Brave Path',
+        description: 'You walked into the shadows and earned the Survivor Crest.',
+        medallionTitle: 'Survivor Medallion',
+      },
+      {
+        id: 'cautious',
+        pathId: 'cautious',
+        title: 'Cautious Path',
+        description: 'You outsmarted the watcher and claimed the Lantern Keeper badge.',
+        medallionTitle: 'Lantern Keeper Badge',
+      },
+    ],
+  },
+  collectionLore: {
+    journalPages: [
+      'The Lantern Keepers once guided lost souls through the yard after midnight.',
+      'Lily was the youngest keeper — she still swings when no one watches.',
+    ],
+  },
+};
+
+const FAMILY_BACKYARD_BASE = {
+  presetId: DIRECTOR_PRESET_IDS.FAMILY_BACKYARD,
+  meta: {
+    tone: 'warm',
+    template: ADVENTURE_TEMPLATES.FAMILY_FUN,
+    scale: 'backyard',
+    claimMethod: CLAIM_METHOD.TAP_MEDALLION,
+    finderMode: FINDER_MODES.FINDER,
+    arAssetType: 'family_treasure',
+    title: 'Grandpa\'s Backyard Treasure',
+    location: 'Your Backyard',
+    collectionId: 'family-heirlooms',
+    collectionName: 'Family Heirlooms',
+    collectionBadge: '🌟',
+  },
+  storyArc: {
+    hook: 'Grandpa hid a treasure somewhere in the yard before the party.',
+    mystery: 'Each clue is a memory from summers past — swing set, flower bed, birdhouse.',
+    rising: 'Work together! Younger explorers read clues aloud while scouts search.',
+    reveals: 'The final spot is where birthday cakes were always cut.',
+    finale: 'Find the golden medallion and celebrate together!',
+  },
+  characters: [
+    {
+      id: 'grandpa',
+      name: 'Grandpa Joe',
+      role: 'Treasure Hider',
+      avatar: '👴',
+      personality: 'warm, playful, storyteller',
+      voice: 'friendly',
+      memoryKeys: ['treasure_started'],
+    },
+    {
+      id: 'mascot',
+      name: 'Sunny the Squirrel',
+      role: 'Hint Helper',
+      avatar: '🐿',
+      personality: 'cheerful, silly',
+      voice: 'cartoon',
+      memoryKeys: ['hints_given'],
+    },
+  ],
+  clueBlueprints: [
+    {
+      title: 'Swing Set Secret',
+      text: 'Where laughter swings highest, look beneath the seat. Grandpa carved a number there.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      npcLine: 'Start at the swing — that\'s where the hunt begins!',
+    },
+    {
+      title: 'Flower Bed Finder',
+      text: 'Petals hide a number — count the red ones in the flower bed.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      npcLine: 'Sunny says: the flowers know the way!',
+    },
+    {
+      title: 'Birdhouse Bonus',
+      text: 'Feathered friends know — check the post with the blue roof.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      bonusRewardText: 'Bonus sticker! You found Sunny\'s acorn cache.',
+    },
+    {
+      title: 'Cake Table Clue',
+      text: 'The treasure waits where birthday cakes are always cut. Look under the picnic table!',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      npcLine: 'You did it! Tap the medallion when Finder Mode finds it.',
+    },
+  ],
+  finalePrompt: null,
+  finaleThemeId: null,
+  twists: [],
+  audioMood: {
+    search: 'birds',
+    tension: 'playful_drums',
+    reveal: 'bells',
+    victory: 'celebration',
+  },
+  branching: { enabled: false, branchOptions: [], alternateEndings: [] },
+  collectionLore: {
+    journalPages: [
+      'Grandpa started this hunt tradition in 1987 — every grandkid gets a turn.',
+      'The Family Heirloom medallion passes to whoever finds it first (with help!).',
+    ],
+  },
+};
+
+export const DIRECTOR_PRESETS = {
+  [DIRECTOR_PRESET_IDS.HORROR_BACKYARD]: {
+    id: DIRECTOR_PRESET_IDS.HORROR_BACKYARD,
+    label: 'Horror Backyard',
+    icon: '👻',
+    desc: 'AR ghost hunt · whispers · lantern finale · branching paths',
+    examplePrompt: 'Scary backyard ghost hunt for teens, 3 clues, secret code claim',
+  },
+  [DIRECTOR_PRESET_IDS.FAMILY_BACKYARD]: {
+    id: DIRECTOR_PRESET_IDS.FAMILY_BACKYARD,
+    label: 'Family Treasure',
+    icon: '👨‍👩‍👧',
+    desc: 'Grandpa\'s hunt · kid-friendly · tap medallion claim',
+    examplePrompt: 'Family backyard treasure hunt for grandparents visiting, tap medallion',
+  },
+};
+
+function normalizePrompt(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function detectPresetId(text) {
+  if (/family|kids|grandpa|grandparent|birthday|treasure hunt for/i.test(text)) {
+    return DIRECTOR_PRESET_IDS.FAMILY_BACKYARD;
+  }
+  if (/scary|horror|ghost|spooky|haunted|lantern|watcher/i.test(text)) {
+    return DIRECTOR_PRESET_IDS.HORROR_BACKYARD;
+  }
+  return null;
+}
+
+function parseClueCount(text, defaultCount) {
+  const match = text.match(/\b(\d+)\s*clues?\b/i);
+  if (match) return Math.min(8, Math.max(2, parseInt(match[1], 10)));
+  return defaultCount;
+}
+
+function parseClaimMethod(text, fallback) {
+  if (/physical medallion|engraved code|hidden medallion/i.test(text)) {
+    return CLAIM_METHOD.PHYSICAL_MEDALLION;
+  }
+  if (/hybrid|tap.*then.*code|code.*after.*tap/i.test(text)) {
+    return CLAIM_METHOD.HYBRID;
+  }
+  if (/qr|scan/i.test(text)) {
+    return CLAIM_METHOD.QR_CODE;
+  }
+  if (/tap medallion|virtual medallion|auto-claim|auto claim/i.test(text)) {
+    return CLAIM_METHOD.TAP_MEDALLION;
+  }
+  if (/secret code|claim code|enter code/i.test(text)) {
+    return CLAIM_METHOD.SECRET_CODE;
+  }
+  return fallback;
+}
+
+function parseScale(text, fallback) {
+  if (/backyard|yard|porch|sleepover/i.test(text)) return 'backyard';
+  if (/neighborhood|block|local trail/i.test(text)) return 'neighborhood';
+  if (/city|downtown|urban/i.test(text)) return 'city';
+  return fallback;
+}
+
+function parseKidFriendly(text) {
+  return /\b(kids?|children|8-year|8 year|young|family-friendly|not too scary)\b/i.test(text);
+}
+
+function buildStoryFromArc(storyArc, title) {
+  const parts = [
+    storyArc.hook,
+    storyArc.mystery,
+    storyArc.rising,
+    storyArc.reveals,
+    storyArc.finale,
+  ].filter(Boolean);
+  return parts.join(' ') || `A new Questory adventure: ${title}.`;
+}
+
+function cloneBlueprintBase(base) {
+  return JSON.parse(JSON.stringify(base));
+}
+
+function expandClueBlueprints(blueprints, targetCount) {
+  if (blueprints.length >= targetCount) return blueprints.slice(0, targetCount);
+  const expanded = [...blueprints];
+  while (expanded.length < targetCount) {
+    const i = expanded.length;
+    expanded.push({
+      title: `Signal ${i + 1}`,
+      text: 'Follow the trail marker to the next hidden spot in the yard.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      arPrompt: expanded[i % blueprints.length]?.arPrompt || null,
+    });
+  }
+  return expanded;
+}
+
+/**
+ * Generate a complete Adventure Blueprint from a creator prompt.
+ * @param {string} prompt
+ * @param {object} [options]
+ * @returns {{ ok: boolean, blueprint?: AdventureBlueprint, message?: string }}
+ */
+export function generateAdventureBlueprint(prompt, options = {}) {
+  const text = normalizePrompt(prompt);
+  if (!text && !options.presetId) {
+    return { ok: false, message: 'Describe the adventure you want — or pick a preset.' };
+  }
+
+  const presetId = options.presetId || detectPresetId(text) || DIRECTOR_PRESET_IDS.HORROR_BACKYARD;
+  const base = cloneBlueprintBase(
+    presetId === DIRECTOR_PRESET_IDS.FAMILY_BACKYARD ? FAMILY_BACKYARD_BASE : HORROR_BACKYARD_BASE
+  );
+
+  const scale = parseScale(text, base.meta.scale);
+  const scalePreset = getScalePreset(scale);
+  const clueCount = parseClueCount(text, scalePreset.clueCount);
+  const kidFriendly = parseKidFriendly(text);
+  const claimMethod = parseClaimMethod(text, base.meta.claimMethod);
+
+  if (kidFriendly && presetId === DIRECTOR_PRESET_IDS.HORROR_BACKYARD) {
+    base.meta.tone = 'mild';
+    base.storyArc.hook = 'Friendly ghosts play tricks in the backyard after sunset.';
+    base.storyArc.mystery = 'A giggling spirit left clues near the swing and the old tree.';
+    base.storyArc.finale = 'Find the glowing lantern and tap the medallion to win!';
+    base.meta.claimMethod = CLAIM_METHOD.TAP_MEDALLION;
+    base.meta.finderMode = FINDER_MODES.AR_ENHANCED;
+  } else {
+    base.meta.claimMethod = claimMethod;
+    if (claimMethod === CLAIM_METHOD.TAP_MEDALLION) {
+      base.meta.finderMode = FINDER_MODES.FINDER;
+    }
+    if (
+      claimMethod === CLAIM_METHOD.HYBRID ||
+      claimMethod === CLAIM_METHOD.PHYSICAL_MEDALLION
+    ) {
+      base.meta.finderMode = FINDER_MODES.FINDER;
+    }
+  }
+
+  base.meta.scale = scale;
+  base.meta.title =
+    options.title ||
+    (text.length > 10 && !options.presetId
+      ? text.slice(0, 60).replace(/^\w/, (c) => c.toUpperCase())
+      : base.meta.title);
+
+  if (options.location) base.meta.location = options.location;
+
+  const clueBlueprints = expandClueBlueprints(base.clueBlueprints, clueCount);
+
+  const blueprint = {
+    version: BLUEPRINT_VERSION,
+    presetId,
+    prompt: String(prompt || '').trim(),
+    meta: base.meta,
+    storyArc: base.storyArc,
+    characters: base.characters,
+    clues: clueBlueprints.map((c, i) => ({
+      index: i,
+      title: c.title,
+      text: c.text,
+      clueType: c.clueType || CLUE_TYPES.TEXT_RIDDLE,
+      choices: c.choices || [],
+      audioUrl: c.audioUrl || '',
+      videoUrl: c.videoUrl || '',
+      imageUrl: c.imageUrl || '',
+      bonusRewardText: c.bonusRewardText || '',
+      arPrompt: c.arPrompt || null,
+      branchOptions: i === 0 && base.branching?.enabled ? base.branching.branchOptions : [],
+      isFalseLead: Boolean(c.isFalseLead),
+    })),
+    arEncounters: clueBlueprints
+      .map((c, i) =>
+        c.arPrompt
+          ? { clueIndex: i, trigger: i === 0 ? 'on_arrival' : 'after_checkin', prompt: c.arPrompt }
+          : null
+      )
+      .filter(Boolean),
+    npcDialogue: {
+      byClueIndex: Object.fromEntries(
+        clueBlueprints.map((c, i) => [i, c.npcLine || null]).filter(([, line]) => line)
+      ),
+      byPhase: {
+        intro: base.characters[0]
+          ? `${base.characters[0].name}: ${base.storyArc.hook}`
+          : base.storyArc.hook,
+        finale: base.storyArc.finale,
+      },
+    },
+    twists: base.twists,
+    finale: {
+      arPrompt: base.finalePrompt,
+      themeId: base.finaleThemeId,
+      bossOptional: presetId === DIRECTOR_PRESET_IDS.HORROR_BACKYARD,
+      endingVariants: base.branching?.alternateEndings || [],
+    },
+    collectionLore: {
+      ...base.collectionLore,
+      collectionId: base.meta.collectionId,
+      collectionName: base.meta.collectionName,
+    },
+    audioMood: base.audioMood,
+    branching: base.branching,
+    generatedAt: new Date().toISOString(),
+  };
+
+  return { ok: true, blueprint };
+}
+
+function generateArSceneFromPrompt(prompt) {
+  if (!prompt) return emptyArScene();
+  const result = generateSceneFromPrompt(prompt);
+  if (result?.ok && result.scene) return normalizeArScene(result.scene);
+  return emptyArScene();
+}
+
+function resolveFinaleScene(blueprint) {
+  const { finale, meta } = blueprint;
+  if (finale?.arPrompt) {
+    const scene = generateArSceneFromPrompt(finale.arPrompt);
+    if (scene?.enabled) return scene;
+  }
+  const theme = finale?.themeId ? FINALE_THEMES[finale.themeId] : null;
+  if (theme?.scene) return normalizeArScene(theme.scene);
+  if (meta.template === ADVENTURE_TEMPLATES.HORROR) {
+    return normalizeArScene(FINALE_THEMES.black_lantern?.scene || emptyArScene());
+  }
+  return emptyArScene();
+}
+
+function buildNpcDialogues(blueprint) {
+  const primary = blueprint.characters[0];
+  if (!primary) return [];
+  const lines = [];
+  const intro = blueprint.npcDialogue?.byPhase?.intro;
+  if (intro) {
+    lines.push({ id: 'intro', text: intro.replace(/^[^:]+:\s*/, ''), mood: 'guide' });
+  }
+  Object.entries(blueprint.npcDialogue?.byClueIndex || {}).forEach(([idx, text]) => {
+    if (text) {
+      lines.push({ id: `clue-${idx}`, text, mood: 'hint' });
+    }
+  });
+  const finale = blueprint.npcDialogue?.byPhase?.finale;
+  if (finale) {
+    lines.push({ id: 'finale', text: finale, mood: 'celebration' });
+  }
+  return lines;
+}
+
+/**
+ * Convert blueprint → Create Adventure form draft (compatible with applyDirectorDraft).
+ */
+export function blueprintToCreateDraft(blueprint, options = {}) {
+  if (!blueprint?.meta) {
+    return { ok: false, message: 'Invalid adventure blueprint.' };
+  }
+
+  const baseLat = options.baseLat ?? 37.34;
+  const baseLng = options.baseLng ?? -95.26;
+  const { meta: bpMeta, storyArc } = blueprint;
+
+  const config = applySmartBuilderConfig({
+    templateId: bpMeta.template,
+    scaleId: bpMeta.scale,
+    players: options.players || '3-5',
+    durationMin: String(options.durationMin || getScalePreset(bpMeta.scale).estimatedMinutes),
+    environment: options.environment || 'outdoor',
+  });
+
+  const claimCode = generateClaimCode();
+  const story = buildStoryFromArc(storyArc, bpMeta.title);
+  const scale = getScalePreset(bpMeta.scale);
+
+  const atmosphere =
+    bpMeta.tone === 'mild' ? 'mild' : bpMeta.tone === 'warm' ? 'mild' : 'creepy';
+
+  const experienceSettings = {
+    ...config.experienceSettings,
+    atmosphere,
+    soundEffects: blueprint.audioMood
+      ? [blueprint.audioMood.search, blueprint.audioMood.tension].filter(Boolean)
+      : config.experienceSettings.soundEffects,
+    audioMood: blueprint.audioMood,
+    arHorror: bpMeta.template === ADVENTURE_TEMPLATES.HORROR,
+    dynamicHintsEnabled: true,
+    backyardPrecision: scale.backyardPrecision,
+    directorGenerated: true,
+    storyArc,
+    collectionLore: blueprint.collectionLore,
+  };
+
+  const clues = blueprint.clues.map((c, i) => {
+    const [dLat, dLng] = GPS_OFFSETS[i % GPS_OFFSETS.length];
+    const arScene =
+      bpMeta.finderMode === FINDER_MODES.AR_ENHANCED && c.arPrompt
+        ? generateArSceneFromPrompt(c.arPrompt)
+        : emptyArScene();
+
+    return {
+      id: `dir-clue-${i + 1}-${Date.now()}`,
+      title: c.title,
+      text: c.text,
+      latitude: String(baseLat + dLat * (i + 1)),
+      longitude: String(baseLng + dLng * (i + 1)),
+      radiusMeters: String(scale.clueRadiusM || 4),
+      bonusRewardText: c.bonusRewardText || '',
+      clueType: c.clueType || CLUE_TYPES.TEXT_RIDDLE,
+      choices: c.choices || [],
+      audioUrl: c.audioUrl || '',
+      videoUrl: c.videoUrl || '',
+      imageUrl: c.imageUrl || '',
+      branchOptions: c.branchOptions || [],
+      arScene,
+    };
+  });
+
+  const rewardTemplates = buildTemplateRewards(bpMeta.template);
+  const rewards = rewardTemplates.map((r) => ({
+    type: r.type,
+    enabled: true,
+    icon: r.icon,
+    title: r.title,
+    desc: r.desc,
+    valueLabel: r.valueLabel,
+    redemptionInstructions: r.redemptionInstructions,
+    expirationDays: String(r.expirationDays || 0),
+    quantityLimit: null,
+    claimedCount: 0,
+    rewardPolicy: 'continue_badge_coins_only',
+  }));
+
+  const arFinale =
+    bpMeta.finderMode === FINDER_MODES.AR_ENHANCED ? resolveFinaleScene(blueprint) : emptyArScene();
+  const arTheme =
+    bpMeta.template === ADVENTURE_TEMPLATES.HORROR ? 'horror' : 'none';
+
+  const claimHint =
+    bpMeta.claimMethod === CLAIM_METHOD.SECRET_CODE ||
+    bpMeta.claimMethod === CLAIM_METHOD.HYBRID
+      ? `The ${blueprint.characters[0]?.name || 'guide'} signed the ledger with one word: ${claimCode}.`
+      : '';
+
+  const worldConfig = normalizeWorldConfig({
+    branchingEnabled: Boolean(blueprint.branching?.enabled),
+    alternateEndings: blueprint.branching?.alternateEndings || [],
+    worldEventTags:
+      bpMeta.template === ADVENTURE_TEMPLATES.HORROR ? ['ghost-walk', 'backyard-haunt'] : ['family-fun'],
+    hiddenDiscoveryIds: blueprint.collectionLore?.collectionId
+      ? [blueprint.collectionLore.collectionId]
+      : [],
+    npcs: blueprint.characters.map((ch) => ({
+      id: ch.id,
+      name: ch.name,
+      role: ch.role || 'Guide',
+      avatar: ch.avatar || '🎭',
+      personality: ch.personality,
+      dialogues: buildNpcDialogues(blueprint).filter((d) =>
+        d.id === 'intro' ? ch.id === blueprint.characters[0]?.id : true
+      ),
+    })),
+  });
+
+  const arCount = clues.filter((c) => c.arScene?.enabled).length;
+
+  return {
+    ok: true,
+    blueprint,
+    meta: {
+      title: bpMeta.title,
+      location: bpMeta.location || 'Your Backyard',
+      sponsorName: options.sponsorName || 'Questory Creator',
+      story,
+      claimCode,
+      claimMethod: bpMeta.claimMethod,
+      claimHint,
+      qrClaimValue: bpMeta.claimMethod === CLAIM_METHOD.QR_CODE ? claimCode : '',
+      hintAfterTap:
+        bpMeta.claimMethod === CLAIM_METHOD.PHYSICAL_MEDALLION
+          ? 'Search for the hidden medallion engraved with your code.'
+          : '',
+      collectionName: bpMeta.collectionName || '',
+      collectionId: bpMeta.collectionId || '',
+      collectionBadge: bpMeta.collectionBadge || '',
+      estimatedMinutes: config.estimatedMinutes,
+      adventureScale: config.adventureScale,
+      adventureTemplate: config.adventureTemplate,
+      finderSearchRadiusM: config.finderSearchRadiusM,
+      finderCaptureBaseM: config.finderCaptureBaseM,
+      finderMode: bpMeta.finderMode,
+      arAssetType: bpMeta.arAssetType,
+      experienceSettings,
+    },
+    clues,
+    rewards,
+    arFinale,
+    arTheme,
+    worldConfig,
+    summary: summarizeBlueprint(blueprint, { arCount }),
+  };
+}
+
+export function summarizeBlueprint(blueprint, extras = {}) {
+  const clueCount = blueprint.clues?.length || 0;
+  const charCount = blueprint.characters?.length || 0;
+  const arCount = extras.arCount ?? blueprint.arEncounters?.length ?? 0;
+  const preset = DIRECTOR_PRESETS[blueprint.presetId];
+  const label = preset?.label || 'Custom';
+  const twists = blueprint.twists?.length || 0;
+  const branch = blueprint.branching?.enabled ? ' · branching' : '';
+  return `${label} adventure · ${clueCount} clues · ${charCount} characters · ${arCount} AR scenes${twists ? ` · ${twists} twist` : ''}${branch}`;
+}
+
+export function generateFullAdventureFromPrompt(prompt, options = {}) {
+  const blueprintResult = generateAdventureBlueprint(prompt, options);
+  if (!blueprintResult.ok) return blueprintResult;
+  return blueprintToCreateDraft(blueprintResult.blueprint, options);
+}
+
+export function getDirectorSuggestions() {
+  return [
+    'Haunted backyard for 8-year-olds, 5 clues, tap medallion',
+    'Scary backyard ghost hunt for teens, secret code claim',
+    'Family backyard treasure hunt for grandparents visiting',
+    'Horror yard hunt with branching paths and lantern finale',
+    'Kid-friendly family treasure, 4 clues, tap medallion to claim',
+  ];
+}
+
+export function getDirectorPresets() {
+  return Object.values(DIRECTOR_PRESETS);
+}
+
+export const ADVENTURE_DIRECTOR = {
+  enabled: true,
+  label: 'Generate Full Adventure',
+  version: BLUEPRINT_VERSION,
+  placeholder:
+    'Haunted backyard for 8-year-olds, 5 clues, tap medallion — or pick a preset below.',
+};

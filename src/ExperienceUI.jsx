@@ -40,6 +40,13 @@ import {
   completeVerificationCheckpoint,
 } from './experience';
 import { generateAdventureFromPrompt, getAssistantSuggestions, refineAssistantDraft } from './adventureAssistant';
+import {
+  ADVENTURE_DIRECTOR,
+  DIRECTOR_PRESET_IDS,
+  generateFullAdventureFromPrompt,
+  getDirectorPresets,
+  getDirectorSuggestions,
+} from './adventureDirector';
 
 export function TemplatePicker({ selected, onSelect }) {
   return (
@@ -201,6 +208,130 @@ export function ToolkitPanel({ toolkit, settings, onChange }) {
       {toolkit === 'date_night' && (
         <p className="admin-meta">Memory questions · hidden messages · couple badges & certificates</p>
       )}
+    </div>
+  );
+}
+
+export function AdventureDirectorPanel({ onApplyDraft }) {
+  const [prompt, setPrompt] = useState('');
+  const [draft, setDraft] = useState(null);
+  const [generating, setGenerating] = useState(false);
+
+  function handleGenerate(presetId) {
+    setGenerating(true);
+    const result = generateFullAdventureFromPrompt(prompt, presetId ? { presetId } : {});
+    setDraft(result);
+    setGenerating(false);
+  }
+
+  return (
+    <div className="card adventure-director questory-assistant">
+      <h3>
+        <Sparkles size={18} /> Adventure Director
+        <span className="director-badge">AI Story Engine</span>
+      </h3>
+      <p className="admin-meta">
+        {ADVENTURE_DIRECTOR.placeholder}
+      </p>
+      <textarea
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder='e.g. "Haunted backyard for 8-year-olds, 5 clues, tap medallion"'
+        rows={3}
+      />
+      <div className="director-presets">
+        {getDirectorPresets().map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            className="director-preset-btn"
+            onClick={() => {
+              setPrompt(preset.examplePrompt);
+              handleGenerate(preset.id);
+            }}
+            disabled={generating}
+          >
+            <span className="director-preset-icon">{preset.icon}</span>
+            <span className="director-preset-label">{preset.label}</span>
+            <small>{preset.desc}</small>
+          </button>
+        ))}
+      </div>
+      <div className="assistant-suggestions">
+        {getDirectorSuggestions().map((s) => (
+          <button key={s} type="button" className="ghost" onClick={() => setPrompt(s)}>
+            {s}
+          </button>
+        ))}
+      </div>
+      <button type="button" onClick={() => handleGenerate()} disabled={generating || !prompt.trim()}>
+        {generating ? 'Generating…' : ADVENTURE_DIRECTOR.label}
+      </button>
+      {draft?.ok && (
+        <div className="assistant-draft director-draft">
+          <p>{draft.summary}</p>
+          <p>
+            <b>{draft.meta.title}</b> · {draft.clues.length} clues · {draft.meta.estimatedMinutes} min
+          </p>
+          {draft.blueprint?.characters?.length > 0 && (
+            <p className="director-characters">
+              Characters: {draft.blueprint.characters.map((c) => c.name).join(', ')}
+            </p>
+          )}
+          {draft.blueprint?.storyArc && (
+            <details className="director-arc-preview">
+              <summary>Story arc preview</summary>
+              <ul>
+                {Object.entries(draft.blueprint.storyArc).map(([key, val]) => (
+                  <li key={key}>
+                    <b>{key}</b>: {val}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          <div className="assistant-actions">
+            <button type="button" onClick={() => onApplyDraft(draft)}>
+              Apply full adventure to form
+            </button>
+          </div>
+        </div>
+      )}
+      {draft && !draft.ok && <p className="form-error">{formatUserErrorMessage(draft)}</p>}
+    </div>
+  );
+}
+
+/** Compact preset strip for Media Studio */
+export function AdventureDirectorStrip({ onApplyDraft }) {
+  function applyPreset(presetId) {
+    const preset = getDirectorPresets().find((p) => p.id === presetId);
+    if (!preset) return;
+    const result = generateFullAdventureFromPrompt(preset.examplePrompt, { presetId });
+    if (result?.ok) onApplyDraft?.(result);
+  }
+
+  return (
+    <div className="adventure-director-strip">
+      <p className="admin-meta">
+        <Sparkles size={14} /> Need a full adventure? Generate story, clues, AR, and NPCs in one step:
+      </p>
+      <div className="director-strip-actions">
+        <button
+          type="button"
+          className="ghost"
+          onClick={() => applyPreset(DIRECTOR_PRESET_IDS.HORROR_BACKYARD)}
+        >
+          👻 Horror Backyard
+        </button>
+        <button
+          type="button"
+          className="ghost"
+          onClick={() => applyPreset(DIRECTOR_PRESET_IDS.FAMILY_BACKYARD)}
+        >
+          👨‍👩‍👧 Family Treasure
+        </button>
+      </div>
     </div>
   );
 }

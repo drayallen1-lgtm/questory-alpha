@@ -27,6 +27,7 @@ import { AI_SCENE_GENERATOR, generateSceneFromPrompt } from './aiSceneGenerator'
 import { ScenePreviewOverlay } from './CinematicAR';
 import { uploadMediaFile, libraryAssetToMediaAsset } from './supabase/mediaService';
 import { HorrorAnimationPreview } from './horrorAssets/animations';
+import { AdventureDirectorStrip } from './ExperienceUI';
 
 function isMediaUrl(url) {
   return typeof url === 'string' && (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('/'));
@@ -235,6 +236,7 @@ export function MediaStudioPanel({
   onManifestChange,
   onInsertAsset,
   onGenerateScene,
+  onApplyDirectorDraft,
   clues = [],
   setClues,
   setArFinale,
@@ -374,6 +376,10 @@ export function MediaStudioPanel({
         </h3>
         <p className="admin-meta">Upload, preview, and insert horror assets — no external tools needed.</p>
       </div>
+
+      {onApplyDirectorDraft && (
+        <AdventureDirectorStrip onApplyDraft={onApplyDirectorDraft} />
+      )}
 
       <label>Insert into</label>
       <select value={insertTarget} onChange={(e) => setInsertTarget(e.target.value)}>
