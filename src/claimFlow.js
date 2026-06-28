@@ -25,6 +25,7 @@ import {
   resolveClaimRewardsAsync,
   isAdventureEnded,
 } from './rewardInventory';
+import { filterRewardsForAccess } from './accessRules';
 import { createCompletionCertificate } from './share';
 import {
   createVaultReward,
@@ -172,6 +173,15 @@ export async function runClaimTreasure({
   const p = getAdventureProgress(state, adventure.id);
   const method = normalizeClaimMethod(adventure.claimMethod);
   const isDemo = adventure.isDemoAdventure || adventure.id === DEMO_ADVENTURE_ID;
+  const accessContext = options.accessContext;
+
+  if (accessContext?.mode === 'hidden') {
+    return { response: fail('This adventure is not available in your area.') };
+  }
+
+  if (accessContext?.remoteOnlyRewards && !accessContext?.canClaimVirtual) {
+    return { response: fail('This adventure is not available for remote play.') };
+  }
   const medallionAutoClaim =
     Boolean(options.medallionTapped) && method === CLAIM_METHOD.TAP_MEDALLION;
 
@@ -224,7 +234,10 @@ export async function runClaimTreasure({
 
   const claimedAt = new Date().toISOString();
   const sponsorInfo = getSponsorInfo(freshAdventure);
-  const vaultRewards = buildVaultRewards(freshAdventure, resolved.vaultTemplates, claimedAt);
+  let vaultRewards = buildVaultRewards(freshAdventure, resolved.vaultTemplates, claimedAt);
+  if (accessContext?.remoteOnlyRewards) {
+    vaultRewards = filterRewardsForAccess(vaultRewards, accessContext);
+  }
 
   const primaryReward =
     vaultRewards.find((r) => r.type === 'medallion') || vaultRewards[0];

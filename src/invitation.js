@@ -294,6 +294,7 @@ export function buildBackyardDemoAdventure() {
     potEntries: 1,
     estimatedMinutes: 3,
     isDemoAdventure: true,
+    accessType: 'demo',
     adventureScale: 'backyard',
     adventureTemplate: 'family_fun',
     experienceSettings: {

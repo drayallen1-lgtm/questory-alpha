@@ -174,6 +174,8 @@ export function metaFormFromAdventure(adventure) {
     collectionRewardMedallion: adventure?.collectionRewardMedallion || '',
     isFounderHunt: Boolean(adventure?.isFounderHunt),
     playMode: adventure?.playMode || 'both',
+    accessType: adventure?.accessType || 'hybrid',
+    playRadiusM: adventure?.playRadiusM ?? '',
     finderMode: adventure?.finderMode || 'finder',
     arAssetType: adventure?.arAssetType || 'ghost_lantern',
     tier: adventure?.tier || 'standard',

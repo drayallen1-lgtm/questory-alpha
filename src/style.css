@@ -459,6 +459,83 @@ small.progress-label {
   border-color: transparent;
 }
 
+.mapbox-marker.adventure-marker.pin-playable .marker-pin {
+  background: linear-gradient(180deg, #5eead4, #14b8a6);
+  box-shadow: 0 0 12px rgba(94, 234, 212, 0.55);
+}
+
+.mapbox-marker.adventure-marker.pin-preview .marker-pin,
+.mapbox-marker.adventure-marker.pin-virtual .marker-pin {
+  background: linear-gradient(180deg, #94a3b8, #64748b);
+  box-shadow: 0 0 10px rgba(148, 163, 184, 0.45);
+}
+
+.user-location-marker {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #60a5fa;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.35);
+}
+
+.access-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 10px 0 16px;
+}
+
+.access-type-card {
+  text-align: left;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.65);
+  cursor: pointer;
+}
+
+.access-type-card.active {
+  border-color: rgba(94, 234, 212, 0.55);
+  background: rgba(20, 184, 166, 0.12);
+}
+
+.access-type-card strong {
+  display: block;
+  margin: 6px 0 4px;
+}
+
+.access-type-card small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.access-badge {
+  background: rgba(96, 165, 250, 0.15);
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+.access-status-banner.preview-mode {
+  border-color: rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.access-status-banner p,
+.access-status-banner small {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.map-pin-badge.pin-preview {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.fallback-marker.adventure.pin-preview {
+  opacity: 0.85;
+  border-style: dashed;
+}
+
 .mapbox-marker {
   border: 0;
   background: transparent;

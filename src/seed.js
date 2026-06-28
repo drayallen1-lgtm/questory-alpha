@@ -44,6 +44,7 @@ import { DEFAULT_LAUNCH_FUNNEL, normalizeLaunchFunnel } from './stability';
 import { DEFAULT_GROWTH, normalizeGrowth, mergeAdventureGrowth } from './growth';
 import { normalizeArScene } from './arEngine';
 import { normalizeMediaManifest } from './mediaStudio';
+import { normalizeAccessType } from './accessRules';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -62,6 +63,7 @@ export const defaultState = {
   pendingPhotoMemory: null,
   claimMessage: null,
   adminPreview: false,
+  previewMode: false,
   adminTab: 'drafts',
   engagement: { ...DEFAULT_ENGAGEMENT },
   economy: { ...DEFAULT_ECONOMY },
@@ -107,6 +109,7 @@ export const defaultState = {
       couponTerms: 'One per customer. Valid at participating Parsons locations.',
       couponExpirationDays: 7,
       playMode: 'both',
+      accessType: 'hybrid',
       heatCategory: 'trending',
       finderMode: 'ar_enhanced',
       arAssetType: 'ancient_artifact',
@@ -224,6 +227,7 @@ export const defaultState = {
       id: 'iron-horse',
       title: 'The Iron Horse',
       location: 'Parsons, Kansas',
+      accessType: 'remote',
       city: 'Parsons',
       state: 'Kansas',
       region: 'Kansas',
@@ -389,6 +393,7 @@ export const defaultState = {
       id: 'union-depot-ghost',
       title: 'Union Depot Ghost',
       location: 'Parsons, Kansas',
+      accessType: 'local',
       city: 'Parsons',
       state: 'Kansas',
       region: 'Kansas',
@@ -742,6 +747,7 @@ export function loadState() {
       pendingPhotoMemory: null,
       claimMessage: null,
       adminPreview: false,
+      previewMode: false,
       engagement: normalizeEngagement(saved.engagement),
       economy: normalizeEconomy(saved.economy),
       social: normalizeSocial(saved.social),
@@ -955,6 +961,8 @@ export function normalizeAdventure(adventure) {
     couponExpirationDays: adventure.couponExpirationDays ?? 7,
     campaignPaused: Boolean(adventure.campaignPaused),
     playMode: adventure.playMode || 'both',
+    accessType: normalizeAccessType(adventure.accessType),
+    playRadiusM: adventure.playRadiusM ?? null,
     heatCategory: adventure.heatCategory || 'trending',
     finderMode: adventure.finderMode || 'finder',
     arAssetType: adventure.arAssetType || 'ghost_lantern',

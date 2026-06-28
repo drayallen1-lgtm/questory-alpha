@@ -37,6 +37,8 @@ import {
   parseMilesEstimate,
 } from './engagement';
 import { getAdventureProgress, getPublishedAdventures, getSponsorInfo } from './seed';
+import { getDiscoverableAdventures } from './accessRules';
+import { AccessTypeBadge } from './AccessRulesUI';
 import { CollectionLoreUnlockBanner } from './CollectionLoreUI';
 import { getCollectionStoryView } from './loreCollectionsEngine';
 import {
@@ -192,7 +194,10 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
 }
 
 export function EnhancedAdventureFeed({ adventures, state, nav, auth, setState }) {
-  const published = getPublishedAdventures(adventures);
+  const published = getDiscoverableAdventures(adventures, {
+    isAdmin: auth?.isAdmin,
+    userId: auth?.user?.id,
+  });
 
   return (
     <>
@@ -246,8 +251,9 @@ function AdventureFeedCard({ adventure, progress, state, nav }) {
         <small>{adventure.distance || `${parseMilesEstimate(adventure)} mi`}</small>
       </div>
       <h3>{adventure.title}</h3>
-      <VerifiedSponsorBadge adventure={adventure} />
-      <CreatorVerifiedBadge adventure={adventure} />
+        <VerifiedSponsorBadge adventure={adventure} />
+        <CreatorVerifiedBadge adventure={adventure} />
+        <AccessTypeBadge adventure={adventure} compact />
         <WorldEventBadge adventure={adventure} />
         <CreatorPrestigeBadge adventure={adventure} adventures={state.adventures} />
         <QuestCodeBadge adventure={adventure} />

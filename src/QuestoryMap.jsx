@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { MapPin, ChevronRight } from 'lucide-react';
+import { MapPin, ChevronRight, Eye, Globe } from 'lucide-react';
 import { LiveMapOverlay } from './SocialUI';
 import { VISIBILITY_MODES } from './social';
 import {
@@ -10,8 +10,11 @@ import {
   buildAdventureMarkers,
   buildClueMarkers,
   getMapBounds,
+  hasMapboxToken,
 } from './mapUtils';
 import { getSponsorInfo } from './seed';
+import { AccessTypeBadge, AccessStatusBanner, usePlayerLocation } from './AccessRulesUI';
+import { evaluateAccessContext } from './accessRules';
 
 function FallbackMap({
   adventureMarkers = [],
@@ -44,7 +47,7 @@ function FallbackMap({
             <button
               key={marker.id}
               type="button"
-              className="fallback-marker adventure"
+              className={`fallback-marker adventure pin-${marker.pinAccess || 'playable'}`}
               onClick={() => onAdventureClick?.(marker.adventure)}
             >
               <MapPin size={16} />
@@ -84,10 +87,13 @@ export function QuestoryMap({
   onClueClick,
   mini = false,
   className = '',
+  showUserLocation = false,
+  userLocation = null,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRefs = useRef([]);
+  const userMarkerRef = useRef(null);
   const token = getMapboxToken();
 
   useEffect(() => {
@@ -106,6 +112,8 @@ export function QuestoryMap({
     mapRef.current = map;
 
     return () => {
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
       markerRefs.current.forEach((m) => m.remove());
       markerRefs.current = [];
       map.remove();
@@ -119,6 +127,11 @@ export function QuestoryMap({
     const map = mapRef.current;
     markerRefs.current.forEach((m) => m.remove());
     markerRefs.current = [];
+
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+      userMarkerRef.current = null;
+    }
 
     const addMarker = (marker, el) => {
       const handleClick = () => {
@@ -140,7 +153,7 @@ export function QuestoryMap({
     adventureMarkers.forEach((marker) => {
       const el = document.createElement('button');
       el.type = 'button';
-      el.className = 'mapbox-marker adventure-marker';
+      el.className = `mapbox-marker adventure-marker pin-${marker.pinAccess || 'playable'}`;
       el.title = marker.title;
       el.innerHTML = `<span class="marker-pin"></span><span class="marker-label">${marker.title}</span>`;
       addMarker(marker, el);
@@ -155,6 +168,15 @@ export function QuestoryMap({
       addMarker(marker, el);
     });
 
+    if (showUserLocation && userLocation?.latitude != null && userLocation?.longitude != null) {
+      const el = document.createElement('span');
+      el.className = 'mapbox-marker user-location-marker';
+      el.title = 'You are here';
+      userMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([userLocation.longitude, userLocation.latitude])
+        .addTo(map);
+    }
+
     const all = [...adventureMarkers, ...clueMarkers];
     if (all.length === 1) {
       map.flyTo({
@@ -165,9 +187,21 @@ export function QuestoryMap({
     } else if (all.length > 1) {
       const bounds = new mapboxgl.LngLatBounds();
       all.forEach((m) => bounds.extend([m.longitude, m.latitude]));
+      if (userLocation?.latitude != null) {
+        bounds.extend([userLocation.longitude, userLocation.latitude]);
+      }
       map.fitBounds(bounds, { padding: mini ? 36 : 56, maxZoom: mini ? 14 : 13, duration: 600 });
     }
-  }, [token, adventureMarkers, clueMarkers, onAdventureClick, onClueClick, mini]);
+  }, [
+    token,
+    adventureMarkers,
+    clueMarkers,
+    onAdventureClick,
+    onClueClick,
+    mini,
+    showUserLocation,
+    userLocation,
+  ]);
 
   if (!token) {
     return (
@@ -190,9 +224,10 @@ export function QuestoryMap({
   );
 }
 
-export function MapScreen({ adventures, nav, state, setState }) {
+export function MapScreen({ adventures, nav, state, setState, isAdmin = false, userId = null }) {
   const [focusedAdventure, setFocusedAdventure] = useState(null);
   const [previewAdventure, setPreviewAdventure] = useState(null);
+  const { location } = usePlayerLocation();
   const presence = state?.social?.mapPresence || {
     explorersNearby: 12,
     activeHunts: 4,
@@ -200,19 +235,45 @@ export function MapScreen({ adventures, nav, state, setState }) {
   };
   const visibility = state?.social?.visibility || VISIBILITY_MODES.TEAM;
 
-  const adventureMarkers = buildAdventureMarkers(adventures);
+  const accessOptions = {
+    userLatitude: location?.latitude,
+    userLongitude: location?.longitude,
+    isAdmin,
+    userId,
+  };
+
+  const adventureMarkers = buildAdventureMarkers(adventures, accessOptions);
   const clueMarkers = focusedAdventure ? buildClueMarkers(focusedAdventure) : [];
+  const previewAccess = previewAdventure
+    ? evaluateAccessContext(previewAdventure, {
+        ...accessOptions,
+        adminPreview: false,
+      })
+    : null;
 
   function handleAdventureClick(adventure) {
     setFocusedAdventure(adventure);
     setPreviewAdventure(adventure);
   }
 
+  function openAdventure() {
+    if (!previewAdventure || !previewAccess) return;
+    const previewMode = previewAccess.tooFar || previewAccess.mode === 'preview';
+    nav('detail', previewAdventure.id, {
+      adminPreview: false,
+      previewMode,
+    });
+  }
+
   return (
     <>
       <div className="section-head">
         <h2>Adventure Map</h2>
-        <p>Published trails and clue locations</p>
+        <p>
+          {hasMapboxToken()
+            ? 'Live Mapbox trails · pins show play access'
+            : 'Trail list · add VITE_MAPBOX_TOKEN for live map'}
+        </p>
       </div>
 
       {state && setState && (
@@ -233,6 +294,8 @@ export function MapScreen({ adventures, nav, state, setState }) {
         clueMarkers={clueMarkers}
         onAdventureClick={handleAdventureClick}
         onClueClick={(marker) => setPreviewAdventure(marker.adventure)}
+        showUserLocation
+        userLocation={location}
       />
 
       {focusedAdventure && (
@@ -247,13 +310,25 @@ export function MapScreen({ adventures, nav, state, setState }) {
         </button>
       )}
 
-      {previewAdventure && (
+      {previewAdventure && previewAccess && (
         <div className="card map-preview-card">
           <div className="row">
-            <span className="badge published">Published</span>
+            <AccessTypeBadge adventure={previewAdventure} />
+            <span className={`badge map-pin-badge pin-${previewAccess.tooFar ? 'preview' : 'playable'}`}>
+              {previewAccess.tooFar ? (
+                <>
+                  <Eye size={12} /> Preview
+                </>
+              ) : (
+                <>
+                  <Globe size={12} /> Playable
+                </>
+              )}
+            </span>
             <small>{previewAdventure.location}</small>
           </div>
           <h3>{previewAdventure.title}</h3>
+          <AccessStatusBanner access={previewAccess} />
           <p className="story-preview">{previewAdventure.story}</p>
           <p className="sponsor-inline">
             Sponsored by {getSponsorInfo(previewAdventure).name}
@@ -262,20 +337,16 @@ export function MapScreen({ adventures, nav, state, setState }) {
             <span>{previewAdventure.clues.length} clues</span>
             <span>{previewAdventure.prize}</span>
           </div>
-          <button
-            onClick={() =>
-              nav('detail', previewAdventure.id, { adminPreview: false })
-            }
-          >
-            View Adventure <ChevronRight size={18} />
+          <button onClick={openAdventure}>
+            {previewAccess.ctaLabel} <ChevronRight size={18} />
           </button>
         </div>
       )}
 
-      {!adventures.length && (
+      {!adventureMarkers.length && (
         <div className="card empty-vault">
           <MapPin size={28} />
-          <p>No published adventures on the map yet.</p>
+          <p>No adventures with map locations in your area yet.</p>
         </div>
       )}
     </>

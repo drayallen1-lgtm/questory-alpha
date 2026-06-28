@@ -80,7 +80,11 @@ import {
   downloadProofCard,
   formatProofDate,
 } from './share';
-import { runClaimTreasure, runMedallionCapture } from './claimFlow';
+import {
+  filterRewardsForAccess,
+  evaluateAccessContext,
+  getMapVisibleAdventures,
+} from './accessRules';
 import { getDirectorChapterBeat, resolveDirectorClue } from './directorRuntime';
 import { advanceClueForAdventure, continueAfterBonus, applyPlayNavigation } from './progressionEngine';
 import { useArSceneFlow } from './arFlow';
@@ -186,6 +190,12 @@ import {
   validateAdventureCluesForPublish,
 } from './adventureEditor';
 import { MapScreen, MiniClueMap } from './QuestoryMap';
+import {
+  AccessTypeSelector,
+  AccessStatusBanner,
+  AccessTypeBadge,
+  usePlayerLocation,
+} from './AccessRulesUI';
 import { hasSupabase } from './supabase/client';
 import { AuthProvider, useAuth } from './supabase/AuthContext';
 import { LoginScreen } from './supabase/LoginScreen';
@@ -314,6 +324,7 @@ function App() {
 
 function QuestoryApp() {
   const auth = useAuth();
+  const { location: playerLocation } = usePlayerLocation();
   const { user, isAdmin, isSponsor, isCreator, isSupabaseMode, loading: authLoading } = auth;
   const [state, setState] = useState(getInitialState);
   const [showLogin, setShowLogin] = useState(false);
@@ -394,6 +405,17 @@ function QuestoryApp() {
     state.adventures.find((a) => a.id === state.pendingInviteAdventureId) || selected;
   const progress = selected ? getAdventureProgress(state, selected.id) : null;
 
+  function getAccessContext(adventure, previewModeOverride) {
+    return evaluateAccessContext(adventure, {
+      userLatitude: playerLocation?.latitude ?? null,
+      userLongitude: playerLocation?.longitude ?? null,
+      adminPreview: state.adminPreview,
+      previewMode: previewModeOverride ?? state.previewMode,
+      isAdmin,
+      userId: user?.id ?? null,
+    });
+  }
+
   function nav(screen, adventureId = state.selectedAdventureId, options = {}) {
     setState((s) => {
       let next = {
@@ -403,6 +425,8 @@ function QuestoryApp() {
         selectedCreatorId: options.creatorId ?? s.selectedCreatorId,
         adminPreview:
           'adminPreview' in options ? options.adminPreview : s.adminPreview,
+        previewMode:
+          'previewMode' in options ? options.previewMode : screen === 'play' || screen === 'detail' ? s.previewMode : false,
         adminTab: options.adminTab ?? s.adminTab,
         quickSponsor: 'quickSponsor' in options ? options.quickSponsor : s.quickSponsor,
         growthTab: options.growthTab ?? s.growthTab,
@@ -564,11 +588,12 @@ function QuestoryApp() {
   }
 
   async function claimTreasure(adventure, code, options = {}) {
+    const accessContext = getAccessContext(adventure, options.previewMode);
     const result = await runClaimTreasure({
       state,
       adventure,
       code,
-      options,
+      options: { ...options, accessContext },
       user,
       isSupabaseMode,
       claimLimitedRewardRemote,
@@ -736,10 +761,15 @@ function QuestoryApp() {
         )}
         {state.screen === 'map' && (
           <MapScreen
-            adventures={getPublishedAdventures(state.adventures)}
+            adventures={getMapVisibleAdventures(state.adventures, {
+              isAdmin,
+              userId: user?.id,
+            })}
             nav={nav}
             state={state}
             setState={setState}
+            isAdmin={isAdmin}
+            userId={user?.id}
           />
         )}
         {state.screen === 'detail' && selected && (
@@ -748,6 +778,8 @@ function QuestoryApp() {
             progress={progress}
             nav={nav}
             adminPreview={state.adminPreview}
+            previewMode={state.previewMode}
+            accessContext={getAccessContext(selected, state.previewMode)}
             state={state}
             setState={setState}
             adventures={state.adventures}
@@ -761,9 +793,13 @@ function QuestoryApp() {
             state={state}
             setState={setState}
             onSolve={() => solveClue(selected)}
-            onClaim={(code, options) => claimTreasure(selected, code, options)}
+            onClaim={(code, options) =>
+              claimTreasure(selected, code, { ...options, previewMode: state.previewMode })
+            }
             nav={nav}
             adminPreview={state.adminPreview}
+            previewMode={state.previewMode}
+            accessContext={getAccessContext(selected, state.previewMode)}
             isDevMode={state.adminPreview || isAdmin}
             clueStartRef={clueStartRef}
             advanceClueForAdventure={advanceClueForAdventure}
@@ -1204,6 +1240,8 @@ function AdventureDetail({
   progress,
   nav,
   adminPreview,
+  previewMode = false,
+  accessContext,
   state,
   setState,
   adventures,
@@ -1212,14 +1250,21 @@ function AdventureDetail({
   const [showIntro, setShowIntro] = useState(false);
   const ended = isAdventureEnded(adventure);
   const unlocked = isAdventureUnlocked(state, adventure);
-  const playable = isAdventurePlayable(adventure, adminPreview) && (!ended || progress.claimed) && unlocked;
+  const access = accessContext;
+  const canStart = access?.canPlayFull || access?.canPreview || adminPreview;
+  const playable =
+    isAdventurePlayable(adventure, adminPreview) &&
+    (!ended || progress.claimed) &&
+    unlocked &&
+    canStart;
   const pct = progress.claimed
     ? 100
     : Math.round((progress.step / Math.max(adventure.clues.length, 1)) * 100);
   const myTeam = getMyTeam(state);
 
-  function startPlay() {
-    nav('play', adventure.id, { adminPreview });
+  function startPlay(forcePreview = false) {
+    const usePreview = forcePreview || previewMode || access?.mode === 'preview';
+    nav('play', adventure.id, { adminPreview, previewMode: usePreview });
   }
 
   return (
@@ -1256,6 +1301,7 @@ function AdventureDetail({
         </div>
       )}
       {adminPreview && <AdminClaimCode adventure={adventure} />}
+      <AccessStatusBanner access={access} />
       <div className="card detail-hero">
         <div className="row">
           {adventure.isFounderHunt ? (
@@ -1267,6 +1313,7 @@ function AdventureDetail({
               {adventureStatusLabel(adventure.status)}
             </span>
           )}
+          <AccessTypeBadge adventure={adventure} compact />
           <small>{adventure.distance}</small>
         </div>
         <h2>{adventure.title}</h2>
@@ -1419,10 +1466,11 @@ function AdventureDetail({
         <button
           disabled={!playable}
           onClick={() => {
-            if (!progress.claimed && progress.step === 0 && !adminPreview) {
+            const usePreview = access?.tooFar && !adminPreview;
+            if (!progress.claimed && progress.step === 0 && !adminPreview && !usePreview) {
               setShowIntro(true);
             } else {
-              startPlay();
+              startPlay(usePreview);
             }
           }}
         >
@@ -1430,16 +1478,18 @@ function AdventureDetail({
             ? 'Adventure Ended'
             : progress.claimed
               ? 'Replay Trail'
-              : progress.step > 0
-                ? 'Continue Adventure'
-                : 'Start Adventure'}
+              : access?.tooFar && !adminPreview
+                ? access.ctaLabel
+                : progress.step > 0
+                  ? 'Continue Adventure'
+                  : access?.ctaLabel || 'Start Adventure'}
         </button>
       )}
     </>
   );
 }
 
-function GpsCheckIn({ clue, onUnlock, disabled = false }) {
+function GpsCheckIn({ clue, onUnlock, disabled = false, previewMode = false }) {
   const [status, setStatus] = useState('idle');
   const [distanceAway, setDistanceAway] = useState(null);
   const [checking, setChecking] = useState(false);
@@ -1501,12 +1551,20 @@ function GpsCheckIn({ clue, onUnlock, disabled = false }) {
       )}
 
       <button onClick={handleGpsCheckIn} disabled={checking || disabled}>
-        <MapPin size={18} /> {checking ? 'Checking…' : disabled ? 'Choose a path first' : 'GPS Check-In'}
+        <MapPin size={18} /> {checking ? 'Checking…' : previewMode ? 'Preview Unlock' : disabled ? 'Choose a path first' : 'GPS Check-In'}
       </button>
 
-      <button className="ghost dev-unlock" onClick={onUnlock} disabled={checking || disabled}>
-        Dev Unlock
-      </button>
+      {previewMode && (
+        <button className="ghost dev-unlock" onClick={onUnlock} disabled={checking || disabled}>
+          Skip GPS (Preview)
+        </button>
+      )}
+
+      {!previewMode && (
+        <button className="ghost dev-unlock" onClick={onUnlock} disabled={checking || disabled}>
+          Dev Unlock
+        </button>
+      )}
     </div>
   );
 }
@@ -1520,6 +1578,8 @@ function AdventurePlay({
   onClaim,
   nav,
   adminPreview,
+  previewMode = false,
+  accessContext,
   isDevMode = false,
   clueStartRef,
   advanceClueForAdventure,
@@ -1650,6 +1710,7 @@ function AdventurePlay({
         </div>
       )}
       {adminPreview && <AdminClaimCode adventure={adventure} />}
+      <AccessStatusBanner access={accessContext} />
       <WeatherOverlay state={state} />
       <WorldEventAtmosphereOverlay context={eventContext} />
       <HorrorAtmosphereOverlay adventure={adventure} eventContext={eventContext} />
@@ -1744,6 +1805,7 @@ function AdventurePlay({
               clue={clue}
               onUnlock={() => queueArScene('after_checkin', { advanceClue: true })}
               disabled={Array.isArray(clue.branchOptions) && clue.branchOptions.length > 0 && !progress.pathId}
+              previewMode={previewMode || accessContext?.remoteOnlyRewards}
             />
             {canReplayClueAr && (
               <ARSceneReplayButton
@@ -2542,6 +2604,8 @@ function CreateAdventure({
     collectionRewardMedallion: '',
     isFounderHunt: false,
     playMode: 'both',
+    accessType: 'hybrid',
+    playRadiusM: '',
     finderMode: FINDER_MODES.FINDER,
     arAssetType: 'ghost_lantern',
     tier: 'standard',
@@ -2911,6 +2975,8 @@ function CreateAdventure({
       collectionRewardMedallion: meta.collectionRewardMedallion.trim(),
       isFounderHunt: Boolean(meta.isFounderHunt),
       playMode: meta.playMode || 'both',
+      accessType: meta.accessType || 'hybrid',
+      playRadiusM: parseInt(meta.playRadiusM, 10) || null,
       finderMode: meta.finderMode || FINDER_MODES.FINDER,
       arAssetType: meta.arAssetType || 'ghost_lantern',
       arFinale: normalizeArScene(arFinale),
@@ -3166,6 +3232,28 @@ function CreateAdventure({
           <option value="team">Team only</option>
           <option value="both">Solo & Team</option>
         </select>
+        <label>Access Type</label>
+        <p className="admin-meta">
+          Decide whether players must be on-site, can play remotely, or preview from afar.
+        </p>
+        <AccessTypeSelector
+          value={meta.accessType}
+          onChange={(accessType) => setMeta((m) => ({ ...m, accessType }))}
+        />
+        {(meta.accessType === 'local' || meta.accessType === 'hybrid' || meta.accessType === 'sponsor') && (
+          <>
+            <label>Play Zone Radius (meters)</label>
+            <input
+              type="number"
+              value={meta.playRadiusM}
+              onChange={(e) => setMeta((m) => ({ ...m, playRadiusM: e.target.value }))}
+              placeholder={`Default ${meta.finderSearchRadiusM || 200} m`}
+            />
+            <p className="admin-meta">
+              Players outside this radius see &quot;Too far to play — Preview instead.&quot;
+            </p>
+          </>
+        )}
         <FinderModeSelector
           value={meta.finderMode}
           onChange={(mode) => setMeta((m) => ({ ...m, finderMode: mode }))}

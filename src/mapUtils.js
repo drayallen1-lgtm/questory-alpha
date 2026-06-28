@@ -1,4 +1,5 @@
 import { env, hasMapboxEnv } from './config/env';
+import { buildMapMarkerAccess, evaluateAccessContext } from './accessRules';
 
 export const MAPBOX_FALLBACK_MESSAGE =
   'Map preview unavailable. Add VITE_MAPBOX_TOKEN to enable live maps.';
@@ -23,11 +24,20 @@ export function getAdventureMapCenter(adventure) {
   return { latitude, longitude };
 }
 
-export function buildAdventureMarkers(adventures) {
+export function buildAdventureMarkers(adventures, accessOptions = {}) {
+  const { userLatitude, userLongitude, isAdmin, userId } = accessOptions;
+
   return adventures
     .filter((a) => a.clues?.length)
     .map((adventure) => {
       const center = getAdventureMapCenter(adventure);
+      const access = evaluateAccessContext(adventure, {
+        userLatitude,
+        userLongitude,
+        isAdmin,
+        userId,
+      });
+      const pinAccess = buildMapMarkerAccess(adventure, access);
       return {
         id: adventure.id,
         type: 'adventure',
@@ -36,8 +46,11 @@ export function buildAdventureMarkers(adventures) {
         latitude: center.latitude,
         longitude: center.longitude,
         adventure,
+        access,
+        pinAccess,
       };
-    });
+    })
+    .filter((m) => m.pinAccess !== 'hidden');
 }
 
 export function buildClueMarkers(adventure, activeIndex = 0) {
