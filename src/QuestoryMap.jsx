@@ -262,6 +262,7 @@ export function QuestoryMap({
   userLocation = null,
   mapExploration = null,
   selectedAdventureId = null,
+  mapState = null,
   onFindMe,
   findMeSignal = 0,
   onVisiblePinCountChange,
@@ -298,7 +299,7 @@ export function QuestoryMap({
       nextIds.add(id);
       const markerData = markerLookup.get(id);
       if (!markerData) return;
-      const visual = resolvePinVisual(markerData.adventure);
+      const visual = resolvePinVisual(markerData.adventure, mapState);
       const selected = selectedAdventureId === id;
       let entry = markersOnScreenRef.current[id];
 
@@ -813,6 +814,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           showUserLocation
           userLocation={location}
           mapExploration={state?.mapExploration}
+          mapState={state}
           selectedAdventureId={selectedAdventure?.id}
           findMeSignal={findMeSignal}
           onVisiblePinCountChange={setVisiblePinCount}
