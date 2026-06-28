@@ -39,8 +39,9 @@ import {
   buildClusterTooltipHtml,
   centerOnPinWithCardPadding,
   clusterVisualClasses,
-  computeSpiderfyLayout,
+  computeSpiderfyLayoutPixel,
   easeMapTo,
+  ensureAnchorsInView,
   flyMapTo,
   groupOverlappingMarkers,
   shouldSpiderfyAtZoom,
@@ -385,6 +386,7 @@ export function QuestoryMap({
   const markerLookupRef = useRef(new Map());
   const mapStateRef = useRef(mapState);
   const syncHtmlMarkersRef = useRef(() => {});
+  const spiderfyPanningRef = useRef(false);
   const onAdventureClickRef = useRef(onAdventureClick);
   const onPinHoverChangeRef = useRef(onPinHoverChange);
   const onSpatialStatsChangeRef = useRef(onSpatialStatsChange);
@@ -523,18 +525,35 @@ export function QuestoryMap({
     };
 
     if (shouldSpiderfyAtZoom(zoom)) {
-      clearSpiderLayers(map);
       const groups = groupOverlappingMarkers(markers);
+
+      if (!spiderfyPanningRef.current && ensureAnchorsInView(map, groups)) {
+        spiderfyPanningRef.current = true;
+        map.once('moveend', () => {
+          spiderfyPanningRef.current = false;
+          syncHtmlMarkersRef.current();
+        });
+        reportStats(0);
+        return;
+      }
+
       const layouts = new Map();
       const spiderGroups = [];
+      const spiderDebug = [];
 
       for (const group of groups) {
         if (group.markers.length >= 2) {
           spiderGroups.push(group);
-          layouts.set(group.id, computeSpiderfyLayout(group, { zoom }));
+          const { layout, debug } = computeSpiderfyLayoutPixel(group, map, { debug: isDev });
+          layouts.set(group.id, layout);
+          if (isDev && debug.length) spiderDebug.push(...debug);
         }
       }
       spiderGroupCount = spiderGroups.length;
+
+      if (isDev && spiderDebug.length) {
+        console.debug('[MapSpiderfy]', spiderDebug);
+      }
 
       if (spiderGroups.length) {
         updateSpiderLayers(map, spiderGroups, layouts);
@@ -1026,15 +1045,38 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     }
   }
 
-  function handleViewClues(adventure) {
-    setFocusedAdventure(adventure);
-    setSelectedMarker(null);
+  function handleViewClues(adventure, access) {
+    if (!adventure?.id || !nav) return;
+    const previewMode = Boolean(access?.tooFar || access?.mode === 'preview' || !access?.canPlayFull);
+    if (isDev) {
+      console.debug('[MapPinCard]', {
+        mapCardCtaClicked: true,
+        adventureId: adventure.id,
+        accessMode: access?.mode,
+        targetScreen: 'detail',
+        previewMode,
+        action: 'viewClueTrail',
+      });
+    }
+    nav('detail', adventure.id, { adminPreview: false, previewMode });
   }
 
-  function openAdventure() {
-    if (!selectedAdventure || !previewAccess) return;
-    const previewMode = previewAccess.tooFar || previewAccess.mode === 'preview';
-    nav('detail', selectedAdventure.id, { adminPreview: false, previewMode });
+  function handleMapCardPlay(adventure, access) {
+    if (!adventure?.id || !nav) return;
+    const previewMode = Boolean(access?.tooFar || access?.mode === 'preview' || !access?.canPlayFull);
+    const targetScreen = previewMode ? 'detail' : 'play';
+
+    if (isDev) {
+      console.debug('[MapPinCard]', {
+        mapCardCtaClicked: true,
+        adventureId: adventure.id,
+        accessMode: access?.mode,
+        targetScreen,
+        previewMode,
+      });
+    }
+
+    nav(targetScreen, adventure.id, { adminPreview: false, previewMode });
   }
 
   return (
@@ -1113,8 +1155,8 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
             visual={pinVisual}
             distanceM={selectedMarker?.distanceM}
             onClose={() => setSelectedMarker(null)}
-            onPlay={openAdventure}
-            onViewClues={() => handleViewClues(selectedAdventure)}
+            onPlay={handleMapCardPlay}
+            onViewClues={handleViewClues}
           />
         )}
       </div>

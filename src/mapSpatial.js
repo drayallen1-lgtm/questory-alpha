@@ -7,8 +7,11 @@ import { resolvePinBaseType, resolvePinOverlays } from './mapDiscovery';
 export const SPIDERFY_MIN_ZOOM = 14;
 export const SPIDERFY_MAX_ZOOM = 18;
 export const OVERLAP_THRESHOLD_M = 48;
+/** Legacy meter fallback — prefer pixel spiderfy when map is available. */
 export const SPIDERFY_RADIUS_M = 38;
 export const CLUSTER_MAX_ZOOM = 14;
+export const SPIDERFY_BASE_RADIUS_PX = 42;
+export const SPIDERFY_VIEW_PADDING_PX = 56;
 
 const EARTH_M = 6371000;
 
@@ -75,7 +78,100 @@ export function groupOverlappingMarkers(markers, thresholdM = OVERLAP_THRESHOLD_
   return groups;
 }
 
-/** Radial fan layout around anchor; returns Map markerId -> [lng, lat]. */
+export function isAnchorInViewport(map, anchor, paddingPx = SPIDERFY_VIEW_PADDING_PX) {
+  if (!map || !anchor) return true;
+  const px = map.project([anchor.longitude, anchor.latitude]);
+  const { clientWidth: w, clientHeight: h } = map.getContainer();
+  return (
+    px.x >= paddingPx &&
+    px.x <= w - paddingPx &&
+    px.y >= paddingPx &&
+    px.y <= h - paddingPx
+  );
+}
+
+function clampPixelFanAroundAnchor(anchorPx, dx, dy, paddingPx, width, height) {
+  let scale = 1;
+  const minX = paddingPx;
+  const maxX = width - paddingPx;
+  const minY = paddingPx;
+  const maxY = height - paddingPx;
+
+  for (let i = 0; i < 10; i += 1) {
+    const x = anchorPx.x + dx * scale;
+    const y = anchorPx.y + dy * scale;
+    if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
+      return { x, y, scale };
+    }
+    scale *= 0.82;
+  }
+
+  return {
+    x: anchorPx.x + dx * 0.55,
+    y: anchorPx.y + dy * 0.55,
+    scale: 0.55,
+  };
+}
+
+/**
+ * Fan pins in pixel space around the true anchor so they stay near the real location.
+ * @returns {{ layout: Map<string, [number, number]>, debug: object[] }}
+ */
+export function computeSpiderfyLayoutPixel(group, map, options = {}) {
+  const { anchor, markers } = group;
+  const count = markers.length;
+  const layout = new Map();
+  const debug = [];
+
+  if (!map || count <= 1) {
+    if (count === 1) {
+      layout.set(markers[0].id, [markers[0].longitude, markers[0].latitude]);
+    }
+    return { layout, debug };
+  }
+
+  const anchorLngLat = [anchor.longitude, anchor.latitude];
+  const anchorPx = map.project(anchorLngLat);
+  const zoom = map.getZoom();
+  const { clientWidth: w, clientHeight: h } = map.getContainer();
+  const pad = options.paddingPx ?? SPIDERFY_VIEW_PADDING_PX;
+  const zoomBoost = Math.max(0, zoom - SPIDERFY_MIN_ZOOM) * 6;
+  const countScale = Math.min(1.28, 1 + (count - 2) * 0.05);
+  const radiusPx = (options.radiusPx ?? SPIDERFY_BASE_RADIUS_PX + zoomBoost) * countScale;
+  const startAngle = -Math.PI / 2;
+
+  markers.forEach((marker, i) => {
+    const angle = startAngle + (2 * Math.PI * i) / count;
+    const dx = Math.cos(angle) * radiusPx;
+    const dy = Math.sin(angle) * radiusPx;
+    const clamped = clampPixelFanAroundAnchor(anchorPx, dx, dy, pad, w, h);
+    const lngLat = map.unproject([clamped.x, clamped.y]);
+    const coords = [lngLat.lng, lngLat.lat];
+
+    if (Number.isFinite(coords[0]) && Number.isFinite(coords[1])) {
+      layout.set(marker.id, coords);
+    } else {
+      layout.set(marker.id, anchorLngLat);
+    }
+
+    if (options.debug) {
+      debug.push({
+        markerId: marker.id,
+        spiderAnchorLngLat: anchorLngLat,
+        spiderPinLngLat: layout.get(marker.id),
+        pixelOffset: {
+          dx: clamped.x - anchorPx.x,
+          dy: clamped.y - anchorPx.y,
+        },
+        radiusScale: clamped.scale,
+      });
+    }
+  });
+
+  return { layout, debug };
+}
+
+/** @deprecated Prefer computeSpiderfyLayoutPixel when map instance is available. */
 export function computeSpiderfyLayout(group, options = {}) {
   const { radiusM = SPIDERFY_RADIUS_M, zoom = SPIDERFY_MIN_ZOOM } = options;
   const { anchor, markers } = group;
@@ -248,6 +344,22 @@ export function flyMapTo(map, options = {}) {
   if (!map) return;
   const { center, zoom, duration = 900, offset = [0, 0], essential = true } = options;
   map.flyTo({ center, zoom, duration, offset, essential });
+}
+
+export function ensureAnchorsInView(map, groups, options = {}) {
+  if (!map || !groups?.length) return false;
+  const spiderGroups = groups.filter((g) => g.markers.length >= 2);
+  if (!spiderGroups.length) return false;
+
+  const offscreen = spiderGroups.find((g) => !isAnchorInViewport(map, g.anchor));
+  if (!offscreen) return false;
+
+  easeMapTo(map, {
+    center: [offscreen.anchor.longitude, offscreen.anchor.latitude],
+    zoom: Math.max(map.getZoom(), SPIDERFY_MIN_ZOOM),
+    duration: options.duration ?? 450,
+  });
+  return true;
 }
 
 /** Keep selected pin above bottom card on mobile/desktop. */
