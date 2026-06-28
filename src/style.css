@@ -3375,6 +3375,93 @@ nav button.active {
   color: #042f2e;
 }
 
+.adventure-intro-panel .intro-mystery {
+  color: var(--xp-muted);
+  font-size: 0.92rem;
+  margin: 8px 0;
+}
+
+.adventure-intro-panel .intro-guide {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+
+.adventure-intro-panel .intro-npc-line {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border-left: 3px solid rgba(94, 234, 212, 0.5);
+  color: var(--xp-body-soft);
+  font-style: italic;
+}
+
+.adventure-intro-panel .intro-cast {
+  font-size: 0.85rem;
+  color: var(--xp-muted);
+}
+
+.npc-avatar.inline {
+  font-size: 1.2rem;
+}
+
+.chapter-beat {
+  margin: 6px 0 10px;
+  color: var(--xp-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.director-npc-card .npc-role {
+  display: block;
+  color: var(--xp-muted);
+  font-size: 0.78rem;
+  margin-bottom: 4px;
+}
+
+.branch-path-flavor {
+  margin-bottom: 12px;
+  border-color: rgba(94, 234, 212, 0.25);
+  background: rgba(94, 234, 212, 0.05);
+}
+
+.branch-path-flavor small {
+  color: #5eead4;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.72rem;
+}
+
+.director-lore-reveal {
+  margin-top: 16px;
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.director-lore-pages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.director-lore-pages li {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.director-lore-pages li.locked p {
+  color: var(--xp-muted);
+  font-style: italic;
+}
+
+.lore-page-num {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fbbf24;
+  margin-bottom: 4px;
+}
+
 .toolkit-panel {
   background: linear-gradient(145deg, rgba(21, 36, 56, 0.72), rgba(11, 19, 29, 0.95));
 }

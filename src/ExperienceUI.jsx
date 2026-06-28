@@ -46,7 +46,12 @@ import {
   generateFullAdventureFromPrompt,
   getDirectorPresets,
   getDirectorSuggestions,
+  refineDirectorDraft,
 } from './adventureDirector';
+import {
+  getDirectorIntroContent,
+  getDirectorVictoryLore,
+} from './directorRuntime';
 
 export function TemplatePicker({ selected, onSelect }) {
   return (
@@ -215,6 +220,7 @@ export function ToolkitPanel({ toolkit, settings, onChange }) {
 export function AdventureDirectorPanel({ onApplyDraft }) {
   const [prompt, setPrompt] = useState('');
   const [draft, setDraft] = useState(null);
+  const [refine, setRefine] = useState('');
   const [generating, setGenerating] = useState(false);
 
   function handleGenerate(presetId) {
@@ -222,6 +228,12 @@ export function AdventureDirectorPanel({ onApplyDraft }) {
     const result = generateFullAdventureFromPrompt(prompt, presetId ? { presetId } : {});
     setDraft(result);
     setGenerating(false);
+  }
+
+  function handleRefine() {
+    if (!draft?.ok || !refine.trim()) return;
+    setDraft(refineDirectorDraft(draft, refine));
+    setRefine('');
   }
 
   return (
@@ -290,7 +302,15 @@ export function AdventureDirectorPanel({ onApplyDraft }) {
               </ul>
             </details>
           )}
+          <input
+            value={refine}
+            onChange={(e) => setRefine(e.target.value)}
+            placeholder="Refine: make it scarier, add a clue, enable branching..."
+          />
           <div className="assistant-actions">
+            <button type="button" className="ghost" onClick={handleRefine}>
+              Refine
+            </button>
             <button type="button" onClick={() => onApplyDraft(draft)}>
               Apply full adventure to form
             </button>
@@ -658,7 +678,7 @@ export function HorrorAtmosphereOverlay({ adventure }) {
   );
 }
 
-export function ClueChapterHeader({ chapter, total, title, adventureTitle }) {
+export function ClueChapterHeader({ chapter, total, title, adventureTitle, beat }) {
   const pct = total > 0 ? Math.round((chapter / total) * 100) : 0;
   return (
     <div className="clue-chapter-header">
@@ -667,6 +687,7 @@ export function ClueChapterHeader({ chapter, total, title, adventureTitle }) {
         {adventureTitle && <small className="chapter-adventure">{adventureTitle}</small>}
       </div>
       <h3 className="chapter-title">{title}</h3>
+      {beat && <p className="chapter-beat">{beat}</p>}
       <div className="chapter-progress">
         <div className="progress">
           <i style={{ width: `${pct}%` }} />
@@ -688,20 +709,45 @@ export function ClueCompleteFlash({ show }) {
 }
 
 export function AdventureIntroModal({ adventure, onAccept, onSkip }) {
+  const intro = getDirectorIntroContent(adventure);
+
   return (
     <div className="invitation-overlay adventure-intro-modal">
       <div className="card adventure-intro-panel">
-        <span className="intro-badge">Story Introduction</span>
-        <h2>{adventure.title}</h2>
-        {adventure.collectionName && (
-          <p className="intro-collection">⭐ {adventure.collectionName}</p>
+        <span className="intro-badge">
+          {intro.isDirector ? 'Adventure Director · Story Intro' : 'Story Introduction'}
+        </span>
+        <h2>{intro.title || adventure.title}</h2>
+        {intro.collectionName && (
+          <p className="intro-collection">⭐ {intro.collectionName}</p>
         )}
-        <p className="intro-story">{adventure.story}</p>
+        {intro.guideName && (
+          <p className="intro-guide">
+            <span className="npc-avatar inline">{intro.guideAvatar}</span> Meet {intro.guideName}
+          </p>
+        )}
+        <p className="intro-story">{intro.hook}</p>
+        {intro.mystery && intro.isDirector && (
+          <p className="intro-mystery">{intro.mystery}</p>
+        )}
+        {intro.guideLine && (
+          <blockquote className="intro-npc-line">"{intro.guideLine}"</blockquote>
+        )}
+        {intro.characterNames?.length > 1 && (
+          <p className="intro-cast">Featuring: {intro.characterNames.join(' · ')}</p>
+        )}
         <ul className="intro-steps">
           <li>Follow GPS clues across the trail</li>
-          <li>Experience AR scenes at key moments</li>
+          {intro.isDirector ? (
+            <>
+              <li>Meet characters who guide each chapter</li>
+              <li>Experience AR scenes at key story beats</li>
+            </>
+          ) : (
+            <li>Experience AR scenes at key moments</li>
+          )}
           <li>Capture the medallion in Finder Mode</li>
-          <li>Claim your treasure and earn rewards</li>
+          <li>Claim your treasure and unlock collection lore</li>
         </ul>
         <button type="button" onClick={onAccept}>
           <Play size={18} /> Accept Adventure
@@ -710,6 +756,27 @@ export function AdventureIntroModal({ adventure, onAccept, onSkip }) {
           Skip intro
         </button>
       </div>
+    </div>
+  );
+}
+
+export function DirectorLoreRevealPanel({ adventure, state }) {
+  const lore = getDirectorVictoryLore(state, adventure);
+  if (!lore?.pages?.length) return null;
+
+  return (
+    <div className="card director-lore-reveal">
+      <h4>
+        <Sparkles size={16} /> {lore.collectionName || 'Collection'} · Lore Unlocked
+      </h4>
+      <ul className="director-lore-pages">
+        {lore.pages.map((page) => (
+          <li key={page.index} className={page.unlocked ? 'unlocked' : 'locked'}>
+            <span className="lore-page-num">Page {page.index + 1}</span>
+            <p>{page.unlocked ? page.text : 'Complete the adventure to unlock this page.'}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

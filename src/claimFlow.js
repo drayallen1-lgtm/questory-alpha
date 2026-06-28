@@ -16,6 +16,7 @@ import {
 } from './invitation';
 import { trackDemoComplete } from './stability';
 import { applyEndingRewards } from './worldEngine';
+import { unlockDirectorLoreOnVictory } from './directorRuntime';
 import {
   resolveClaimRewards,
   resolveClaimRewardsAsync,
@@ -139,6 +140,7 @@ export function buildClaimSuccessState(
   nextState = completeDemoIfNeeded(nextState, freshAdventure.id);
   if (isDemo) nextState = trackDemoComplete(nextState);
   nextState = applyGrowthOnCompletion(nextState, freshAdventure);
+  nextState = unlockDirectorLoreOnVictory(nextState, freshAdventure);
 
   return nextState;
 }

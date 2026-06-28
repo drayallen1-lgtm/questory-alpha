@@ -45,6 +45,7 @@ import {
   resolveAdventureEnding,
   setWeatherOverride,
 } from './worldEngine';
+import { getDirectorBranchFlavor, getDirectorNpcContext } from './directorRuntime';
 import { computeCreatorAnalytics } from './experience';
 
 export function WorldEngineHub({ state, setState, adventures, nav }) {
@@ -459,9 +460,22 @@ export function LockedAdventureNotice({ adventure, state, nav }) {
   );
 }
 
-export function BranchChoicePanel({ clue, progress, onSelect }) {
+export function BranchChoicePanel({ clue, progress, onSelect, adventure }) {
   const options = clue?.branchOptions || [];
-  if (!options.length || progress.pathId) return null;
+  if (!options.length) return null;
+
+  if (progress.pathId) {
+    const flavor = adventure ? getDirectorBranchFlavor(adventure, progress) : null;
+    if (flavor?.hint) {
+      return (
+        <div className="card branch-path-flavor">
+          <small>{flavor.title || 'Your path'}</small>
+          <p>{flavor.hint}</p>
+        </div>
+      );
+    }
+    return null;
+  }
 
   return (
     <div className="card branch-choice-panel">
@@ -477,6 +491,33 @@ export function BranchChoicePanel({ clue, progress, onSelect }) {
 }
 
 export function NpcPlayCard({ adventure, state, setState, clueIndex }) {
+  const directorCtx = getDirectorNpcContext(adventure, clueIndex);
+
+  if (directorCtx) {
+    const { npc, dialogue, dialogueId } = directorCtx;
+    const seen = state.world?.npcProgress?.[npc.id]?.seenDialogues?.includes(dialogueId);
+
+    return (
+      <div className="card npc-play-card director-npc-card">
+        <span className="npc-avatar">{npc.avatar}</span>
+        <div>
+          <b>{npc.name}</b>
+          {npc.role && <small className="npc-role">{npc.role}</small>}
+          <p>"{dialogue.text}"</p>
+        </div>
+        {!seen && (
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => setState((s) => markNpcDialogueSeen(s, npc.id, dialogueId))}
+          >
+            Continue
+          </button>
+        )}
+      </div>
+    );
+  }
+
   const npcs = getNpcsForAdventure(adventure);
   const npc = npcs.find((n) => n.dialogues?.some((d) => d.id === 'branch')) || npcs[0];
   if (!npc) return null;

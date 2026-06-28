@@ -81,6 +81,7 @@ import {
   formatProofDate,
 } from './share';
 import { runClaimTreasure, runMedallionCapture } from './claimFlow';
+import { getDirectorChapterBeat } from './directorRuntime';
 import { advanceClueForAdventure, continueAfterBonus, applyPlayNavigation } from './progressionEngine';
 import { useArSceneFlow } from './arFlow';
 import {
@@ -239,6 +240,7 @@ import {
   HorrorAtmosphereOverlay,
   ClueChapterHeader,
   AdventureIntroModal,
+  DirectorLoreRevealPanel,
 } from './ExperienceUI';
 import {
   WorldEngineHub,
@@ -893,6 +895,9 @@ function QuestoryApp() {
               state={state}
               adventures={state.adventures}
             />
+            {selected && (
+              <DirectorLoreRevealPanel adventure={selected} state={state} />
+            )}
           </>
         )}
         {state.screen === 'create' && (
@@ -1637,6 +1642,7 @@ function AdventurePlay({
             total={total}
             title={clue.title}
             adventureTitle={adventure.title}
+            beat={getDirectorChapterBeat(adventure, clueIndex, total)}
           />
         ) : (
           <h3>
@@ -1659,6 +1665,7 @@ function AdventurePlay({
             <BranchChoicePanel
               clue={clue}
               progress={progress}
+              adventure={adventure}
               onSelect={(pathId) => setState((s) => selectBranchPath(s, adventure.id, pathId, clueIndex))}
             />
             <CluePlayContent

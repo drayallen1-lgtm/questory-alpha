@@ -17,7 +17,7 @@ import {
 } from './templates';
 import { normalizeWorldConfig } from './worldEngine';
 
-export const BLUEPRINT_VERSION = '1.0';
+export const BLUEPRINT_VERSION = '1.1';
 
 export const DIRECTOR_PRESET_IDS = {
   HORROR_BACKYARD: 'horror_backyard',
@@ -300,6 +300,32 @@ function parseKidFriendly(text) {
   return /\b(kids?|children|8-year|8 year|young|family-friendly|not too scary)\b/i.test(text);
 }
 
+function parseDuration(text, fallback) {
+  const match = text.match(/\b(\d+)\s*(?:min(?:ute)?s?|m)\b/i);
+  if (match) return Math.min(120, Math.max(5, parseInt(match[1], 10)));
+  return fallback;
+}
+
+function parsePlayers(text, fallback) {
+  if (/solo|alone|1 player|one player/i.test(text)) return '1-2';
+  if (/large group|6\+|six\+|party of/i.test(text)) return '6+';
+  if (/couple|two players|2 players/i.test(text)) return '1-2';
+  return fallback;
+}
+
+function parseAtmosphere(text, fallback) {
+  if (/terrifying|nightmare|extreme|very scary/i.test(text)) return 'terrifying';
+  if (/mild|gentle|not too scary|kid-friendly|friendly ghost/i.test(text)) return 'mild';
+  if (/creepy|spooky|scary|horror/i.test(text)) return 'creepy';
+  return fallback;
+}
+
+function parseBranching(text, fallback) {
+  if (/no branch|linear|single path|one ending/i.test(text)) return false;
+  if (/branch|choose path|multiple ending|split path/i.test(text)) return true;
+  return fallback;
+}
+
 function buildStoryFromArc(storyArc, title) {
   const parts = [
     storyArc.hook,
@@ -352,6 +378,18 @@ export function generateAdventureBlueprint(prompt, options = {}) {
   const clueCount = parseClueCount(text, scalePreset.clueCount);
   const kidFriendly = parseKidFriendly(text);
   const claimMethod = parseClaimMethod(text, base.meta.claimMethod);
+  const durationMin = parseDuration(text, scalePreset.estimatedMinutes);
+  const players = parsePlayers(text, options.players || '3-5');
+  const atmosphere = parseAtmosphere(text, base.meta.tone === 'warm' ? 'mild' : 'creepy');
+  const branchingEnabled = parseBranching(text, base.branching?.enabled ?? false);
+
+  if (branchingEnabled && base.branching) {
+    base.branching.enabled = true;
+  } else if (!branchingEnabled && base.branching) {
+    base.branching.enabled = false;
+  }
+
+  base.meta.tone = atmosphere === 'terrifying' ? 'creepy' : atmosphere === 'mild' ? 'mild' : base.meta.tone;
 
   if (kidFriendly && presetId === DIRECTOR_PRESET_IDS.HORROR_BACKYARD) {
     base.meta.tone = 'mild';
@@ -438,6 +476,7 @@ export function generateAdventureBlueprint(prompt, options = {}) {
     audioMood: base.audioMood,
     branching: base.branching,
     generatedAt: new Date().toISOString(),
+    options: { durationMin, players, atmosphere, branchingEnabled },
   };
 
   return { ok: true, blueprint };
@@ -464,24 +503,49 @@ function resolveFinaleScene(blueprint) {
   return emptyArScene();
 }
 
-function buildNpcDialogues(blueprint) {
+function buildCharacterNpcs(blueprint) {
   const primary = blueprint.characters[0];
-  if (!primary) return [];
-  const lines = [];
-  const intro = blueprint.npcDialogue?.byPhase?.intro;
-  if (intro) {
-    lines.push({ id: 'intro', text: intro.replace(/^[^:]+:\s*/, ''), mood: 'guide' });
-  }
-  Object.entries(blueprint.npcDialogue?.byClueIndex || {}).forEach(([idx, text]) => {
-    if (text) {
-      lines.push({ id: `clue-${idx}`, text, mood: 'hint' });
+  const secondary = blueprint.characters[1];
+
+  return blueprint.characters.map((ch) => {
+    const dialogues = [];
+
+    if (ch.id === primary?.id) {
+      const introRaw = blueprint.npcDialogue?.byPhase?.intro || '';
+      const introText = introRaw.replace(/^[^:]+:\s*/, '').trim();
+      if (introText) {
+        dialogues.push({ id: 'intro', text: introText, mood: 'guide' });
+      }
+      Object.entries(blueprint.npcDialogue?.byClueIndex || {}).forEach(([idx, text]) => {
+        if (text) {
+          dialogues.push({ id: `clue-${idx}`, text, mood: 'hint' });
+        }
+      });
+      const finale = blueprint.npcDialogue?.byPhase?.finale;
+      if (finale) {
+        dialogues.push({ id: 'finale', text: finale, mood: 'celebration' });
+      }
     }
+
+    if (ch.id === secondary?.id && blueprint.branching?.enabled) {
+      dialogues.push({
+        id: 'branch',
+        text: 'Your choice here changes what you discover later.',
+        mood: 'warning',
+      });
+    }
+
+    return {
+      id: ch.id,
+      name: ch.name,
+      role: ch.role || 'Guide',
+      avatar: ch.avatar || '🎭',
+      personality: ch.personality,
+      voice: ch.voice,
+      memoryKeys: ch.memoryKeys || [],
+      dialogues,
+    };
   });
-  const finale = blueprint.npcDialogue?.byPhase?.finale;
-  if (finale) {
-    lines.push({ id: 'finale', text: finale, mood: 'celebration' });
-  }
-  return lines;
 }
 
 /**
@@ -499,8 +563,10 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
   const config = applySmartBuilderConfig({
     templateId: bpMeta.template,
     scaleId: bpMeta.scale,
-    players: options.players || '3-5',
-    durationMin: String(options.durationMin || getScalePreset(bpMeta.scale).estimatedMinutes),
+    players: options.players || blueprint.options?.players || '3-5',
+    durationMin: String(
+      options.durationMin || blueprint.options?.durationMin || getScalePreset(bpMeta.scale).estimatedMinutes
+    ),
     environment: options.environment || 'outdoor',
   });
 
@@ -509,7 +575,8 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
   const scale = getScalePreset(bpMeta.scale);
 
   const atmosphere =
-    bpMeta.tone === 'mild' ? 'mild' : bpMeta.tone === 'warm' ? 'mild' : 'creepy';
+    blueprint.options?.atmosphere ||
+    (bpMeta.tone === 'mild' ? 'mild' : bpMeta.tone === 'warm' ? 'mild' : 'creepy');
 
   const experienceSettings = {
     ...config.experienceSettings,
@@ -585,16 +652,7 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
     hiddenDiscoveryIds: blueprint.collectionLore?.collectionId
       ? [blueprint.collectionLore.collectionId]
       : [],
-    npcs: blueprint.characters.map((ch) => ({
-      id: ch.id,
-      name: ch.name,
-      role: ch.role || 'Guide',
-      avatar: ch.avatar || '🎭',
-      personality: ch.personality,
-      dialogues: buildNpcDialogues(blueprint).filter((d) =>
-        d.id === 'intro' ? ch.id === blueprint.characters[0]?.id : true
-      ),
-    })),
+    npcs: buildCharacterNpcs(blueprint),
   });
 
   const arCount = clues.filter((c) => c.arScene?.enabled).length;
@@ -647,6 +705,77 @@ export function summarizeBlueprint(blueprint, extras = {}) {
   return `${label} adventure · ${clueCount} clues · ${charCount} characters · ${arCount} AR scenes${twists ? ` · ${twists} twist` : ''}${branch}`;
 }
 
+export function refineDirectorBlueprint(blueprint, instruction) {
+  if (!blueprint?.meta) {
+    return { ok: false, message: 'No blueprint to refine.' };
+  }
+
+  const lower = String(instruction || '').toLowerCase();
+  if (!lower.trim()) {
+    return { ok: false, message: 'Describe how to refine the adventure.' };
+  }
+
+  const next = JSON.parse(JSON.stringify(blueprint));
+
+  if (/scarier|creepier|terrifying|more horror/i.test(lower)) {
+    next.meta.tone = 'creepy';
+    next.options = { ...next.options, atmosphere: /terrifying/.test(lower) ? 'terrifying' : 'creepy' };
+    next.audioMood = { ...next.audioMood, tension: 'heartbeat', reveal: 'strings' };
+    next.storyArc.rising = 'The air grows cold. Every shadow might move.';
+  }
+
+  if (/easier|simpler|younger|kid/i.test(lower)) {
+    next.meta.tone = 'mild';
+    next.options = { ...next.options, atmosphere: 'mild' };
+    next.clues = next.clues.slice(0, Math.max(2, next.clues.length - 1));
+    next.storyArc.finale = 'Find the treasure and celebrate — you did it!';
+  }
+
+  if (/longer|more clues|extra clue/i.test(lower)) {
+    const extraIndex = next.clues.length;
+    next.clues.push({
+      index: extraIndex,
+      title: `Signal ${extraIndex + 1}`,
+      text: 'A new trail marker appears — follow it to continue the story.',
+      clueType: CLUE_TYPES.TEXT_RIDDLE,
+      arPrompt: next.clues[0]?.arPrompt || null,
+      branchOptions: [],
+      isFalseLead: false,
+    });
+  }
+
+  if (/branch|split path|multiple ending/i.test(lower) && next.branching) {
+    next.branching.enabled = true;
+  }
+
+  if (/linear|no branch|single ending/i.test(lower) && next.branching) {
+    next.branching.enabled = false;
+    next.clues = next.clues.map((c) => ({ ...c, branchOptions: [] }));
+  }
+
+  if (/tap medallion|virtual medallion/i.test(lower)) {
+    next.meta.claimMethod = CLAIM_METHOD.TAP_MEDALLION;
+    next.meta.finderMode = FINDER_MODES.FINDER;
+  }
+
+  if (/secret code|claim code/i.test(lower)) {
+    next.meta.claimMethod = CLAIM_METHOD.SECRET_CODE;
+  }
+
+  return { ok: true, blueprint: next };
+}
+
+export function refineDirectorDraft(draft, instruction, options = {}) {
+  if (!draft?.ok || !draft.blueprint) return draft;
+  const refined = refineDirectorBlueprint(draft.blueprint, instruction);
+  if (!refined.ok) return refined;
+  const nextDraft = blueprintToCreateDraft(refined.blueprint, options);
+  return {
+    ...nextDraft,
+    summary: `${nextDraft.summary} · refined`,
+  };
+}
+
 export function generateFullAdventureFromPrompt(prompt, options = {}) {
   const blueprintResult = generateAdventureBlueprint(prompt, options);
   if (!blueprintResult.ok) return blueprintResult;
@@ -673,4 +802,5 @@ export const ADVENTURE_DIRECTOR = {
   version: BLUEPRINT_VERSION,
   placeholder:
     'Haunted backyard for 8-year-olds, 5 clues, tap medallion — or pick a preset below.',
+  refinePlaceholder: 'Refine: make it scarier, add a clue, enable branching...',
 };
