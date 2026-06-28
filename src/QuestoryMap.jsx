@@ -6,6 +6,7 @@ import { LiveMapOverlay } from './SocialUI';
 import { VISIBILITY_MODES } from './social';
 import {
   MAPBOX_FALLBACK_MESSAGE,
+  MAPBOX_WEBGL_FALLBACK_MESSAGE,
   getMapboxToken,
   buildAdventureMarkers,
   buildClueMarkers,
@@ -34,17 +35,13 @@ import {
   wireAdventurePinElement,
 } from './mapDiscovery';
 import {
-  SPIDERFY_MIN_ZOOM,
+  SPIDERFY_CLICK_ZOOM,
   anchorPointsGeoJSON,
   buildClusterTooltipHtml,
-  centerOnPinWithCardPadding,
   clusterVisualClasses,
-  computeSpiderfyLayoutPixel,
+  computeRadialSpiderfy,
   easeMapTo,
   flyMapTo,
-  getOffscreenSpiderGroup,
-  groupOverlappingMarkers,
-  shouldSpiderfyAtZoom,
   spiderLinesGeoJSON,
   summarizeClusterMarkers,
 } from './mapSpatial';
@@ -65,7 +62,7 @@ function isClusterFeature(props) {
   return props.point_count != null && Number.isFinite(Number(props.point_count));
 }
 
-function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect, getMapState, requestCameraMove }) {
+function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect, getMapState, onClusterClick }) {
   const clusterPopup = new mapboxgl.Popup({
     closeButton: false,
     closeOnClick: false,
@@ -81,31 +78,7 @@ function setupAdventureLayerInteractions(map, { getMarkerById, onAdventureSelect
     const clusterId = feature.properties?.cluster_id;
     if (clusterId == null) return;
     const coords = feature.geometry.coordinates;
-    const source = map.getSource(ADVENTURE_SOURCE);
-
-    source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-      if (err) return;
-      const currentZoom = map.getZoom();
-      const targetZoom = Math.min(zoom, SPIDERFY_MIN_ZOOM + 1);
-
-      if (targetZoom <= currentZoom + 0.25) {
-        source.getClusterLeaves(clusterId, 100, 0, (leafErr, leaves) => {
-          if (leafErr || !leaves?.length) return;
-          requestCameraMove?.('cluster', (m) => {
-            easeMapTo(m, {
-              center: coords,
-              zoom: Math.max(currentZoom, SPIDERFY_MIN_ZOOM),
-              duration: 600,
-            });
-          });
-        });
-        return;
-      }
-
-      requestCameraMove?.('cluster', (m) => {
-        easeMapTo(m, { center: coords, zoom: targetZoom, duration: 600 });
-      });
-    });
+    onClusterClick?.(clusterId, coords);
   };
 
   map.on('click', MAP_LAYER_IDS.CLUSTERS, handleClusterClick);
@@ -300,6 +273,7 @@ function FallbackMap({
   onClueClick,
   mini = false,
   className = '',
+  notice = MAPBOX_FALLBACK_MESSAGE,
 }) {
   const allMarkers = [...adventureMarkers, ...clueMarkers];
   const bounds = getMapBounds(allMarkers);
@@ -308,8 +282,8 @@ function FallbackMap({
     <div className={`fallback-map ${mini ? 'mini' : ''} ${className}`}>
       <div className="fallback-map-grid" />
       <div className="fallback-map-body">
-        {!mini && <p className="fallback-map-notice">{MAPBOX_FALLBACK_MESSAGE}</p>}
-        {mini && <p className="fallback-map-notice mini-notice">{MAPBOX_FALLBACK_MESSAGE}</p>}
+        {!mini && <p className="fallback-map-notice">{notice}</p>}
+        {mini && <p className="fallback-map-notice mini-notice">{notice}</p>}
         {bounds && (
           <p className="fallback-map-region">
             {bounds.minLat.toFixed(3)}°N · {Math.abs(bounds.minLng).toFixed(3)}°W
@@ -392,11 +366,15 @@ export function QuestoryMap({
   const userLocationRef = useRef(userLocation);
   const selectedAdventureIdRef = useRef(selectedAdventureId);
   const syncHtmlMarkersRef = useRef(() => {});
+  const activeSpiderfyRef = useRef(null);
+  const handleClusterClickRef = useRef(null);
+  const clearSpiderfyRef = useRef(null);
   const cameraRef = useRef(null);
   const onAdventureClickRef = useRef(onAdventureClick);
   const onPinHoverChangeRef = useRef(onPinHoverChange);
   const onSpatialStatsChangeRef = useRef(onSpatialStatsChange);
   const requestCameraMoveRef = useRef(null);
+  const [mapInitFailed, setMapInitFailed] = useState(false);
   adventureMarkersRef.current = adventureMarkers;
   mapStateRef.current = mapState;
   userLocationRef.current = userLocation;
@@ -428,33 +406,11 @@ export function QuestoryMap({
     nextIds.add(id);
     let entry = markersOnScreenRef.current[id];
     const mergedMeta = { ...meta, count };
-    const requestCameraMove = requestCameraMoveRef.current;
 
     const handleClusterTap = (e) => {
       e.stopPropagation();
       e.preventDefault();
-      const source = map.getSource(ADVENTURE_SOURCE);
-      source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-        if (err) return;
-        const currentZoom = map.getZoom();
-        const targetZoom = Math.min(zoom, SPIDERFY_MIN_ZOOM + 1);
-        if (targetZoom <= currentZoom + 0.25) {
-          source.getClusterLeaves(clusterId, 100, 0, (leafErr) => {
-            if (leafErr) return;
-            requestCameraMove?.('cluster', (m) => {
-              easeMapTo(m, {
-                center: coords,
-                zoom: Math.max(currentZoom, SPIDERFY_MIN_ZOOM),
-                duration: 600,
-              });
-            });
-          });
-          return;
-        }
-        requestCameraMove?.('cluster', (m) => {
-          easeMapTo(m, { center: coords, zoom: targetZoom, duration: 600 });
-        });
-      });
+      handleClusterClickRef.current?.(clusterId, coords);
     };
 
     if (!entry) {
@@ -521,6 +477,76 @@ export function QuestoryMap({
     [markerLookup]
   );
 
+  const clearSpiderfy = useCallback((reason) => {
+    if (!activeSpiderfyRef.current) return;
+    activeSpiderfyRef.current = null;
+    if (isDev) {
+      console.debug('[QuestoryMap]', { spiderfyCleared: reason });
+    }
+  }, []);
+
+  const applyClusterSpiderfy = useCallback((clusterId, coords, markers, map) => {
+    if (markers.length < 2) {
+      if (markers[0]?.adventure) {
+        onAdventureClickRef.current?.(markers[0].adventure, markers[0]);
+      }
+      return;
+    }
+
+    const { layout, radius } = computeRadialSpiderfy(coords, markers, map);
+    activeSpiderfyRef.current = {
+      clusterId,
+      center: coords,
+      markers,
+      layout,
+      radius,
+    };
+
+    if (isDev) {
+      console.debug('[QuestoryMap]', {
+        spiderfyCreated: { count: markers.length, center: coords, radius },
+      });
+    }
+
+    syncHtmlMarkersRef.current?.();
+  }, []);
+
+  const handleClusterClick = useCallback((clusterId, coords) => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (isDev) {
+      console.debug('[QuestoryMap]', { clusterClicked: clusterId });
+    }
+
+    const source = map.getSource(ADVENTURE_SOURCE);
+    if (!source) return;
+
+    const currentZoom = map.getZoom();
+
+    source.getClusterLeaves(clusterId, 100, 0, (err, leaves) => {
+      if (err || !leaves?.length) return;
+      const leafMarkers = leaves
+        .map((f) => markerLookupRef.current.get(f.properties?.id ?? f.id))
+        .filter(Boolean);
+      if (!leafMarkers.length) return;
+
+      const finishSpiderfy = () => applyClusterSpiderfy(clusterId, coords, leafMarkers, map);
+
+      if (currentZoom < SPIDERFY_CLICK_ZOOM) {
+        requestCameraMoveRef.current?.('cluster', (m) => {
+          easeMapTo(m, { center: coords, zoom: SPIDERFY_CLICK_ZOOM, duration: 600 });
+        });
+        map.once('moveend', finishSpiderfy);
+      } else {
+        finishSpiderfy();
+      }
+    });
+  }, [applyClusterSpiderfy]);
+
+  clearSpiderfyRef.current = clearSpiderfy;
+  handleClusterClickRef.current = handleClusterClick;
+
   const syncHtmlMarkers = useCallback(() => {
     const map = mapRef.current;
     if (!map || !map.getSource(ADVENTURE_SOURCE)) return;
@@ -542,103 +568,28 @@ export function QuestoryMap({
       });
     };
 
-    if (shouldSpiderfyAtZoom(zoom)) {
-      const groups = groupOverlappingMarkers(markers);
-      const offscreenGroup = getOffscreenSpiderGroup(groups, map);
-      const cam = cameraRef.current?.state;
+    const activeSpider = activeSpiderfyRef.current;
 
-      if (
-        offscreenGroup &&
-        cam &&
-        !cam.isUserInteracting &&
-        cam.lastSpiderAnchorKey !== offscreenGroup.id
-      ) {
-        cam.lastSpiderAnchorKey = offscreenGroup.id;
-        const moved = requestCameraMoveRef.current?.('spiderAnchor', (m) => {
-          easeMapTo(m, {
-            center: [offscreenGroup.anchor.longitude, offscreenGroup.anchor.latitude],
-            zoom: Math.max(zoom, SPIDERFY_MIN_ZOOM),
-            duration: 450,
-          });
-        });
-        if (moved) {
-          reportStats(0);
-          return;
-        }
-      }
+    if (activeSpider && zoom >= SPIDERFY_CLICK_ZOOM) {
+      const { layout } = computeRadialSpiderfy(activeSpider.center, activeSpider.markers, map);
+      activeSpider.layout = layout;
 
-      const layouts = new Map();
-      const spiderGroups = [];
-      const spiderDebug = [];
-      let deferSpiderfy = false;
+      const group = {
+        id: String(activeSpider.clusterId),
+        anchor: { longitude: activeSpider.center[0], latitude: activeSpider.center[1] },
+        markers: activeSpider.markers,
+      };
+      const layouts = new Map([[group.id, layout]]);
+      spiderGroupCount = 1;
+      updateSpiderLayers(map, [group], layouts);
 
-      for (const group of groups) {
-        if (group.markers.length >= 2) {
-          const result = computeSpiderfyLayoutPixel(group, map, { debug: isDev });
-          if (result.needsAnchorPan) {
-            const camState = cameraRef.current?.state;
-            if (
-              camState &&
-              !camState.isUserInteracting &&
-              camState.lastSpiderAnchorKey !== group.id
-            ) {
-              camState.lastSpiderAnchorKey = group.id;
-              const moved = requestCameraMoveRef.current?.('spiderAnchor', (m) => {
-                easeMapTo(m, {
-                  center: [group.anchor.longitude, group.anchor.latitude],
-                  zoom: Math.max(zoom, SPIDERFY_MIN_ZOOM),
-                  duration: 450,
-                });
-              });
-              if (moved) {
-                reportStats(0);
-                return;
-              }
-            }
-            deferSpiderfy = true;
-            continue;
-          }
-          if (result.invalidEdgeClamp || !result.layout.size) {
-            deferSpiderfy = true;
-            continue;
-          }
-          spiderGroups.push(group);
-          layouts.set(group.id, result.layout);
-          if (isDev && result.debug.length) spiderDebug.push(...result.debug);
-        }
-      }
-      spiderGroupCount = spiderGroups.length;
-
-      if (isDev && spiderDebug.length) {
-        console.debug('[MapSpiderfy]', spiderDebug);
-      }
-
-      if (deferSpiderfy && !spiderGroups.length) {
-        reportStats(0);
-        return;
-      }
-
-      if (spiderGroups.length) {
-        updateSpiderLayers(map, spiderGroups, layouts);
-      } else {
-        clearSpiderLayers(map);
-      }
-
-      for (const group of groups) {
-        const layout = layouts.get(group.id);
-        if (layout) {
-          for (const marker of group.markers) {
-            const coords = layout.get(marker.id);
-            if (coords) upsertAdventurePin(map, marker.id, coords, nextIds);
-          }
-        } else if (group.markers.length === 1) {
-          const m = group.markers[0];
-          upsertAdventurePin(map, m.id, [m.longitude, m.latitude], nextIds);
-        }
+      for (const marker of activeSpider.markers) {
+        const coords = layout.get(marker.id);
+        if (coords) upsertAdventurePin(map, marker.id, coords, nextIds);
       }
     } else {
-      if (cameraRef.current?.state) {
-        cameraRef.current.state.lastSpiderAnchorKey = null;
+      if (activeSpider && zoom < SPIDERFY_CLICK_ZOOM) {
+        clearSpiderfyRef.current?.('zoom');
       }
       clearSpiderLayers(map);
       let features = [];
@@ -731,7 +682,17 @@ export function QuestoryMap({
   syncHtmlMarkersRef.current = syncHtmlMarkers;
 
   useEffect(() => {
-    if (!token || !containerRef.current || mapRef.current || mini) return;
+    if (!token || !containerRef.current || mapRef.current || mini || mapInitFailed) return;
+
+    if (!mapboxgl.supported()) {
+      if (isDev) {
+        console.debug('[QuestoryMap]', { mapboxInitFailed: 'WebGL not supported' });
+      }
+      setMapInitFailed(true);
+      return;
+    }
+
+    let cancelled = false;
 
     mapboxgl.accessToken = token;
     const initialCenter =
@@ -743,20 +704,45 @@ export function QuestoryMap({
       cameraRef.current.state.initialUserCentered = true;
     }
 
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: initialCenter,
-      zoom: userLocation ? 13 : 11,
-      attributionControl: true,
-    });
+    let map;
+    try {
+      map = new mapboxgl.Map({
+        container: containerRef.current,
+        style: 'mapbox://styles/mapbox/dark-v11',
+        center: initialCenter,
+        zoom: userLocation ? 13 : 11,
+        attributionControl: true,
+        failIfMajorPerformanceCaveat: false,
+      });
+    } catch (err) {
+      if (isDev) {
+        console.debug('[QuestoryMap]', { mapboxInitFailed: err?.message || 'Map creation failed' });
+      }
+      setMapInitFailed(true);
+      return;
+    }
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
     mapRef.current = map;
     const detachCameraHandlers = cameraRef.current.attachInteractionHandlers(map);
 
+    map.on('error', (e) => {
+      const msg = e?.error?.message || '';
+      if (/webgl/i.test(msg)) {
+        if (isDev) {
+          console.debug('[QuestoryMap]', { mapboxInitFailed: msg });
+        }
+        setMapInitFailed(true);
+      }
+    });
+
     map.on('load', () => {
+      if (cancelled) return;
       mapReadyRef.current = true;
+
+      if (isDev) {
+        console.debug('[QuestoryMap]', { mapCreated: true });
+      }
 
       map.addSource(MAP_SOURCE_IDS.REVEALED, {
         type: 'geojson',
@@ -852,7 +838,17 @@ export function QuestoryMap({
         onAdventureSelect: (markerData) => {
           if (markerData?.adventure) onAdventureClickRef.current?.(markerData.adventure, markerData);
         },
-        requestCameraMove: (...args) => cameraRef.current?.requestCameraMove(...args),
+        onClusterClick: (clusterId, coords) => handleClusterClickRef.current?.(clusterId, coords),
+      });
+
+      map.on('click', (e) => {
+        const hits = map.queryRenderedFeatures(e.point, {
+          layers: [MAP_LAYER_IDS.CLUSTERS, MAP_LAYER_IDS.UNCLUSTERED],
+        });
+        if (!hits.length && activeSpiderfyRef.current) {
+          clearSpiderfyRef.current?.('mapClick');
+          syncHtmlMarkers();
+        }
       });
 
       map.on('moveend', syncHtmlMarkers);
@@ -865,17 +861,22 @@ export function QuestoryMap({
     });
 
     return () => {
+      cancelled = true;
       detachCameraHandlers?.();
       mapReadyRef.current = false;
+      activeSpiderfyRef.current = null;
       Object.values(markersOnScreenRef.current).forEach((m) => m.remove());
       markersOnScreenRef.current = {};
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
+      if (isDev) {
+        console.debug('[QuestoryMap]', { mapRemoved: true });
+      }
       map.remove();
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, mini]);
+  }, [token, mini, mapInitFailed]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -963,45 +964,14 @@ export function QuestoryMap({
     lastFindMeSignalRef.current = findMeSignal;
     const loc = userLocationRef.current;
     if (loc?.latitude == null) return;
-    requestCameraMoveRef.current?.(
-      'findMe',
-      (m) => {
-        flyMapTo(m, {
-          center: [loc.longitude, loc.latitude],
-          zoom: 14,
-          duration: 900,
-        });
-      },
-      { allowDuringInteraction: true }
-    );
+    requestCameraMoveRef.current?.('findMe', (m) => {
+      flyMapTo(m, {
+        center: [loc.longitude, loc.latitude],
+        zoom: 14,
+        duration: 900,
+      });
+    });
   }, [findMeSignal, mini]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const cam = cameraRef.current;
-    if (!map || mini || !cam) return;
-
-    if (!selectedAdventureId) {
-      cam.state.lastCenteredPinId = null;
-      return;
-    }
-
-    if (cam.state.lastCenteredPinId === selectedAdventureId) return;
-
-    const marker = markerLookupRef.current.get(selectedAdventureId);
-    if (!marker) return;
-
-    cam.state.lastCenteredPinId = selectedAdventureId;
-    requestCameraMoveRef.current?.(
-      'pinSelect',
-      (m) => {
-        centerOnPinWithCardPadding(m, [marker.longitude, marker.latitude], {
-          zoom: Math.max(m.getZoom(), SPIDERFY_MIN_ZOOM),
-        });
-      },
-      { pinId: selectedAdventureId }
-    );
-  }, [selectedAdventureId, mini]);
 
   useEffect(() => {
     if (mini || !mapRef.current) return;
@@ -1026,7 +996,7 @@ export function QuestoryMap({
     });
   }, [clueMarkers, onClueClick, mini]);
 
-  if (!token) {
+  if (!token || mapInitFailed) {
     return (
       <FallbackMap
         adventureMarkers={adventureMarkers}
@@ -1035,6 +1005,7 @@ export function QuestoryMap({
         onClueClick={onClueClick}
         mini={mini}
         className={className}
+        notice={mapInitFailed ? MAPBOX_WEBGL_FALLBACK_MESSAGE : MAPBOX_FALLBACK_MESSAGE}
       />
     );
   }

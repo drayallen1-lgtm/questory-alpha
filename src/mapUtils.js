@@ -5,6 +5,9 @@ import { haversineDistanceMeters } from './geolocation';
 export const MAPBOX_FALLBACK_MESSAGE =
   'Map preview unavailable. Add VITE_MAPBOX_TOKEN to enable live maps.';
 
+export const MAPBOX_WEBGL_FALLBACK_MESSAGE =
+  'Live map unavailable. Showing adventure list instead.';
+
 export function getMapboxToken() {
   return env.mapboxToken;
 }
