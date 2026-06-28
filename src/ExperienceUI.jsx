@@ -54,6 +54,7 @@ import {
   getDirectorVictoryLore,
 } from './directorRuntime';
 import { getDirectorMoodCue } from './directorAudioMood';
+import { AdaptiveAudioLayer } from './AdaptiveAudioLayer';
 
 export function TemplatePicker({ selected, onSelect }) {
   return (
@@ -782,7 +783,11 @@ export function AdventureIntroModal({ adventure, onAccept, onSkip }) {
   );
 }
 
-export function DirectorMoodBadge({ adventure, phaseKey }) {
+export function DirectorMoodBadge({ adventure, phaseKey, context }) {
+  if (context) {
+    return <AdaptiveAudioLayer adventure={adventure} context={context} />;
+  }
+
   const cue = getDirectorMoodCue(adventure, phaseKey);
   const audioRef = React.useRef(null);
 

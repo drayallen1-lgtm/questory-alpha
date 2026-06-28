@@ -82,7 +82,6 @@ import {
 } from './share';
 import { runClaimTreasure, runMedallionCapture } from './claimFlow';
 import { getDirectorChapterBeat, resolveDirectorClue } from './directorRuntime';
-import { resolveDirectorMoodPhase } from './directorAudioMood';
 import { advanceClueForAdventure, continueAfterBonus, applyPlayNavigation } from './progressionEngine';
 import { useArSceneFlow } from './arFlow';
 import {
@@ -1522,12 +1521,6 @@ function AdventurePlay({
   const method = adventure.claimMethod || CLAIM_METHOD.SECRET_CODE;
   const finderFlow = adventureUsesFinder(adventure);
   const awaitingFinder = atClaim && finderFlow && !progress.medallionTapped && !progress.claimed;
-  const moodPhase = resolveDirectorMoodPhase({
-    claimed: progress.claimed,
-    atClaim,
-    awaitingFinder,
-    medallionTapped: progress.medallionTapped,
-  });
   const readyToClaim =
     atClaim &&
     !progress.claimed &&
@@ -1550,6 +1543,28 @@ function AdventurePlay({
       clueStartRef,
       onClueAdvanced,
     });
+
+  const adaptiveAudioContext = useMemo(
+    () => ({
+      claimed: progress.claimed,
+      atClaim,
+      awaitingFinder,
+      medallionTapped: progress.medallionTapped,
+      arActive: Boolean(activeAr),
+      clueIndex: progress.step,
+      totalClues: total,
+      onFinderScreen: false,
+    }),
+    [
+      progress.claimed,
+      progress.step,
+      progress.medallionTapped,
+      atClaim,
+      awaitingFinder,
+      activeAr,
+      total,
+    ]
+  );
 
   function handleCoinSpend(type) {
     let result;
@@ -1616,7 +1631,7 @@ function AdventurePlay({
       <WeatherOverlay state={state} />
       <HorrorAtmosphereOverlay adventure={adventure} />
       <BackyardPrecisionBanner adventure={adventure} />
-      <DirectorMoodBadge adventure={adventure} phaseKey={moodPhase} />
+      <DirectorMoodBadge adventure={adventure} context={adaptiveAudioContext} />
       <CinematicAROverlay
         open={Boolean(activeAr)}
         scene={activeAr?.scene}

@@ -37,6 +37,7 @@ import {
   markArSceneComplete,
   shouldPlayArScene,
 } from './arEngine';
+import { DirectorMoodBadge } from './ExperienceUI';
 
 function useMedallionGps(adventure, watching = true) {
   const [distance, setDistance] = useState(null);
@@ -197,6 +198,16 @@ export function MedallionSignalScreen({ adventure, nav, adminPreview }) {
 
   return (
     <>
+      <DirectorMoodBadge
+        adventure={adventure}
+        context={{
+          atClaim: true,
+          awaitingFinder: true,
+          onFinderScreen: true,
+          finderPhase: phase,
+          signalPercent: phaseUi.signalPercent,
+        }}
+      />
       <button
         type="button"
         className="ghost back"
@@ -446,6 +457,18 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
 
   return (
     <>
+      <DirectorMoodBadge
+        adventure={adventure}
+        context={{
+          atClaim: true,
+          awaitingFinder: !progress.medallionTapped,
+          medallionTapped: progress.medallionTapped,
+          onFinderScreen: true,
+          finderPhase: phase,
+          signalPercent: phaseUi.signalPercent,
+          arActive: finaleArOpen,
+        }}
+      />
       <CinematicAROverlay
         open={finaleArOpen}
         scene={arFinale}

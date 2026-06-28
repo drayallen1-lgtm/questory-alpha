@@ -1,58 +1,49 @@
 /**
- * Sweep 14.3 — Adaptive audio mood hooks for Director adventures.
- * Maps gameplay phase → ambient cue (lightweight precursor to Sweep 16).
+ * Sweep 14.3 / 16 — Director mood hooks (legacy API + adaptive audio bridge).
  */
-import { HORROR_AUDIO } from './horrorAssets/catalog';
+import {
+  ADAPTIVE_AUDIO_PHASES,
+  ADAPTIVE_PHASE_LABELS,
+  MOOD_AUDIO_MAP,
+  buildAdaptiveAudioPlan,
+  getAudioMoodForAdventure,
+  hasAdaptiveAudio,
+  resolveAdaptiveAudioContext,
+} from './adaptiveAudioDirector';
 import { isDirectorAdventure } from './directorRuntime';
 
-export const MOOD_AUDIO_MAP = {
-  wind: HORROR_AUDIO.windGusts,
-  heartbeat: HORROR_AUDIO.heartbeat,
-  footsteps: HORROR_AUDIO.footsteps,
-  musicbox: HORROR_AUDIO.musicBox,
-  static: HORROR_AUDIO.radioStatic,
-  whisper: HORROR_AUDIO.whisperingVoices,
-  birds: null,
-  bells: HORROR_AUDIO.musicBox,
-  playful_drums: HORROR_AUDIO.footsteps,
-  celebration: HORROR_AUDIO.musicBox,
-  fanfare: HORROR_AUDIO.musicBox,
-  strings: HORROR_AUDIO.whisperingVoices,
-};
+export { MOOD_AUDIO_MAP };
 
-export const MOOD_LABELS = {
-  search: 'Searching',
-  tension: 'Tension rising',
-  reveal: 'Reveal',
-  victory: 'Victory',
-};
+export const MOOD_LABELS = ADAPTIVE_PHASE_LABELS;
 
-/**
- * Resolve mood cue for current play context.
- * @param {object} adventure
- * @param {'search'|'tension'|'reveal'|'victory'} phaseKey
- */
+/** @deprecated Use buildAdaptiveAudioPlan — kept for summaries */
 export function getDirectorMoodCue(adventure, phaseKey) {
-  if (!isDirectorAdventure(adventure)) return null;
+  if (!hasAdaptiveAudio(adventure) && !isDirectorAdventure(adventure)) return null;
 
-  const mood = adventure.experienceSettings?.audioMood;
-  if (!mood) return null;
-
+  const mood = getAudioMoodForAdventure(adventure);
   const assetKey = mood[phaseKey];
   if (!assetKey) return null;
 
-  const audioUrl = MOOD_AUDIO_MAP[assetKey] || null;
+  const ctx = resolveAdaptiveAudioContext({
+    claimed: phaseKey === 'victory',
+    atClaim: phaseKey === 'tension' || phaseKey === 'reveal',
+    awaitingFinder: phaseKey === 'tension',
+    medallionTapped: phaseKey === 'reveal',
+    arActive: phaseKey === 'reveal',
+  });
+  const plan = buildAdaptiveAudioPlan(adventure, ctx);
+  const primary = plan.layers[0];
 
   return {
     phase: phaseKey,
     assetKey,
-    label: MOOD_LABELS[phaseKey] || phaseKey,
-    audioUrl,
-    volume: phaseKey === 'tension' ? 0.35 : phaseKey === 'victory' ? 0.5 : 0.25,
+    label: MOOD_LABELS[phaseKey] || plan.label || phaseKey,
+    audioUrl: primary?.url || MOOD_AUDIO_MAP[assetKey] || null,
+    volume: primary?.volume ?? 0.25,
   };
 }
 
-/** Map AdventurePlay state to mood phase key. */
+/** Map AdventurePlay state to legacy mood phase key. */
 export function resolveDirectorMoodPhase({ claimed, atClaim, awaitingFinder, medallionTapped }) {
   if (claimed) return 'victory';
   if (awaitingFinder) return 'tension';
@@ -60,3 +51,10 @@ export function resolveDirectorMoodPhase({ claimed, atClaim, awaitingFinder, med
   if (atClaim) return 'tension';
   return 'search';
 }
+
+export {
+  hasAdaptiveAudio,
+  resolveAdaptiveAudioContext,
+  buildAdaptiveAudioPlan,
+  ADAPTIVE_AUDIO_PHASES,
+};

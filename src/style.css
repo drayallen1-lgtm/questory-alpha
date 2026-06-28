@@ -3440,6 +3440,50 @@ nav button.active {
   flex-shrink: 0;
 }
 
+.adaptive-audio-layer {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.adaptive-audio-badge {
+  margin: 0;
+}
+
+.adaptive-audio-intensity {
+  display: inline-block;
+  width: 48px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.25);
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.adaptive-audio-intensity i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5eead4, #fbbf24);
+  transition: width 0.4s ease;
+}
+
+.adaptive-audio-unlock {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+}
+
+.adaptive-audio-mute {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  border-radius: 999px;
+}
+
 .cinematic-asset-browser {
   margin: 16px 0;
   border-color: rgba(167, 139, 250, 0.28);
