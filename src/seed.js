@@ -446,9 +446,46 @@ export const defaultState = {
             name: 'The Conductor',
             role: 'Story Guide',
             avatar: '🎩',
+            personality: 'mysterious, ominous',
+            memoryKeys: ['trail_started', 'trusted_npc'],
             dialogues: [
-              { id: 'intro', text: 'The rails remember every soul who passed through.', mood: 'mysterious' },
-              { id: 'branch', text: 'Brave the platform shadows, or search the archives.', mood: 'warning' },
+              {
+                id: 'intro',
+                text: 'The rails remember every soul who passed through.',
+                mood: 'mysterious',
+                choices: [
+                  {
+                    id: 'listen',
+                    label: 'What happened here?',
+                    effects: { trust: 6, memoryKey: 'trail_started' },
+                    nextLine: 'Listen for the echo — it knows your name.',
+                  },
+                  {
+                    id: 'hurry',
+                    label: 'Just point me to the clue.',
+                    effects: { trust: -2 },
+                    nextLine: 'Platform bench count. Start there.',
+                  },
+                ],
+              },
+              {
+                id: 'branch',
+                text: 'Brave the platform shadows, or search the archives.',
+                mood: 'warning',
+                choices: [
+                  {
+                    id: 'shadows',
+                    label: 'I will brave the shadows.',
+                    effects: { trust: 3, memoryKey: 'trusted_npc' },
+                  },
+                  {
+                    id: 'archives',
+                    label: 'Archives feel safer.',
+                    effects: { trust: 1 },
+                    nextLine: 'Paper remembers what flesh forgets.',
+                  },
+                ],
+              },
             ],
           },
         ],

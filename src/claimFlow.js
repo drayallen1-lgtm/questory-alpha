@@ -17,6 +17,7 @@ import {
 import { trackDemoComplete } from './stability';
 import { applyEndingRewards } from './worldEngine';
 import { unlockDirectorLoreOnVictory } from './directorRuntime';
+import { recordLivingNpcVictory } from './livingNpcEngine';
 import {
   resolveClaimRewards,
   resolveClaimRewardsAsync,
@@ -141,6 +142,7 @@ export function buildClaimSuccessState(
   if (isDemo) nextState = trackDemoComplete(nextState);
   nextState = applyGrowthOnCompletion(nextState, freshAdventure);
   nextState = unlockDirectorLoreOnVictory(nextState, freshAdventure);
+  nextState = recordLivingNpcVictory(nextState, freshAdventure);
 
   return nextState;
 }

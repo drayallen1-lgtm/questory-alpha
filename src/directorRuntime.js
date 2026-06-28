@@ -8,6 +8,7 @@ import {
   normalizeWorld,
   resolveAdventureEnding,
 } from './worldEngine';
+import { resolveLivingNpcPresentation } from './livingNpcEngine';
 
 export function isDirectorAdventure(adventure) {
   return Boolean(adventure?.experienceSettings?.directorGenerated);
@@ -53,9 +54,7 @@ export function getDirectorChapterBeat(adventure, clueIndex, totalClues) {
 }
 
 /** Pick NPC + dialogue for the current clue. */
-export function getDirectorNpcContext(adventure, clueIndex) {
-  if (!isDirectorAdventure(adventure)) return null;
-
+export function getDirectorNpcContext(adventure, clueIndex, state, progress) {
   const npcs = getNpcsForAdventure(adventure);
   if (!npcs.length) return null;
 
@@ -71,10 +70,22 @@ export function getDirectorNpcContext(adventure, clueIndex) {
   }
   if (!dialogue) return null;
 
+  const presentation = state
+    ? resolveLivingNpcPresentation({
+        npc,
+        dialogue,
+        dialogueId: dialogue.id || dialogueId,
+        state,
+        adventure,
+        progress,
+      })
+    : null;
+
   return {
     npc,
     dialogue,
     dialogueId: dialogue.id || dialogueId,
+    presentation,
   };
 }
 

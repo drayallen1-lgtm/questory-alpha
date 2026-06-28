@@ -870,11 +870,54 @@ function buildCharacterNpcs(blueprint) {
       const introRaw = blueprint.npcDialogue?.byPhase?.intro || '';
       const introText = introRaw.replace(/^[^:]+:\s*/, '').trim();
       if (introText) {
-        dialogues.push({ id: 'intro', text: introText, mood: 'guide' });
+        dialogues.push({
+          id: 'intro',
+          text: introText,
+          mood: 'guide',
+          choices: [
+            {
+              id: 'trust',
+              label: "I'm ready — guide me.",
+              effects: { trust: 8, memoryKey: 'trail_started' },
+              response: introText,
+            },
+            {
+              id: 'cautious',
+              label: 'Why should I trust you?',
+              effects: { trust: -3 },
+              nextLine: 'Fair question. Watch the signs — they never lie.',
+            },
+          ],
+        });
       }
       Object.entries(blueprint.npcDialogue?.byClueIndex || {}).forEach(([idx, text]) => {
         if (text) {
-          dialogues.push({ id: `clue-${idx}`, text, mood: 'hint' });
+          dialogues.push({
+            id: `clue-${idx}`,
+            text,
+            mood: 'hint',
+            choices: Number(idx) > 0 ? [
+              {
+                id: 'listen',
+                label: 'Tell me more',
+                effects: { trust: 5, memoryKey: 'hints_given' },
+              },
+              {
+                id: 'rush',
+                label: 'Just the clue',
+                effects: { trust: -2 },
+                nextLine: 'Alright — keep your eyes open.',
+              },
+            ] : undefined,
+            pathFlavors: {
+              brave: 'The bold path sharpens every sense.',
+              cautious: 'Patience reveals what haste hides.',
+              sanctuary: 'Walk with purpose — the path blesses the careful.',
+              garden: 'Nature leaves breadcrumbs for those who notice.',
+              historian: 'The archives whisper if you listen closely.',
+              exhibit: 'Every exhibit holds a shadow of the truth.',
+            },
+          });
         }
       });
       const finale = blueprint.npcDialogue?.byPhase?.finale;
@@ -888,6 +931,19 @@ function buildCharacterNpcs(blueprint) {
         id: 'branch',
         text: 'Your choice here changes what you discover later.',
         mood: 'warning',
+        choices: [
+          {
+            id: 'commit',
+            label: 'I understand — we choose our path.',
+            effects: { trust: 4, memoryKey: 'trusted_npc' },
+          },
+          {
+            id: 'doubt',
+            label: 'What if we choose wrong?',
+            effects: { trust: -1 },
+            nextLine: 'Then the story remembers.',
+          },
+        ],
       });
     }
 

@@ -1687,6 +1687,7 @@ function AdventurePlay({
               state={state}
               setState={setState}
               clueIndex={clueIndex}
+              progress={progress}
             />
             <BranchChoicePanel
               clue={clue}

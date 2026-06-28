@@ -1,5 +1,6 @@
 import { getAdventureProgress } from './seed';
 import { computeCreatorAnalytics, DEFAULT_CREATOR_ANALYTICS } from './experience';
+import { recordNpcDialogueSeen as recordLivingNpcDialogueSeen } from './livingNpcEngine';
 
 export const WEATHER_TYPES = {
   CLEAR: 'clear',
@@ -363,22 +364,8 @@ export function getNpcDialogue(npc, dialogueId = 'intro') {
   return dialogues.find((d) => d.id === dialogueId) || dialogues[0] || null;
 }
 
-export function markNpcDialogueSeen(state, npcId, dialogueId) {
-  const world = normalizeWorld(state.world);
-  const progress = world.npcProgress[npcId] || { seenDialogues: [] };
-  const seen = progress.seenDialogues.includes(dialogueId)
-    ? progress.seenDialogues
-    : [...progress.seenDialogues, dialogueId];
-  return {
-    ...state,
-    world: normalizeWorld({
-      ...world,
-      npcProgress: {
-        ...world.npcProgress,
-        [npcId]: { ...progress, seenDialogues: seen, lastSeenAt: new Date().toISOString() },
-      },
-    }),
-  };
+export function markNpcDialogueSeen(state, npcId, dialogueId, adventureId) {
+  return recordLivingNpcDialogueSeen(state, npcId, dialogueId, adventureId);
 }
 
 export function selectBranchPath(state, adventureId, pathId, clueIndex) {

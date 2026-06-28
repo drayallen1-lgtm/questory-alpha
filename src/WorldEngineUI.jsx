@@ -46,6 +46,10 @@ import {
   setWeatherOverride,
 } from './worldEngine';
 import { getDirectorBranchFlavor, getDirectorNpcContext } from './directorRuntime';
+import {
+  recordNpcChoice,
+  resolveLivingNpcPresentation,
+} from './livingNpcEngine';
 import { computeCreatorAnalytics } from './experience';
 
 export function WorldEngineHub({ state, setState, adventures, nav }) {
@@ -490,32 +494,41 @@ export function BranchChoicePanel({ clue, progress, onSelect, adventure }) {
   );
 }
 
-export function NpcPlayCard({ adventure, state, setState, clueIndex }) {
-  const directorCtx = getDirectorNpcContext(adventure, clueIndex);
+export function NpcPlayCard({ adventure, state, setState, clueIndex, progress }) {
+  const directorCtx = getDirectorNpcContext(adventure, clueIndex, state, progress);
+
+  if (directorCtx?.presentation) {
+    return (
+      <LivingNpcCard
+        presentation={directorCtx.presentation}
+        adventure={adventure}
+        progress={progress}
+        state={state}
+        setState={setState}
+      />
+    );
+  }
 
   if (directorCtx) {
-    const { npc, dialogue, dialogueId } = directorCtx;
-    const seen = state.world?.npcProgress?.[npc.id]?.seenDialogues?.includes(dialogueId);
-
-    return (
-      <div className="card npc-play-card director-npc-card">
-        <span className="npc-avatar">{npc.avatar}</span>
-        <div>
-          <b>{npc.name}</b>
-          {npc.role && <small className="npc-role">{npc.role}</small>}
-          <p>"{dialogue.text}"</p>
-        </div>
-        {!seen && (
-          <button
-            type="button"
-            className="ghost"
-            onClick={() => setState((s) => markNpcDialogueSeen(s, npc.id, dialogueId))}
-          >
-            Continue
-          </button>
-        )}
-      </div>
-    );
+    const fallback = resolveLivingNpcPresentation({
+      npc: directorCtx.npc,
+      dialogue: directorCtx.dialogue,
+      dialogueId: directorCtx.dialogueId,
+      state,
+      adventure,
+      progress,
+    });
+    if (fallback) {
+      return (
+        <LivingNpcCard
+          presentation={fallback}
+          adventure={adventure}
+          progress={progress}
+          state={state}
+          setState={setState}
+        />
+      );
+    }
   }
 
   const npcs = getNpcsForAdventure(adventure);
@@ -524,24 +537,84 @@ export function NpcPlayCard({ adventure, state, setState, clueIndex }) {
   const dialogueId = clueIndex === 0 ? 'intro' : 'branch';
   const dialogue = getNpcDialogue(npc, dialogueId);
   if (!dialogue) return null;
-  const seen = state.world?.npcProgress?.[npc.id]?.seenDialogues?.includes(dialogueId);
+
+  const presentation = resolveLivingNpcPresentation({
+    npc,
+    dialogue,
+    dialogueId,
+    state,
+    adventure,
+    progress,
+  });
 
   return (
-    <div className="card npc-play-card">
+    <LivingNpcCard
+      presentation={presentation}
+      adventure={adventure}
+      progress={progress}
+      state={state}
+      setState={setState}
+    />
+  );
+}
+
+function LivingNpcCard({ presentation, adventure, state, setState, progress }) {
+  if (!presentation) return null;
+
+  const {
+    npc,
+    dialogueId,
+    text,
+    mood,
+    moodLabel,
+    greeting,
+    memoryLine,
+    trustLabel,
+    choices,
+    seen,
+  } = presentation;
+
+  function handleChoice(choice) {
+    setState((s) => recordNpcChoice(s, npc.id, dialogueId, choice, adventure?.id, progress));
+  }
+
+  function handleContinue() {
+    setState((s) => markNpcDialogueSeen(s, npc.id, dialogueId, adventure?.id));
+  }
+
+  return (
+    <div className={`card npc-play-card living-npc-card mood-${mood}`}>
       <span className="npc-avatar">{npc.avatar}</span>
-      <div>
-        <b>{npc.name}</b>
-        <p>"{dialogue.text}"</p>
+      <div className="living-npc-body">
+        <div className="living-npc-head">
+          <b>{npc.name}</b>
+          {npc.role && <small className="npc-role">{npc.role}</small>}
+          <span className={`npc-mood-badge mood-${mood}`}>{moodLabel}</span>
+          <span className="npc-trust-badge">{trustLabel}</span>
+        </div>
+        {greeting && <p className="npc-return-greeting">{greeting}</p>}
+        {memoryLine && <p className="npc-memory-callback">{memoryLine}</p>}
+        <blockquote className="npc-dialogue-line">"{text}"</blockquote>
+        {choices?.length > 0 && (
+          <div className="npc-choice-list">
+            {choices.map((choice) => (
+              <button
+                key={choice.id}
+                type="button"
+                className="npc-choice-btn"
+                onClick={() => handleChoice(choice)}
+              >
+                {choice.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {!seen && !choices?.length && (
+          <button type="button" className="ghost" onClick={handleContinue}>
+            Continue
+          </button>
+        )}
       </div>
-      {!seen && (
-        <button
-          type="button"
-          className="ghost"
-          onClick={() => setState((s) => markNpcDialogueSeen(s, npc.id, dialogueId))}
-        >
-          Continue
-        </button>
-      )}
     </div>
   );
 }
