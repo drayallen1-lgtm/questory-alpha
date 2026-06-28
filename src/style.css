@@ -4032,6 +4032,97 @@ nav button.active {
   margin: 0 0 6px;
 }
 
+.branch-choice-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.branch-preview-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  border: 1px solid rgba(94, 234, 212, 0.22);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+  color: var(--xp-heading);
+  cursor: pointer;
+}
+
+.branch-preview-card:hover {
+  border-color: rgba(94, 234, 212, 0.45);
+  background: rgba(94, 234, 212, 0.06);
+}
+
+.branch-preview-icon {
+  font-size: 1.25rem;
+}
+
+.branch-preview-ending {
+  color: #5eead4;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+}
+
+.branch-preview-medallion {
+  font-size: 0.82rem;
+  color: #fbbf24;
+}
+
+.branch-path-tracker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(94, 234, 212, 0.2);
+  background: rgba(94, 234, 212, 0.04);
+}
+
+.branch-path-tracker small {
+  display: block;
+  color: var(--xp-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.branch-path-ending {
+  display: block;
+  font-size: 0.78rem;
+  color: #5eead4;
+}
+
+.ending-reveal-banner {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.06);
+}
+
+.ending-reveal-body small {
+  display: block;
+  color: var(--xp-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ending-reveal-medallion {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #fbbf24;
+}
+
 .branch-option {
   margin: 6px 0;
   text-align: left;

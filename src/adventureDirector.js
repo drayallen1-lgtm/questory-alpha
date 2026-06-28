@@ -158,6 +158,8 @@ const HORROR_BACKYARD_BASE = {
         title: 'Brave Path',
         description: 'You walked into the shadows and earned the Survivor Crest.',
         medallionTitle: 'Survivor Medallion',
+        arPrompt: 'A shadow figure lunges from the shed as whispers crescendo — brave path finale.',
+        discoveryUnlock: 'backyard-haunt',
       },
       {
         id: 'cautious',
@@ -165,6 +167,8 @@ const HORROR_BACKYARD_BASE = {
         title: 'Cautious Path',
         description: 'You outsmarted the watcher and claimed the Lantern Keeper badge.',
         medallionTitle: 'Lantern Keeper Badge',
+        arPrompt: 'A black lantern glows warmly as the watcher fades into mist — cautious path finale.',
+        passportStamp: 'lantern-keeper',
       },
     ],
   },
@@ -372,6 +376,7 @@ const CHURCH_TRAIL_BASE = {
         title: 'Sanctuary Path',
         description: 'You walked the path of worship and earned the Sanctuary Crest.',
         medallionTitle: 'Sanctuary Crest',
+        arPrompt: 'Sanctuary light pours through stained glass as the faith trail completes.',
       },
       {
         id: 'garden',
@@ -379,6 +384,7 @@ const CHURCH_TRAIL_BASE = {
         title: 'Garden Path',
         description: 'You found blessings in the garden and earned the Gardener Badge.',
         medallionTitle: 'Gardener Badge',
+        arPrompt: 'Garden blooms burst into golden petals as blessings settle over the trail.',
       },
     ],
   },
@@ -497,6 +503,8 @@ const EDUCATIONAL_TRAIL_BASE = {
         title: 'Historian Path',
         description: 'You mastered the archives and earned the Historian Crest.',
         medallionTitle: 'Historian Crest',
+        arPrompt: 'A history scroll unfurls from the archives wing — scholar trail complete.',
+        collectionUnlock: 'scholar-trail',
       },
       {
         id: 'exhibit',
@@ -504,6 +512,7 @@ const EDUCATIONAL_TRAIL_BASE = {
         title: 'Exhibit Path',
         description: 'You explored the main hall and earned the Explorer Badge.',
         medallionTitle: 'Explorer Badge',
+        arPrompt: 'A magic book and star compass merge above the exhibit hall — explorer finale.',
       },
     ],
   },
@@ -829,6 +838,18 @@ function generateArSceneFromPrompt(prompt, directorMeta = {}) {
   return emptyArScene();
 }
 
+function buildPathFinaleVariants(blueprint) {
+  if (!blueprint.branching?.enabled) return {};
+  const directorMeta = directorMetaFromBlueprint(blueprint);
+  const variants = {};
+  for (const ending of blueprint.branching.alternateEndings || []) {
+    if (!ending.arPrompt) continue;
+    const scene = generateArSceneFromPrompt(ending.arPrompt, directorMeta);
+    if (scene?.enabled) variants[ending.pathId] = scene;
+  }
+  return variants;
+}
+
 function buildPathVariantScenes(pathVariants, useAr, directorMeta = {}) {
   if (!pathVariants || typeof pathVariants !== 'object') return pathVariants;
   const next = {};
@@ -1066,9 +1087,12 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
       ? `The ${blueprint.characters[0]?.name || 'guide'} signed the ledger with one word: ${claimCode}.`
       : '';
 
+  const pathFinaleVariants = buildPathFinaleVariants(blueprint);
+
   const worldConfig = normalizeWorldConfig({
     branchingEnabled: Boolean(blueprint.branching?.enabled),
     alternateEndings: blueprint.branching?.alternateEndings || [],
+    pathFinaleVariants,
     worldEventTags:
       bpMeta.template === ADVENTURE_TEMPLATES.HORROR ? ['ghost-walk', 'backyard-haunt'] : ['family-fun'],
     hiddenDiscoveryIds: blueprint.collectionLore?.collectionId
@@ -1112,6 +1136,7 @@ export function blueprintToCreateDraft(blueprint, options = {}) {
     rewards,
     arFinale,
     arTheme,
+    pathFinaleVariants,
     worldConfig,
     summary: summarizeBlueprint(blueprint, { arCount, pathVariantCount }),
   };

@@ -47,6 +47,11 @@ import {
 } from './worldEngine';
 import { getDirectorBranchFlavor, getDirectorNpcContext } from './directorRuntime';
 import {
+  getBranchSummary,
+  getPathMeta,
+  previewPathOutcome,
+} from './branchingEngine';
+import {
   recordNpcChoice,
   resolveLivingNpcPresentation,
 } from './livingNpcEngine';
@@ -464,6 +469,22 @@ export function LockedAdventureNotice({ adventure, state, nav }) {
   );
 }
 
+export function BranchPathTracker({ adventure, progress }) {
+  const summary = getBranchSummary(adventure, progress);
+  if (!summary) return null;
+
+  return (
+    <div className="branch-path-tracker">
+      <span className="branch-path-icon">{summary.icon}</span>
+      <div className="branch-path-copy">
+        <small>Your path</small>
+        <strong>{summary.label}</strong>
+        {summary.endingTitle && <span className="branch-path-ending">{summary.endingTitle}</span>}
+      </div>
+    </div>
+  );
+}
+
 export function BranchChoicePanel({ clue, progress, onSelect, adventure }) {
   const options = clue?.branchOptions || [];
   if (!options.length) return null;
@@ -484,12 +505,30 @@ export function BranchChoicePanel({ clue, progress, onSelect, adventure }) {
   return (
     <div className="card branch-choice-panel">
       <h4>Choose your path</h4>
-      <p className="admin-meta">This choice affects your ending and rewards.</p>
-      {options.map((opt) => (
-        <button key={opt.id} type="button" className="ghost branch-option" onClick={() => onSelect(opt.pathId)}>
-          {opt.label}
-        </button>
-      ))}
+      <p className="admin-meta">This choice shapes clues, AR scenes, and your ending.</p>
+      <div className="branch-choice-grid">
+        {options.map((opt) => {
+          const preview = adventure ? previewPathOutcome(adventure, opt.pathId) : getPathMeta(opt.pathId);
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              className="branch-preview-card"
+              onClick={() => onSelect(opt.pathId)}
+            >
+              <span className="branch-preview-icon">{preview.icon || '🔀'}</span>
+              <strong>{opt.label}</strong>
+              {preview.endingTitle && (
+                <small className="branch-preview-ending">{preview.endingTitle}</small>
+              )}
+              {preview.endingDesc && <p>{preview.endingDesc}</p>}
+              {preview.medallionTitle && (
+                <span className="branch-preview-medallion">🏅 {preview.medallionTitle}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -669,12 +708,20 @@ export function WorldHealthDashboard({ adventure, state }) {
 }
 
 export function EndingRevealBanner({ adventure, progress }) {
-  const ending = resolveAdventureEnding(adventure, progress);
-  if (!adventure.worldConfig?.branchingEnabled || !progress.pathId) return null;
+  const summary = getBranchSummary(adventure, progress);
+  if (!summary) return null;
+
   return (
     <div className="card ending-reveal-banner">
-      <Sparkles size={16} /> <b>{ending.title || 'Your path'}</b>
-      {ending.description && <p>{ending.description}</p>}
+      <Sparkles size={16} />
+      <div className="ending-reveal-body">
+        <small>{summary.label}</small>
+        <b>{summary.endingTitle || 'Your path ending'}</b>
+        {summary.endingDesc && <p>{summary.endingDesc}</p>}
+        {summary.medallionTitle && (
+          <span className="ending-reveal-medallion">🏅 {summary.medallionTitle}</span>
+        )}
+      </div>
     </div>
   );
 }

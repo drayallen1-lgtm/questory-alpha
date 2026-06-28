@@ -431,6 +431,8 @@ export const defaultState = {
             title: 'Ghost Ledger Ending',
             description: 'You followed the conductor into the shadows.',
             medallionTitle: 'Depot Ghost Medallion',
+            discoveryUnlock: 'depot-lantern',
+            arPrompt: 'The conductor steps from platform fog, lantern swinging — ghost path finale.',
           },
           {
             id: 'historian',
@@ -438,8 +440,26 @@ export const defaultState = {
             title: 'Historian Ending',
             description: 'The archives reveal what the platform hides.',
             medallionTitle: 'Archivist Crest',
+            collectionUnlock: 'parsons-legends',
+            arPrompt: 'An archive ledger opens in warm light as train schedules flutter — historian finale.',
           },
         ],
+        pathFinaleVariants: {
+          ghost: {
+            enabled: true,
+            title: 'Conductor Finale',
+            overlayText: 'The conductor steps from the fog…',
+            sceneType: 'ghost',
+            trigger: 'on_finale',
+          },
+          historian: {
+            enabled: true,
+            title: 'Archivist Finale',
+            overlayText: 'The ledger opens in archive light…',
+            sceneType: 'memory',
+            trigger: 'on_finale',
+          },
+        },
         npcs: [
           {
             id: 'conductor-ghost',

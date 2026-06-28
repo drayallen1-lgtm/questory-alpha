@@ -37,6 +37,7 @@ import {
   markArSceneComplete,
   shouldPlayArScene,
 } from './arEngine';
+import { getAdventureArFinaleForProgress } from './branchingEngine';
 import { DirectorMoodBadge } from './ExperienceUI';
 
 function useMedallionGps(adventure, watching = true) {
@@ -382,7 +383,9 @@ export function FinderModeScreen({ adventure, progress, nav, adminPreview, onMed
 
   const tapDisabled =
     !inCaptureRange || progress.medallionTapped || capturing || phase === FINDER_PHASE.CAPTURED;
-  const arFinale = getAdventureArFinale(adventure);
+  const arFinale = progress?.pathId
+    ? getAdventureArFinaleForProgress(adventure, progress)
+    : getAdventureArFinale(adventure);
   const finaleSceneId = getArSceneId(adventure.id, 'finale', 'finale');
 
   async function finishMedallionTap(context) {

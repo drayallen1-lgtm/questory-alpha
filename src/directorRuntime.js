@@ -9,6 +9,7 @@ import {
   resolveAdventureEnding,
 } from './worldEngine';
 import { resolveLivingNpcPresentation } from './livingNpcEngine';
+import { applyBranchToClue } from './branchingEngine';
 
 export function isDirectorAdventure(adventure) {
   return Boolean(adventure?.experienceSettings?.directorGenerated);
@@ -172,19 +173,7 @@ export function getDirectorVictoryLore(state, adventure) {
  * Apply path-specific clue variant when player has chosen a branch.
  */
 export function resolveDirectorClue(adventure, clue, progress) {
-  if (!clue || !progress?.pathId || !clue.pathVariants) return clue;
-
-  const variant = clue.pathVariants[progress.pathId];
-  if (!variant) return clue;
-
-  return {
-    ...clue,
-    title: variant.title || clue.title,
-    text: variant.text || clue.text,
-    arScene:
-      variant.arScene?.enabled ? variant.arScene : clue.arScene,
-    _directorVariant: progress.pathId,
-  };
+  return applyBranchToClue(adventure, clue, progress);
 }
 
 export function countDirectorPathVariants(adventure) {

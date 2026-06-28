@@ -240,6 +240,10 @@ export function normalizeWorldConfig(config = {}) {
     hiddenDiscoveryIds: Array.isArray(config.hiddenDiscoveryIds) ? config.hiddenDiscoveryIds : [],
     unlockRequirement: config.unlockRequirement || null,
     worldEventTags: Array.isArray(config.worldEventTags) ? config.worldEventTags : [],
+    pathFinaleVariants:
+      config.pathFinaleVariants && typeof config.pathFinaleVariants === 'object'
+        ? config.pathFinaleVariants
+        : {},
   };
 }
 

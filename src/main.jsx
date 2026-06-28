@@ -218,8 +218,8 @@ import {
   isAdventureUnlocked,
   normalizeWorld,
   normalizeWorldConfig,
-  selectBranchPath,
 } from './worldEngine';
+import { commitBranchPath } from './branchingEngine';
 import { ADVENTURE_TEMPLATES, SCALE_PRESETS, buildTemplateClues, buildTemplateRewards, buildTemplateStory, getTemplateMeta } from './templates';
 import {
   TemplatePicker,
@@ -251,6 +251,7 @@ import {
   CreatorPrestigeBadge,
   LockedAdventureNotice,
   BranchChoicePanel,
+  BranchPathTracker,
   NpcPlayCard,
   WorldHealthDashboard,
   EndingRevealBanner,
@@ -1682,6 +1683,7 @@ function AdventurePlay({
 
         {!atClaim && !progress.claimed && clue && (
           <>
+            <BranchPathTracker adventure={adventure} progress={progress} />
             <NpcPlayCard
               adventure={adventure}
               state={state}
@@ -1693,7 +1695,7 @@ function AdventurePlay({
               clue={clue}
               progress={progress}
               adventure={adventure}
-              onSelect={(pathId) => setState((s) => selectBranchPath(s, adventure.id, pathId, clueIndex))}
+              onSelect={(pathId) => setState((s) => commitBranchPath(s, adventure, pathId, clueIndex))}
             />
             <CluePlayContent
               clue={clue}

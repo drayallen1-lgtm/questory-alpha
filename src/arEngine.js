@@ -147,6 +147,7 @@ export function getClueArScene(clue) {
   return normalizeArScene(clue.arScene || clue.ar_scene || {});
 }
 
+
 export function getAdventureArFinale(adventure) {
   if (!adventure) return emptyArScene();
   return normalizeArScene(adventure.arFinale || adventure.ar_finale || {});
