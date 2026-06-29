@@ -1009,7 +1009,16 @@ small.progress-label {
 }
 
 .map-stage-adventure-active .map-pin-card {
-  z-index: 26;
+  z-index: 32;
+}
+
+.map-stage-adventure-active .living-cluster-blossom {
+  z-index: 18;
+  pointer-events: none;
+}
+
+.map-stage-adventure-active .living-cluster-blossom .blossom-selected {
+  pointer-events: auto;
 }
 
 .user-location-wrap {
@@ -1077,24 +1086,59 @@ small.progress-label {
   position: absolute;
   left: 50%;
   bottom: 12px;
-  z-index: 25;
+  z-index: 30;
   width: min(420px, calc(100% - 24px));
-  max-height: 35vh;
-  overflow-y: auto;
+  max-height: min(440px, 42vh);
   transform: translateX(-50%);
   pointer-events: auto;
-  padding: 0 0 16px;
+  padding: 0;
   border-radius: 16px;
   background: linear-gradient(165deg, rgba(12, 20, 32, 0.97), rgba(8, 14, 24, 0.98));
   border: 1px solid rgba(94, 234, 212, 0.35);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   animation: map-card-rise 0.22s ease-out;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-card-safe-start {
+  display: none;
+  margin: 44px 16px 0;
+  width: calc(100% - 32px);
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.map-pin-card-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 8px;
+}
+
+.map-pin-card-actions-sticky {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 12px 16px 16px;
+  background: linear-gradient(to top, rgba(8, 14, 24, 0.99) 70%, rgba(8, 14, 24, 0.88));
+  border-top: 1px solid rgba(94, 234, 212, 0.2);
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.map-pin-card-cta-primary,
+.map-pin-card-cta-secondary {
+  pointer-events: auto;
+  width: 100%;
 }
 
 .map-pin-card-hero {
   position: relative;
-  min-height: 132px;
+  min-height: 112px;
   background: linear-gradient(135deg, var(--pin-hero-color, #14b8a6), rgba(8, 14, 24, 0.95));
   margin-bottom: 12px;
 }
@@ -1186,11 +1230,14 @@ small.progress-label {
     right: 0;
     bottom: 0;
     width: auto;
-    max-height: 45vh;
-    overflow-y: auto;
+    max-height: min(52vh, 480px);
     border-radius: 16px 16px 0 0;
     transform: none;
     animation: map-card-rise-mobile 0.22s ease-out;
+  }
+
+  .map-card-safe-start {
+    display: flex;
   }
 
   @keyframes map-card-rise-mobile {
@@ -1368,10 +1415,11 @@ small.progress-label {
 
 .map-pin-card-close {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 10px;
+  right: 10px;
   padding: 4px;
-  z-index: 3;
+  z-index: 4;
+  pointer-events: auto;
 }
 
 .map-pin-card-head {

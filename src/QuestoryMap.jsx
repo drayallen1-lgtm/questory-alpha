@@ -771,7 +771,7 @@ export function QuestoryMap({
         const target = e.originalEvent?.target;
         if (
           target?.closest?.(
-            '.questory-cluster, .questory-pin, .blossom-pin, .blossom-category, .blossom-overflow, .living-cluster-blossom'
+            '.questory-cluster, .questory-pin, .blossom-pin, .blossom-category, .blossom-overflow, .living-cluster-blossom, .map-pin-card, .questory-map-card, .cluster-adventure-picker'
           )
         ) {
           return;
@@ -1030,9 +1030,13 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   ]);
 
   const selectedAdventure = selectedMarker?.adventure || null;
-  const previewAccess = selectedAdventure
-    ? evaluateAccessContext(selectedAdventure, { ...accessOptions, adminPreview: false })
-    : null;
+  const selectedAccess = useMemo(() => {
+    if (!selectedAdventure) return null;
+    return (
+      selectedMarker?.access ||
+      evaluateAccessContext(selectedAdventure, { ...accessOptions, adminPreview: false })
+    );
+  }, [selectedAdventure, selectedMarker?.access, accessOptions]);
   const pinVisual = selectedAdventure ? resolvePinVisual(selectedAdventure, state) : null;
 
   const clusterDistanceM =
@@ -1248,15 +1252,22 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
 
     if (isDev) {
       console.debug('[MapPinCard]', {
-        mapCardCtaClicked: true,
-        adventureId: adventure.id,
-        accessMode: access?.mode,
-        targetScreen,
-        previewMode,
+        mapCardPrimaryCtaClicked: { adventureId: adventure.id, accessMode: access?.mode, targetScreen, previewMode },
       });
     }
 
     nav(targetScreen, adventure.id, { adminPreview: false, previewMode });
+  }
+
+  function handleMapCardPreview(adventure, access) {
+    if (!adventure?.id || !nav) return;
+    const previewMode = Boolean(access?.tooFar || access?.mode === 'preview' || !access?.canPlayFull);
+    if (isDev) {
+      console.debug('[MapPinCard]', {
+        mapCardPrimaryCtaClicked: { adventureId: adventure.id, accessMode: access?.mode, targetScreen: 'detail', previewMode: true },
+      });
+    }
+    nav('detail', adventure.id, { adminPreview: false, previewMode: true });
   }
 
   return (
@@ -1297,7 +1308,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       )}
 
       <div
-        className={`map-stage${livingCluster ? ' map-stage-living-cluster' : ''}${selectedMarker?.fromCluster ? ' map-stage-adventure-active' : ''}`}
+        className={`map-stage${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}`}
       >
         <QuestoryMap
           adventureMarkers={focusedAdventure ? [] : adventureMarkers}
@@ -1353,14 +1364,15 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           />
         )}
 
-        {selectedAdventure && previewAccess && (
+        {selectedAdventure && selectedAccess && (
           <MapPinCard
             adventure={selectedAdventure}
-            access={previewAccess}
+            access={selectedAccess}
             visual={pinVisual}
             distanceM={selectedMarker?.distanceM}
             onClose={handleCardClose}
             onPlay={handleMapCardPlay}
+            onPreview={handleMapCardPreview}
             onViewClues={handleViewClues}
           />
         )}

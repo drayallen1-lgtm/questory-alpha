@@ -23,6 +23,14 @@ function resolveHeroImage(adventure, visual) {
   return adventure?.coverUrl || adventure?.heroUrl || adventure?.imageUrl || null;
 }
 
+function resolvePrimaryCtaLabel(access) {
+  if (access?.ctaLabel) return access.ctaLabel;
+  if (access?.tooFar || access?.mode === 'preview' || !access?.canPlayFull) {
+    return access?.mode === 'hidden' ? 'View Details' : 'Preview Adventure';
+  }
+  return 'Start Adventure';
+}
+
 export function MapPinCard({
   adventure,
   access,
@@ -30,13 +38,14 @@ export function MapPinCard({
   distanceM,
   onClose,
   onPlay,
+  onPreview,
   onViewClues,
 }) {
   if (!adventure) return null;
 
   const tooFar = access?.tooFar;
-  const ctaPrimary = tooFar ? 'Preview Adventure' : 'Start Adventure';
-  const ctaLabel = access?.ctaLabel || ctaPrimary;
+  const previewOnly = Boolean(tooFar || access?.mode === 'preview' || !access?.canPlayFull);
+  const ctaLabel = resolvePrimaryCtaLabel(access);
   const pinIcon = visual?.icon || visual?.base?.icon || '📍';
   const pinLabel = visual?.label || visual?.base?.label || 'Adventure';
   const pinColor = visual?.color || visual?.base?.color;
@@ -44,19 +53,30 @@ export function MapPinCard({
   const difficulty = difficultyLabel(adventure?.difficulty);
   const duration = estimateDuration(adventure);
 
-  function handleCardPointer(e) {
+  function stopCardEvent(e) {
     e.stopPropagation();
   }
 
-  function handlePlay(e) {
+  function handlePrimaryCta(e) {
     e.stopPropagation();
     e.preventDefault();
-    onPlay?.(adventure, access);
+    const handler = previewOnly ? onPreview || onPlay : onPlay;
+    if (isDev) {
+      console.debug('[MapPinCard]', {
+        mapCardPrimaryCtaClicked: { adventureId: adventure.id, accessMode: access?.mode },
+      });
+    }
+    handler?.(adventure, access);
   }
 
   function handleViewClues(e) {
     e.stopPropagation();
     e.preventDefault();
+    if (isDev) {
+      console.debug('[MapPinCard]', {
+        mapCardViewCluesClicked: { adventureId: adventure.id },
+      });
+    }
     onViewClues?.(adventure, access);
   }
 
@@ -68,78 +88,84 @@ export function MapPinCard({
 
   return (
     <div
-      className="map-pin-card"
+      className="map-pin-card questory-map-card"
       role="dialog"
       aria-label={adventure.title}
-      onClick={handleCardPointer}
-      onMouseDown={handleCardPointer}
-      onTouchStart={handleCardPointer}
+      onClick={stopCardEvent}
+      onMouseDown={stopCardEvent}
+      onTouchStart={stopCardEvent}
     >
       <button type="button" className="map-pin-card-close ghost" onClick={handleClose} aria-label="Close">
         <X size={16} />
       </button>
 
-      <div
-        className="map-pin-card-hero"
-        style={{ '--pin-hero-color': pinColor || '#14b8a6' }}
-      >
-        {heroImage ? (
-          <img src={heroImage} alt="" className="map-pin-card-hero-img" />
-        ) : (
-          <span className="map-pin-card-hero-icon">{pinIcon}</span>
-        )}
-        <div className="map-pin-card-hero-scrim" />
-        <div className="map-pin-card-hero-text">
-          <h3>{adventure.title}</h3>
-          <p>{pinLabel}</p>
+      <button type="button" className="primary map-card-safe-start" onClick={handlePrimaryCta}>
+        <Play size={16} /> {ctaLabel}
+      </button>
+
+      <div className="map-pin-card-body">
+        <div
+          className="map-pin-card-hero"
+          style={{ '--pin-hero-color': pinColor || '#14b8a6' }}
+        >
+          {heroImage ? (
+            <img src={heroImage} alt="" className="map-pin-card-hero-img" />
+          ) : (
+            <span className="map-pin-card-hero-icon">{pinIcon}</span>
+          )}
+          <div className="map-pin-card-hero-scrim" />
+          <div className="map-pin-card-hero-text">
+            <h3>{adventure.title}</h3>
+            <p>{pinLabel}</p>
+          </div>
+        </div>
+
+        <div className="map-pin-card-meta-row">
+          <span>{difficulty}</span>
+          {distanceM != null && <span>{formatPinDistanceImperial(distanceM)}</span>}
+          <span>{duration}</span>
+        </div>
+
+        <div className="map-pin-card-badges">
+          <AccessTypeBadge adventure={adventure} compact />
+          <span className={`badge map-pin-badge pin-${tooFar ? 'preview' : 'playable'}`}>
+            {tooFar ? (
+              <>
+                <Eye size={12} /> Preview
+              </>
+            ) : (
+              <>
+                <Globe size={12} /> Playable
+              </>
+            )}
+          </span>
+          {visual?.heatLevel === 'hot' && <span className="badge map-heat-badge">🔥 Hot</span>}
+          {visual?.overlays?.some((o) => o.id === 'featured') && (
+            <span className="badge cluster-picker-featured">⭐ Featured</span>
+          )}
+          {visual?.overlays?.some((o) => o.id === 'event') && (
+            <span className="badge cluster-picker-event">📅 Event</span>
+          )}
+        </div>
+
+        <AccessStatusBanner access={access} />
+
+        <p className="story-preview map-pin-card-story">{adventure.story}</p>
+        <p className="sponsor-inline">Sponsored by {getSponsorInfo(adventure).name}</p>
+
+        <div className="chips map-pin-card-chips">
+          <span>{adventure.clues?.length || 0} clues</span>
+          {adventure.prize && <span className="map-pin-card-reward">{adventure.prize}</span>}
+          <span>{adventure.location}</span>
         </div>
       </div>
 
-      <div className="map-pin-card-meta-row">
-        <span>{difficulty}</span>
-        {distanceM != null && <span>{formatPinDistanceImperial(distanceM)}</span>}
-        <span>{duration}</span>
-      </div>
-
-      <div className="map-pin-card-badges">
-        <AccessTypeBadge adventure={adventure} compact />
-        <span className={`badge map-pin-badge pin-${tooFar ? 'preview' : 'playable'}`}>
-          {tooFar ? (
-            <>
-              <Eye size={12} /> Preview
-            </>
-          ) : (
-            <>
-              <Globe size={12} /> Playable
-            </>
-          )}
-        </span>
-        {visual?.heatLevel === 'hot' && <span className="badge map-heat-badge">🔥 Hot</span>}
-        {visual?.overlays?.some((o) => o.id === 'featured') && (
-          <span className="badge cluster-picker-featured">⭐ Featured</span>
-        )}
-        {visual?.overlays?.some((o) => o.id === 'event') && (
-          <span className="badge cluster-picker-event">📅 Event</span>
-        )}
-      </div>
-
-      <AccessStatusBanner access={access} />
-
-      <p className="story-preview map-pin-card-story">{adventure.story}</p>
-      <p className="sponsor-inline">Sponsored by {getSponsorInfo(adventure).name}</p>
-
-      <div className="chips map-pin-card-chips">
-        <span>{adventure.clues?.length || 0} clues</span>
-        {adventure.prize && <span className="map-pin-card-reward">{adventure.prize}</span>}
-        <span>{adventure.location}</span>
-      </div>
-
-      <div className="map-pin-card-actions">
-        <button type="button" onClick={handlePlay}>
+      <div className="map-pin-card-actions map-pin-card-actions-sticky">
+        <button type="button" className="primary map-pin-card-cta-primary" onClick={handlePrimaryCta}>
           <Play size={16} /> {ctaLabel} <ChevronRight size={16} />
         </button>
         {onViewClues && (
-          <button type="button" className="ghost" onClick={handleViewClues}>
+          <button type="button" className="ghost map-pin-card-cta-secondary" onClick={handleViewClues}>
             View clue trail
           </button>
         )}
