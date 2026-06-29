@@ -696,6 +696,31 @@ small.progress-label {
   padding: 0;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   z-index: 4;
+  pointer-events: auto;
+}
+
+.living-cluster-blossom {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 18;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.living-cluster-blossom > .blossom-pin,
+.living-cluster-blossom > .blossom-category,
+.living-cluster-blossom > .blossom-overflow {
+  position: absolute;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+}
+
+.mapboxgl-marker:has(.questory-cluster) {
+  z-index: 6 !important;
+  pointer-events: auto !important;
 }
 
 .questory-cluster:hover {
@@ -806,7 +831,7 @@ small.progress-label {
 .mapboxgl-marker:has(.blossom-pin),
 .mapboxgl-marker:has(.blossom-category),
 .mapboxgl-marker:has(.blossom-overflow) {
-  z-index: 14 !important;
+  display: none !important;
 }
 
 .mapboxgl-marker:has(.blossom-selected) {

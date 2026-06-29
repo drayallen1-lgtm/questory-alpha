@@ -39,21 +39,10 @@ import {
   flyMapTo,
   summarizeClusterMarkers,
 } from './mapSpatial';
-import {
-  BLOSSOM_ANIM_MS,
-  BLOSSOM_MAX_PINS,
-  buildBlossomTooltipHtml,
-  computeBlossomLayout,
-  computeCategoryBlossomLayout,
-  createBlossomAdventureElement,
-  createBlossomCategoryElement,
-  createBlossomOverflowElement,
-  groupMarkersByCategory,
-  livingClusterPhase,
-  wireBlossomAdventureElement,
-} from './mapClusterBlossom';
 import { createMapCameraController } from './mapCamera';
 import { ClusterAdventurePicker, MapFilterBar, MapPinCard } from './MapPinCard';
+import { LivingClusterBlossomOverlay } from './LivingClusterBlossom';
+import { BLOSSOM_MAX_PINS, groupMarkersByCategory, livingClusterPhase } from './mapClusterBlossom';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -310,6 +299,7 @@ export function QuestoryMap({
   const onSpatialStatsChangeRef = useRef(onSpatialStatsChange);
   const requestCameraMoveRef = useRef(null);
   const [mapInitFailed, setMapInitFailed] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   adventureMarkersRef.current = adventureMarkers;
   mapStateRef.current = mapState;
   userLocationRef.current = userLocation;
@@ -350,15 +340,27 @@ export function QuestoryMap({
     let entry = markersOnScreenRef.current[id];
     const mergedMeta = { ...meta, count };
 
-    const handleClusterTap = (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      handleClusterClickRef.current?.(clusterId, coords);
+    const wireClusterElement = (el) => {
+      if (!el || el.dataset.clusterWired === '1') return;
+      el.dataset.clusterWired = '1';
+      el.style.pointerEvents = 'auto';
+      el.addEventListener(
+        'click',
+        (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const current = markersOnScreenRef.current[id];
+          const lngLat = current?.getLngLat?.();
+          if (!lngLat) return;
+          handleClusterClickRef.current?.(clusterId, [lngLat.lng, lngLat.lat]);
+        },
+        true
+      );
     };
 
     if (!entry) {
       const el = createClusterElement(mergedMeta);
-      el.addEventListener('click', handleClusterTap);
+      wireClusterElement(el);
       entry = new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat(coords).addTo(map);
       markersOnScreenRef.current[id] = entry;
     } else {
@@ -370,12 +372,14 @@ export function QuestoryMap({
         const countEl = el.querySelector('.questory-cluster-count');
         if (iconEl) iconEl.textContent = mergedMeta.dominant?.icon || '📍';
         if (countEl) countEl.textContent = String(count);
+        wireClusterElement(el);
       }
     }
 
     const el = entry.getElement();
     if (el) {
       el.classList.toggle('questory-cluster-fading', Boolean(options.fading));
+      el.style.pointerEvents = options.fading ? 'none' : 'auto';
     }
   }, []);
 
@@ -439,15 +443,23 @@ export function QuestoryMap({
       const leafMarkers = leaves
         .map((f) => markerLookupRef.current.get(f.properties?.id ?? f.id))
         .filter(Boolean);
-      if (!leafMarkers.length) return;
+      if (!leafMarkers.length) {
+        if (isDev) {
+          console.debug('[QuestoryMap]', {
+            livingClusterClicked: { clusterId, count: 0, phase: 'failed', reason: 'noLeafMarkers' },
+          });
+        }
+        return;
+      }
 
       const meta = summarizeClusterMarkers(leafMarkers, mapStateRef.current);
       meta.count = leafMarkers.length;
       const categories = groupMarkersByCategory(leafMarkers, mapStateRef.current);
+      const phase = categories.length === 1 ? 'adventure' : 'category';
 
       if (isDev) {
         console.debug('[QuestoryMap]', {
-          clusterClicked: { count: meta.count, clusterId, categories: categories.length },
+          livingClusterClicked: { clusterId, count: meta.count, phase },
         });
       }
 
@@ -463,172 +475,63 @@ export function QuestoryMap({
 
   handleClusterClickRef.current = handleClusterClick;
 
-  const syncBlossomMarkers = useCallback(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const living = livingClusterRef.current;
-    const nextIds = new Set();
-    const accessOptions = {
-      userLatitude: userLocationRef.current?.latitude,
-      userLongitude: userLocationRef.current?.longitude,
-      isAdmin: isAdminRef.current,
-      userId: userIdRef.current,
-    };
-
-    const placeBlossomMarker = (id, coords, element, offset) => {
-      nextIds.add(id);
-      let entry = markersOnScreenRef.current[id];
-      if (!entry) {
-        entry = new mapboxgl.Marker({ element, anchor: 'center', offset })
-          .setLngLat(coords)
-          .addTo(map);
-        markersOnScreenRef.current[id] = entry;
-        requestAnimationFrame(() => {
-          element.classList.add('blossom-animate-in');
-          window.setTimeout(() => element.classList.add('blossom-open-pulse'), BLOSSOM_ANIM_MS);
-        });
-      } else {
-        entry.setLngLat(coords);
-        entry.setOffset(offset);
-      }
-    };
-
-    if (living && !living.overflowOpen && living.coords) {
-      const coords = living.coords;
-      const selectedId = living.selectedId;
-
-      if (living.phase === 'category' && living.categories?.length) {
-        const layout = computeCategoryBlossomLayout(living.categories);
-        living.categories.forEach((category, index) => {
-          const slot = layout.slots[index];
-          if (!slot) return;
-          const id = `blossom-${living.clusterId}-cat-${category.id}`;
-          let entry = markersOnScreenRef.current[id];
-          let el = entry?.getElement?.();
-          if (!el) {
-            el = createBlossomCategoryElement(category, index);
-            el.addEventListener('click', (e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              onBlossomCategorySelectRef.current?.(category.id);
-            });
-          }
-          placeBlossomMarker(id, coords, el, [slot.x, slot.y]);
-        });
-      } else {
-        const markers = living.activeMarkers || [];
-        const layout = computeBlossomLayout(markers.length);
-        const selectedMarker = selectedId ? markers.find((m) => m.id === selectedId) : null;
-        const selectedInRing = Boolean(
-          selectedMarker &&
-            layout.slots.some(
-              (slot) => slot.kind === 'item' && markers[slot.index]?.id === selectedId
-            )
-        );
-        const selectedFromOverflow = Boolean(selectedMarker && !selectedInRing);
-
-        layout.slots.forEach((slot) => {
-          if (slot.kind === 'overflow') {
-            if (selectedFromOverflow) return;
-            const id = `blossom-${living.clusterId}-overflow`;
-            let entry = markersOnScreenRef.current[id];
-            let el = entry?.getElement?.();
-            if (!el) {
-              el = createBlossomOverflowElement(layout.overflowCount);
-              el.addEventListener('click', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                onBlossomOverflowRef.current?.();
-              });
-            } else {
-              const label = el.querySelector('.blossom-overflow-label');
-              if (label) label.textContent = `+${layout.overflowCount} More`;
-              el.classList.toggle('blossom-dimmed', Boolean(selectedId));
-            }
-            placeBlossomMarker(id, coords, el, [slot.x, slot.y]);
-            return;
-          }
-
-          const marker = markers[slot.index];
-          if (!marker) return;
-          const id = `blossom-${living.clusterId}-${marker.id}`;
-          const visual = resolvePinVisual(marker.adventure, mapStateRef.current);
-          const dimmed = Boolean(selectedId && selectedId !== marker.id);
-          const selected = selectedId === marker.id;
-          let entry = markersOnScreenRef.current[id];
-          let el = entry?.getElement?.();
-
-          if (!el) {
-            el = createBlossomAdventureElement(marker, visual, {
-              dimmed,
-              selected,
-              animIndex: slot.index,
-            });
-            wireBlossomAdventureElement(el, {
-              marker,
-              mapState: mapStateRef.current,
-              accessOptions,
-              onSelect: (data) => onBlossomPinSelectRef.current?.(data),
-              onHoverChange: (hoverId) => onPinHoverChangeRef.current?.(hoverId),
-              getTooltipHtml: buildBlossomTooltipHtml,
-            });
-          } else {
-            el.classList.toggle('blossom-dimmed', dimmed);
-            el.classList.toggle('blossom-selected', selected);
-            el.classList.toggle('pin-solo-active', selected);
-            el.classList.toggle('blossom-selected-pulse', selected);
-          }
-
-          placeBlossomMarker(id, coords, el, [slot.x, slot.y]);
-        });
-
-        if (selectedFromOverflow && selectedMarker) {
-          const id = `blossom-${living.clusterId}-selected`;
-          const visual = resolvePinVisual(selectedMarker.adventure, mapStateRef.current);
-          let entry = markersOnScreenRef.current[id];
-          let el = entry?.getElement?.();
-
-          if (!el) {
-            el = createBlossomAdventureElement(selectedMarker, visual, {
-              dimmed: false,
-              selected: true,
-              animIndex: 0,
-            });
-            wireBlossomAdventureElement(el, {
-              marker: selectedMarker,
-              mapState: mapStateRef.current,
-              accessOptions,
-              onSelect: (data) => onBlossomPinSelectRef.current?.(data),
-              onHoverChange: (hoverId) => onPinHoverChangeRef.current?.(hoverId),
-              getTooltipHtml: buildBlossomTooltipHtml,
-            });
-          }
-
-          placeBlossomMarker(id, coords, el, [0, 0]);
-        }
-      }
-    }
-
+  const purgeLegacyBlossomMarkers = useCallback(() => {
     Object.keys(markersOnScreenRef.current).forEach((id) => {
       if (!id.startsWith('blossom-')) return;
-      if (!nextIds.has(id)) {
-        markersOnScreenRef.current[id].remove();
-        delete markersOnScreenRef.current[id];
+      markersOnScreenRef.current[id].remove();
+      delete markersOnScreenRef.current[id];
+    });
+  }, []);
+
+  const guardLeftEdgeMarkers = useCallback((map) => {
+    const container = map.getContainer();
+    const mapWidth = container.clientWidth;
+    const containerRect = container.getBoundingClientRect();
+    let edgeCount = 0;
+    const toRemove = [];
+
+    Object.entries(markersOnScreenRef.current).forEach(([id, marker]) => {
+      if (id.startsWith('cluster-') || id.startsWith('clue-') || id.startsWith('blossom-')) return;
+      const el = marker.getElement?.();
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const x = rect.left - containerRect.left + rect.width / 2;
+      if (x <= 10 || x >= mapWidth - 10) {
+        edgeCount += 1;
+        toRemove.push(id);
       }
     });
+
+    if (edgeCount > 3) {
+      if (isDev) {
+        console.debug('[QuestoryMap]', {
+          leftEdgeMarkerGuardTriggered: { edgeCount, mapWidth, removed: toRemove.length },
+        });
+      }
+      toRemove.forEach((id) => {
+        markersOnScreenRef.current[id]?.remove();
+        delete markersOnScreenRef.current[id];
+      });
+    }
   }, []);
 
   const syncHtmlMarkers = useCallback(() => {
     const map = mapRef.current;
     if (!map || !map.getSource(ADVENTURE_SOURCE)) return;
 
+    purgeLegacyBlossomMarkers();
+
     const markers = adventureMarkersRef.current;
     const nextIds = new Set();
     let clusterCount = 0;
     const living = livingClusterRef.current;
     const suppressedId = living?.clusterId ?? null;
-    const blossomOpen = Boolean(living && !living.overflowOpen);
+    const livingMemberIds =
+      living && !living.overflowOpen
+        ? new Set((living.markers || []).map((m) => m.id))
+        : null;
+    const mapMode = livingClusterPhase(living);
+    const allowIndividualPins = mapMode === 'CLUSTER_VIEW';
 
     const reportStats = (pinCount) => {
       onVisiblePinCountChange?.(pinCount);
@@ -639,13 +542,6 @@ export function QuestoryMap({
         clusterCount,
       });
     };
-
-    let features = [];
-    try {
-      features = map.querySourceFeatures(ADVENTURE_SOURCE);
-    } catch {
-      features = [];
-    }
 
     const clusterFeatures = (() => {
       try {
@@ -661,7 +557,7 @@ export function QuestoryMap({
       const coords = feature.geometry?.coordinates;
       if (!coords || props.cluster_id == null) continue;
       const count = props.point_count || 0;
-      if (suppressedId != null && props.cluster_id === suppressedId) {
+      if (suppressedId != null && Number(props.cluster_id) === Number(suppressedId)) {
         upsertClusterMarker(
           map,
           props.cluster_id,
@@ -669,7 +565,7 @@ export function QuestoryMap({
           count,
           { dominant: { icon: '📍', label: 'Adventure' } },
           nextIds,
-          { fading: blossomOpen }
+          { fading: living && !living.overflowOpen }
         );
         map.getSource(ADVENTURE_SOURCE).getClusterLeaves(props.cluster_id, 50, 0, (err, leaves) => {
           if (err || !leaves?.length) return;
@@ -680,7 +576,7 @@ export function QuestoryMap({
           const meta = summarizeClusterMarkers(leafMarkers, mapStateRef.current);
           meta.count = count;
           upsertClusterMarker(map, props.cluster_id, coords, count, meta, nextIds, {
-            fading: blossomOpen,
+            fading: living && !living.overflowOpen,
           });
         });
         continue;
@@ -706,11 +602,17 @@ export function QuestoryMap({
       });
     }
 
-    if (!blossomOpen && !living?.overflowOpen) {
-      const useDirectMarkers = features.length === 0 && markers.length > 0;
+    if (allowIndividualPins) {
+      let unclusteredFeatures = [];
+      try {
+        unclusteredFeatures = map.queryRenderedFeatures({ layers: [MAP_LAYER_IDS.UNCLUSTERED] });
+      } catch {
+        unclusteredFeatures = [];
+      }
 
-      if (useDirectMarkers) {
+      if (unclusteredFeatures.length === 0 && markers.length > 0 && clusterCount === 0) {
         for (const markerData of markers) {
+          if (livingMemberIds?.has(markerData.id)) continue;
           upsertAdventurePin(
             map,
             markerData.id,
@@ -719,29 +621,16 @@ export function QuestoryMap({
           );
         }
       } else {
-        for (const feature of features) {
+        for (const feature of unclusteredFeatures) {
           const props = parseFeatureProps(feature.properties);
           const coords = feature.geometry?.coordinates;
           if (!coords || isClusterFeature(props)) continue;
           const id = props.id ?? feature.id;
-          if (!id) continue;
+          if (!id || livingMemberIds?.has(id)) continue;
           upsertAdventurePin(map, id, coords, nextIds);
-        }
-
-        if (!nextIds.size && markers.length > 0 && clusterCount === 0) {
-          for (const markerData of markers) {
-            upsertAdventurePin(
-              map,
-              markerData.id,
-              [markerData.longitude, markerData.latitude],
-              nextIds
-            );
-          }
         }
       }
     }
-
-    syncBlossomMarkers();
 
     Object.keys(markersOnScreenRef.current).forEach((id) => {
       if (!nextIds.has(id)) {
@@ -753,7 +642,14 @@ export function QuestoryMap({
     let pinCount = [...nextIds].filter((id) => !String(id).startsWith('cluster-')).length;
     if (!pinCount && clusterCount > 0) pinCount = markers.length;
     reportStats(pinCount);
-  }, [upsertAdventurePin, upsertClusterMarker, onVisiblePinCountChange, syncBlossomMarkers]);
+    guardLeftEdgeMarkers(map);
+  }, [
+    upsertAdventurePin,
+    upsertClusterMarker,
+    onVisiblePinCountChange,
+    purgeLegacyBlossomMarkers,
+    guardLeftEdgeMarkers,
+  ]);
 
   syncHtmlMarkersRef.current = syncHtmlMarkers;
 
@@ -863,9 +759,31 @@ export function QuestoryMap({
         getMapState: () => mapStateRef.current,
       });
 
-      map.on('click', () => {
+      map.on('click', MAP_LAYER_IDS.CLUSTERS, (e) => {
+        e.originalEvent?.stopPropagation?.();
+        const props = parseFeatureProps(e.features?.[0]?.properties);
+        const coords = e.features?.[0]?.geometry?.coordinates;
+        if (props.cluster_id == null || !coords) return;
+        handleClusterClickRef.current?.(props.cluster_id, coords);
+      });
+
+      map.on('click', (e) => {
+        const target = e.originalEvent?.target;
+        if (
+          target?.closest?.(
+            '.questory-cluster, .questory-pin, .blossom-pin, .blossom-category, .blossom-overflow, .living-cluster-blossom'
+          )
+        ) {
+          return;
+        }
+        try {
+          const hit = map.queryRenderedFeatures(e.point, { layers: [MAP_LAYER_IDS.CLUSTERS] });
+          if (hit.length > 0) return;
+        } catch {
+          /* ignore */
+        }
         if (isDev) {
-          console.debug('[QuestoryMap]', { mapBackgroundClicked: true });
+          console.debug('[QuestoryMap]', { mapBackgroundCollapsed: true });
         }
         onMapBackgroundClickRef.current?.();
       });
@@ -877,10 +795,12 @@ export function QuestoryMap({
       });
 
       syncHtmlMarkers();
+      setMapReady(true);
     });
 
     return () => {
       cancelled = true;
+      setMapReady(false);
       detachCameraHandlers?.();
       mapReadyRef.current = false;
       Object.values(markersOnScreenRef.current).forEach((m) => m.remove());
@@ -1008,6 +928,23 @@ export function QuestoryMap({
   return (
     <div className={`questory-map-wrap ${mini ? 'mini' : ''} ${className}`}>
       <div ref={containerRef} className={`questory-map ${mini ? 'mini' : ''}`} />
+      {!mini && mapReady && livingCluster && !livingCluster.overflowOpen && mapRef.current && (
+        <LivingClusterBlossomOverlay
+          map={mapRef.current}
+          livingCluster={livingCluster}
+          mapState={mapState}
+          accessOptions={{
+            userLatitude: userLocation?.latitude,
+            userLongitude: userLocation?.longitude,
+            isAdmin,
+            userId,
+          }}
+          onCategorySelect={onBlossomCategorySelect}
+          onPinSelect={onBlossomPinSelect}
+          onOverflow={onBlossomOverflow}
+          onHoverChange={onPinHoverChange}
+        />
+      )}
     </div>
   );
 }
@@ -1113,7 +1050,18 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       ? livingCluster.activeMarkers.slice(BLOSSOM_MAX_PINS)
       : [];
 
+  useEffect(() => {
+    if (!isDev) return;
+    console.debug('[QuestoryMap]', {
+      mapModeChanged: livingClusterPhase(livingCluster),
+      livingClusterId: livingCluster?.clusterId ?? null,
+    });
+  }, [livingCluster]);
+
   function handleLivingClusterCollapse() {
+    if (isDev) {
+      console.debug('[QuestoryMap]', { mapBackgroundCollapsed: true });
+    }
     setLivingCluster(null);
     setSelectedMarker(null);
     setHoveredPinId(null);
@@ -1123,6 +1071,16 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     setSelectedMarker(null);
     const { categories } = payload;
     if (categories.length === 1) {
+      if (isDev) {
+        console.debug('[QuestoryMap]', {
+          livingClusterClicked: {
+            clusterId: payload.clusterId,
+            count: payload.meta?.count ?? payload.markers.length,
+            phase: 'adventure',
+          },
+          adventureBlossomOpened: { categoryId: categories[0].id, count: categories[0].markers.length },
+        });
+      }
       setLivingCluster({
         clusterId: payload.clusterId,
         coords: payload.coords,
@@ -1136,6 +1094,17 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         overflowOpen: false,
       });
       return;
+    }
+
+    if (isDev) {
+      console.debug('[QuestoryMap]', {
+        livingClusterClicked: {
+          clusterId: payload.clusterId,
+          count: payload.meta?.count ?? payload.markers.length,
+          phase: 'category',
+        },
+        categoryBlossomOpened: { categories: categories.length },
+      });
     }
 
     setLivingCluster({
@@ -1157,6 +1126,11 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       if (!lc) return lc;
       const cat = lc.categories.find((c) => c.id === categoryId);
       if (!cat) return lc;
+      if (isDev) {
+        console.debug('[QuestoryMap]', {
+          adventureBlossomOpened: { categoryId, count: cat.markers.length },
+        });
+      }
       return {
         ...lc,
         phase: 'adventure',
@@ -1204,9 +1178,6 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   }
 
   function handleMapBackgroundClick() {
-    if (isDev) {
-      console.debug('[QuestoryMap]', { mapBackgroundClicked: true });
-    }
     handleLivingClusterCollapse();
   }
 
