@@ -3,6 +3,7 @@
  * Evaluates recurring/limited-time events once per session day and injects modifiers.
  */
 import { WEATHER_TYPES } from './weatherTypes';
+import { safeGetTime, toSafeDate } from './dateUtils';
 
 export const WORLD_EVENT_TYPES = {
   HALLOWEEN: 'halloween',
@@ -445,11 +446,12 @@ function normalizeWorldEventContext(context, now = new Date()) {
 }
 
 export function safeGetWorldEventContext(state, adventures = [], now = new Date()) {
+  const safeNow = toSafeDate(now);
   try {
-    return normalizeWorldEventContext(getWorldEventContext(state, adventures, now), now);
+    return normalizeWorldEventContext(getWorldEventContext(state, adventures, safeNow), safeNow);
   } catch (error) {
     console.warn('[WorldEvents] Context evaluation failed; continuing without active event.', error);
-    return normalizeWorldEventContext(null, now);
+    return normalizeWorldEventContext(null, safeNow);
   }
 }
 
@@ -565,21 +567,23 @@ function matchesSchedule(event, date) {
 }
 
 export function evaluateActiveWorldEvents(now = new Date()) {
+  const date = toSafeDate(now);
   const forced = getForcedWorldEventId();
   if (forced) {
     const match = WORLD_EVENTS.find((e) => e.id === forced);
     if (match) return [match];
   }
 
-  return WORLD_EVENTS.filter((e) => matchesSchedule(e, now)).sort(
+  return WORLD_EVENTS.filter((e) => matchesSchedule(e, date)).sort(
     (a, b) => (b.priority || 0) - (a.priority || 0)
   );
 }
 
 export function getUpcomingWorldEvents(now = new Date(), withinDays = 14) {
+  const baseDate = toSafeDate(now);
   const upcoming = [];
   for (let i = 1; i <= withinDays; i += 1) {
-    const d = new Date(now);
+    const d = new Date(baseDate);
     d.setDate(d.getDate() + i);
     const events = evaluateActiveWorldEvents(d);
     for (const event of events) {
@@ -625,9 +629,10 @@ function mergeModifiers(events) {
 }
 
 function eventEndDate(event, now = new Date()) {
+  const nowDate = toSafeDate(now);
   const s = event.schedule;
   if (!s || s.kind !== 'annual') {
-    const end = new Date(now);
+    const end = new Date(nowDate);
     end.setHours(23, 59, 59, 999);
     if (s?.kind === 'weekend' || s?.kind === 'first_weekend_of_month' || s?.kind === 'last_weekend_of_month') {
       const day = end.getDay();
@@ -637,18 +642,20 @@ function eventEndDate(event, now = new Date()) {
     }
     return end;
   }
-  const year = now.getFullYear();
+  const year = nowDate.getFullYear();
   let endMonth = s.endMonth;
   let endDay = s.endDay;
   let endYear = year;
-  if (s.startMonth > s.endMonth && now.getMonth() + 1 >= s.startMonth) {
+  if (s.startMonth > s.endMonth && nowDate.getMonth() + 1 >= s.startMonth) {
     endYear = year + 1;
   }
   return new Date(endYear, endMonth - 1, endDay, 23, 59, 59);
 }
 
 export function formatEventCountdown(endDate, now = new Date()) {
-  const ms = Math.max(0, endDate - now);
+  const endMs = safeGetTime(endDate);
+  const nowMs = safeGetTime(now);
+  const ms = Math.max(0, endMs - nowMs);
   const hours = Math.floor(ms / 3600000);
   const days = Math.floor(hours / 24);
   if (days > 0) return `${days}d ${hours % 24}h left`;
@@ -909,7 +916,9 @@ export function getFeaturedSponsorForEvent(context, adventures) {
 }
 
 export function getWorldEventContext(state, adventures = [], now = new Date()) {
-  const dayKey = now.toISOString().slice(0, 10);
+  const nowDate = toSafeDate(now);
+  const nowMs = nowDate.getTime();
+  const dayKey = nowDate.toISOString().slice(0, 10);
   const forced = getForcedWorldEventId() || 'none';
   const joined = Array.isArray(state?.world?.joinedEventIds)
     ? state.world.joinedEventIds.join(',')
@@ -918,26 +927,26 @@ export function getWorldEventContext(state, adventures = [], now = new Date()) {
 
   if (_cache && _cacheKey === cacheKey) return _cache;
 
-  const activeEvents = evaluateActiveWorldEvents(now);
+  const activeEvents = evaluateActiveWorldEvents(nowDate);
   const modifiers = mergeModifiers(activeEvents);
   const primaryEvent = activeEvents[0] || null;
 
   const endingSoon = activeEvents
     .map((event) => ({
       ...event,
-      endDate: eventEndDate(event, now),
-      countdown: formatEventCountdown(eventEndDate(event, now), now),
+      endDate: eventEndDate(event, nowDate),
+      countdown: formatEventCountdown(eventEndDate(event, nowDate), nowMs),
     }))
-    .filter((e) => e.endDate - now < 3 * 86400000);
+    .filter((e) => safeGetTime(e.endDate) - nowMs < 3 * 86400000);
 
   const context = normalizeWorldEventContext(
     {
-      now,
+      now: nowDate,
       activeEvents,
       primaryEvent,
       modifiers,
       endingSoon,
-      upcoming: getUpcomingWorldEvents(now),
+      upcoming: getUpcomingWorldEvents(nowDate),
       coinMultiplier: modifiers.coinMultiplier,
       coinBonus: modifiers.coinBonus,
       limitedRelicsAvailable: [],
@@ -947,7 +956,7 @@ export function getWorldEventContext(state, adventures = [], now = new Date()) {
       featuredSponsor: null,
       participatingCount: getParticipatingAdventures(adventures, { activeEvents }).length,
     },
-    now
+    nowDate
   );
 
   context.limitedRelicsAvailable = getLimitedRelicsForContext(context, state);

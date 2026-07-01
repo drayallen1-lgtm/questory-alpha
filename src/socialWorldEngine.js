@@ -6,6 +6,7 @@ import { getAdventureMapCenter } from './mapUtils';
 import { getAdventureProgress } from './seed';
 import { getAllCollectionProgress, isAdventureClaimed } from './engagement';
 import { getMyTeam, SEED_TEAMS } from './social';
+import { safeGetTime, toSafeDate } from './dateUtils';
 
 export const SOCIAL_DISCOVERY_LIMITS = {
   MAX_FEED: 12,
@@ -135,7 +136,7 @@ function hashSeed(str) {
 
 function minutesAgoFromIso(iso) {
   if (!iso) return 99;
-  const ms = Date.now() - new Date(iso).getTime();
+  const ms = Date.now() - safeGetTime(iso);
   return Math.max(1, Math.round(ms / 60000));
 }
 
@@ -294,7 +295,7 @@ export function buildCompletionFeed(state, adventures = [], options = {}) {
     });
   }
 
-  const dateKey = new Date(now).toDateString();
+  const dateKey = toSafeDate(now).toDateString();
   adventures.slice(0, 6).forEach((adventure, i) => {
     const name = DEMO_EXPLORER_NAMES[(hashSeed(`${adventure.id}-${dateKey}`) + i) % DEMO_EXPLORER_NAMES.length];
     const mins = 1 + (hashSeed(`${name}-${adventure.id}`) % 12);

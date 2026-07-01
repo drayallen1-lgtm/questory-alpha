@@ -16,6 +16,7 @@ import {
   getSeasonForAdventure,
   WORLD_BOSS_SCAFFOLD,
 } from './seasonEngine';
+import { safeGetTime } from './dateUtils';
 
 export const IDENTITY_LIMITS = {
   MAX_FEED: 8,
@@ -71,10 +72,11 @@ const BOSS_LINKED_IDS = [
 ];
 
 function daysBetween(startIso, endIso, now = Date.now()) {
-  const end = new Date(endIso).getTime();
-  const start = new Date(startIso).getTime();
-  if (now > end) return 0;
-  return Math.max(0, Math.ceil((end - now) / 86400000));
+  const end = safeGetTime(endIso);
+  const start = safeGetTime(startIso);
+  const nowMs = safeGetTime(now);
+  if (nowMs > end) return 0;
+  return Math.max(0, Math.ceil((end - nowMs) / 86400000));
 }
 
 function hoursRemaining(hours, seed = 'boss') {
@@ -84,12 +86,13 @@ function hoursRemaining(hours, seed = 'boss') {
 
 export function getSeasonProgress(state = null, now = Date.now()) {
   const season = getCurrentSeason();
-  const start = new Date(season.startDate).getTime();
-  const end = new Date(season.endDate).getTime();
+  const start = safeGetTime(season.startDate);
+  const end = safeGetTime(season.endDate);
+  const nowMs = safeGetTime(now);
   const span = Math.max(1, end - start);
-  const elapsed = Math.min(span, Math.max(0, now - start));
+  const elapsed = Math.min(span, Math.max(0, nowMs - start));
   const pct = Math.round((elapsed / span) * 100);
-  const daysLeft = daysBetween(season.startDate, season.endDate, now);
+  const daysLeft = daysBetween(season.startDate, season.endDate, nowMs);
   const seasonPoints = state?.social?.seasonPoints ?? 0;
 
   return {

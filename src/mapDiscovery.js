@@ -6,6 +6,7 @@ import { isDev } from './config/env';
 import { haversineDistanceMeters } from './geolocation';
 import { getAdventureMapCenter } from './mapUtils';
 import { safeGetWorldEventContext } from './worldEventEngine';
+import { safeGetTime } from './dateUtils';
 
 export const MAP_FILTERS = {
   ALL: 'all',
@@ -543,7 +544,8 @@ export const MAP_TRAIL_FADE_HOURS = 48;
 
 export function computeFogReturnOpacity(revealedAt, now = Date.now()) {
   if (!revealedAt) return 0;
-  const ageDays = (now - new Date(revealedAt).getTime()) / 86400000;
+  const nowMs = safeGetTime(now);
+  const ageDays = (nowMs - safeGetTime(revealedAt)) / 86400000;
   if (ageDays < 1) return 0;
   if (ageDays >= MAP_FOG_DECAY_DAYS) return 0.88;
   const t = (ageDays - 1) / (MAP_FOG_DECAY_DAYS - 1);
@@ -552,7 +554,8 @@ export function computeFogReturnOpacity(revealedAt, now = Date.now()) {
 
 export function computeTrailOpacity(revealedAt, now = Date.now()) {
   if (!revealedAt) return 0;
-  const ageHours = (now - new Date(revealedAt).getTime()) / 3600000;
+  const nowMs = safeGetTime(now);
+  const ageHours = (nowMs - safeGetTime(revealedAt)) / 3600000;
   if (ageHours >= MAP_TRAIL_FADE_HOURS) return 0;
   return Math.max(0, 1 - ageHours / MAP_TRAIL_FADE_HOURS);
 }
@@ -567,6 +570,7 @@ export function applyFogDecay(exploration, now = Date.now()) {
 }
 
 export function buildDiscoveryTrail(exploration, now = Date.now()) {
+  const nowMs = safeGetTime(now);
   const revealed = normalizeMapExploration(exploration).revealed;
   return revealed
     .map((r, i) => ({
@@ -574,9 +578,9 @@ export function buildDiscoveryTrail(exploration, now = Date.now()) {
       latitude: r.latitude,
       longitude: r.longitude,
       adventureId: r.adventureId,
-      opacity: computeTrailOpacity(r.revealedAt, now),
+      opacity: computeTrailOpacity(r.revealedAt, nowMs),
       ageHours: r.revealedAt
-        ? (now - new Date(r.revealedAt).getTime()) / 3600000
+        ? (nowMs - safeGetTime(r.revealedAt)) / 3600000
         : MAP_TRAIL_FADE_HOURS,
     }))
     .filter((p) => p.opacity > 0.04)

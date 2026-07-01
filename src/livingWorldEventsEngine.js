@@ -7,6 +7,7 @@ import { getAdventureMapCenter } from './mapUtils';
 import { hasLiveWorldEvent, applyFogDecay, buildDiscoveryTrail, computeFogReturnOpacity } from './mapDiscovery';
 import { safeGetWorldEventContext } from './worldEventEngine';
 import { getCurrentSeason } from './seasonEngine';
+import { safeGetHours, safeGetTime, toSafeDate } from './dateUtils';
 
 const HEAT_LEVELS = {
   COLD: 'cold',
@@ -51,7 +52,7 @@ function seededCount(seed, min, max) {
 }
 
 export function isNightTime(now = new Date()) {
-  const hour = now.getHours();
+  const hour = safeGetHours(now);
   return hour >= 19 || hour < 6;
 }
 
@@ -81,7 +82,7 @@ export function isSeasonalAdventureActive(adventure, eventContext, now = new Dat
   if (!tag) return true;
   const activeType = eventContext?.primaryEvent?.type || eventContext?.primaryEvent?.id || '';
   if (!activeType) {
-    const month = now.getMonth() + 1;
+    const month = toSafeDate(now).getMonth() + 1;
     if (tag === 'halloween') return month >= 10 || month <= 11;
     if (tag === 'christmas') return month === 12 || month === 1;
     if (tag === 'summer') return month >= 6 && month <= 8;
@@ -297,19 +298,20 @@ export function getLivingWorldEventsSnapshot(adventures = [], options = {}) {
   const {
     state = null,
     now = Date.now(),
-    eventContext = safeGetWorldEventContext(state, adventures),
+    eventContext = safeGetWorldEventContext(state, adventures, now),
   } = options;
 
-  const exploration = applyFogDecay(state?.mapExploration, now);
-  const discoveryTrail = buildDiscoveryTrail(state?.mapExploration, now);
+  const nowMs = safeGetTime(now);
+  const exploration = applyFogDecay(state?.mapExploration, nowMs);
+  const discoveryTrail = buildDiscoveryTrail(state?.mapExploration, nowMs);
   const ambientBanners = buildAmbientActivityBanners(adventures, {
     state,
-    now,
+    now: nowMs,
     eventContext,
     userRevealed: exploration.revealed,
   });
-  const legendaryDrop = getActiveLegendaryDrop(adventures, now);
-  const notifications = buildWorldEventNotifications(adventures, { now });
+  const legendaryDrop = getActiveLegendaryDrop(adventures, nowMs);
+  const notifications = buildWorldEventNotifications(adventures, { now: nowMs });
   const nightMode = isNightTime(now);
   const visibleAdventureIds = adventures
     .filter((a) => isAdventureMapVisible(a, { now, eventContext }))
@@ -336,6 +338,6 @@ export function getLivingWorldEventsSnapshot(adventures = [], options = {}) {
     seasonalActiveIds,
     fogDecayLevel,
     eventContext,
-    now,
+    now: nowMs,
   };
 }
