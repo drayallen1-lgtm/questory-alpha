@@ -4,6 +4,7 @@ import { AccessStatusBanner, AccessTypeBadge } from './AccessRulesUI';
 import { evaluateAccessContext } from './accessRules';
 import { isDev } from './config/env';
 import { formatPinDistanceImperial, MAP_FILTER_OPTIONS, resolvePinVisual } from './mapDiscovery';
+import { getAdventureIdentityChips } from './questoryIdentityEngine';
 import { getSponsorInfo } from './seed';
 
 function difficultyLabel(level) {
@@ -57,6 +58,11 @@ export function MapPinCard({
   const hasFeatured = visual?.overlays?.some((o) => o.id === 'featured');
   const hasEvent = visual?.overlays?.some((o) => o.id === 'event');
   const hasLegendary = visual?.overlays?.some((o) => o.id === 'legendary');
+  const identityChips = getAdventureIdentityChips(adventure);
+  const sponsorInfo = getSponsorInfo(adventure);
+  const showSponsorLine = Boolean(
+    adventure?.isSponsoredDrop || adventure?.sponsorVerified || sponsorInfo?.name
+  );
 
   function stopCardEvent(e) {
     e.stopPropagation();
@@ -167,12 +173,22 @@ export function MapPinCard({
               ✨ Legendary
             </span>
           )}
+          {identityChips.map((chip) => (
+            <span
+              key={chip.id}
+              className={`badge map-pin-identity-chip chip-${chip.kind} map-badge-shimmer`}
+            >
+              {chip.icon} {chip.label}
+            </span>
+          ))}
         </div>
 
         <AccessStatusBanner access={access} />
 
         <p className="story-preview map-pin-card-story">{adventure.story}</p>
-        <p className="sponsor-inline">Sponsored by {getSponsorInfo(adventure).name}</p>
+        {showSponsorLine && (
+          <p className="sponsor-inline">Sponsored by {sponsorInfo.name}</p>
+        )}
 
         <div className="chips map-pin-card-chips">
           <span>{adventure.clues?.length || 0} clues</span>

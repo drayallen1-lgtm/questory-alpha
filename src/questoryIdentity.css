@@ -1,0 +1,362 @@
+/* Phase 5 — Questory Identity */
+
+.questory-identity-panel {
+  margin-bottom: 10px;
+}
+
+.questory-identity-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.questory-identity-head h4 {
+  margin: 0 0 4px;
+}
+
+.questory-identity-season {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.questory-city-ring {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.questory-city-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.questory-city-ring-bg {
+  fill: none;
+  stroke: rgba(148, 163, 184, 0.2);
+  stroke-width: 3;
+}
+
+.questory-city-ring-fill {
+  fill: none;
+  stroke: #5eead4;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.questory-city-ring-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.questory-identity-city-line {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+.questory-identity-boss-card {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.25), rgba(15, 23, 42, 0.6));
+  border: 1px solid rgba(167, 139, 250, 0.35);
+}
+
+.questory-identity-boss-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.questory-identity-boss-head strong {
+  flex: 1;
+  font-size: 0.85rem;
+}
+
+.questory-identity-boss-timer {
+  font-size: 0.68rem;
+  color: #e9d5ff;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(167, 139, 250, 0.2);
+}
+
+.questory-identity-boss-card p {
+  margin: 0 0 8px;
+  font-size: 0.74rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+.questory-identity-boss-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.questory-identity-community-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 0.76rem;
+  color: #cbd5e1;
+  margin-bottom: 10px;
+  line-height: 1.35;
+}
+
+.questory-identity-sponsored-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.questory-identity-sponsored-chip {
+  font-size: 0.68rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  color: #fde68a;
+}
+
+.questory-identity-creator-worlds h5,
+.questory-identity-hof h5 {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.questory-identity-creator-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 12px;
+}
+
+.questory-identity-creator-card {
+  flex: 0 0 auto;
+  min-width: 140px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.questory-identity-creator-card strong {
+  font-size: 0.78rem;
+  color: #f1f5f9;
+}
+
+.questory-identity-creator-card span {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.questory-identity-creator-pct {
+  color: #5eead4 !important;
+  font-weight: 600;
+}
+
+.questory-identity-hof-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.questory-identity-hof-link {
+  font-size: 0.72rem;
+  padding: 2px 6px;
+}
+
+.questory-identity-hof-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.questory-identity-hof-list li {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.76rem;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.questory-identity-hof-list li.is-you {
+  border: 1px solid rgba(94, 234, 212, 0.3);
+  background: rgba(20, 184, 166, 0.08);
+}
+
+.questory-identity-hof-rank {
+  font-size: 0.68rem;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.questory-identity-hof-name {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.questory-identity-hof-title {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+/* Map layers */
+.world-boss-layer,
+.ar-treasure-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.world-boss-marker {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  margin: -48px 0 0 -48px;
+  display: grid;
+  place-items: center;
+}
+
+.world-boss-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(167, 139, 250, 0.5);
+}
+
+.world-boss-ring-a {
+  animation: world-boss-pulse 2.4s ease-out infinite;
+}
+
+.world-boss-ring-b {
+  animation: world-boss-pulse 2.4s ease-out infinite 1.2s;
+}
+
+.world-boss-core {
+  font-size: 1.6rem;
+  z-index: 1;
+  filter: drop-shadow(0 0 12px rgba(167, 139, 250, 0.6));
+}
+
+.world-boss-label {
+  position: absolute;
+  bottom: -4px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e9d5ff;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+}
+
+@keyframes world-boss-pulse {
+  0% { transform: scale(0.7); opacity: 0.85; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.ar-treasure-marker {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  display: grid;
+  place-items: center;
+}
+
+.ar-treasure-sparkle {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.5), transparent 70%);
+  animation: ar-sparkle 2s ease-in-out infinite;
+}
+
+.ar-treasure-icon {
+  font-size: 0.85rem;
+  z-index: 1;
+}
+
+@keyframes ar-sparkle {
+  0%, 100% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.map-pin-identity-chip {
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.map-pin-identity-chip.chip-creator {
+  border-color: rgba(167, 139, 250, 0.35);
+  color: #e9d5ff;
+}
+
+.map-pin-identity-chip.chip-ar {
+  border-color: rgba(96, 165, 250, 0.35);
+  color: #bfdbfe;
+}
+
+.map-pin-identity-chip.chip-sponsor {
+  border-color: rgba(251, 191, 36, 0.35);
+  color: #fde68a;
+}
+
+.map-pin-identity-chip.chip-boss {
+  border-color: rgba(167, 139, 250, 0.45);
+  color: #e9d5ff;
+}
+
+.living-world-activity-season,
+.living-world-activity-boss,
+.living-world-activity-ar {
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+.living-world-timeline-item.kind-boss .living-world-timeline-text,
+.living-world-timeline-item.kind-hall .living-world-timeline-text,
+.living-world-timeline-item.kind-city .living-world-timeline-text,
+.living-world-timeline-item.kind-ar .living-world-timeline-text,
+.living-world-timeline-item.kind-community .living-world-timeline-text {
+  color: #e2e8f0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-boss-ring,
+  .ar-treasure-sparkle {
+    animation: none !important;
+  }
+}

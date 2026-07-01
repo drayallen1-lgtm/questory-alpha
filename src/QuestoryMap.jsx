@@ -57,10 +57,14 @@ import { LivingWorldTimeline } from './LivingWorldTimeline';
 import { formatHeatTooltip, getLivingWorldSnapshot } from './livingWorldEngine';
 import { getLivingWorldEventsSnapshot } from './livingWorldEventsEngine';
 import { triggerDiscoveryPulse } from './MapDiscoveryPulse';
+import { WorldBossLayer } from './WorldBossLayer';
+import { ArTreasureLayer } from './ArTreasureLayer';
+import { QuestoryIdentityPanel } from './QuestoryIdentityPanel';
 import {
   buildRaceActivityBanners,
   getSocialDiscoverySnapshot,
 } from './socialWorldEngine';
+import { getQuestoryIdentitySnapshot } from './questoryIdentityEngine';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -310,6 +314,7 @@ export function QuestoryMap({
   livingCluster = null,
   livingWorld = null,
   socialDiscovery = null,
+  questoryIdentity = null,
   isAdmin = false,
   userId = null,
 }) {
@@ -1014,6 +1019,12 @@ export function QuestoryMap({
           {socialDiscovery?.raceMarkers?.length > 0 && (
             <SocialRaceLayer map={mapRef.current} markers={socialDiscovery.raceMarkers} />
           )}
+          {questoryIdentity?.bossMarker && (
+            <WorldBossLayer map={mapRef.current} marker={questoryIdentity.bossMarker} />
+          )}
+          {questoryIdentity?.arMarkers?.length > 0 && (
+            <ArTreasureLayer map={mapRef.current} markers={questoryIdentity.arMarkers} />
+          )}
           <DiscoveryTrailLayer map={mapRef.current} trail={livingWorld.discoveryTrail} />
           <MapDiscoveryPulse map={mapRef.current} pulses={livingWorld.pulses} />
         </>
@@ -1109,6 +1120,11 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     [state, visibleAdventures, livingWorld.timeline, worldNow]
   );
 
+  const questoryIdentitySnapshot = useMemo(
+    () => getQuestoryIdentitySnapshot(state, adventures, { now: worldNow }),
+    [state, adventures, worldNow]
+  );
+
   const livePresence = useMemo(
     () => ({
       ...livingWorld.presence,
@@ -1126,14 +1142,21 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
 
   const activityBanners = useMemo(() => {
     const raceBanners = buildRaceActivityBanners(socialDiscoverySnapshot.races);
-    const merged = [...(livingWorld.ambientBanners || []), ...raceBanners];
+    const identityBanners = questoryIdentitySnapshot.banners || [];
+    const merged = [
+      ...(livingWorld.ambientBanners || []),
+      ...identityBanners,
+      ...raceBanners,
+    ];
     const seen = new Set();
-    return merged.filter((b) => {
-      if (seen.has(b.id)) return false;
-      seen.add(b.id);
-      return true;
-    });
-  }, [livingWorld.ambientBanners, socialDiscoverySnapshot.races]);
+    return merged
+      .filter((b) => {
+        if (seen.has(b.id)) return false;
+        seen.add(b.id);
+        return true;
+      })
+      .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  }, [livingWorld.ambientBanners, questoryIdentitySnapshot.banners, socialDiscoverySnapshot.races]);
 
   const mapNotifications = useMemo(() => {
     const socialToasts = socialDiscoverySnapshot.toasts || [];
@@ -1150,15 +1173,15 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
 
   const timelineEntries = useMemo(() => {
     const merged = [...livingWorld.timeline];
-    socialDiscoverySnapshot.feed.forEach((item) => {
+    [...socialDiscoverySnapshot.feed, ...(questoryIdentitySnapshot.feed || [])].forEach((item) => {
       if (!merged.some((e) => e.id === item.id)) {
         merged.push({ ...item, kind: item.kind || 'social' });
       }
     });
     return merged
       .sort((a, b) => (a.minutesAgo ?? 99) - (b.minutesAgo ?? 99))
-      .slice(0, 12);
-  }, [livingWorld.timeline, socialDiscoverySnapshot.feed]);
+      .slice(0, 14);
+  }, [livingWorld.timeline, socialDiscoverySnapshot.feed, questoryIdentitySnapshot.feed]);
 
   const pinStats = useMemo(
     () => computeMapPinStats(adventures, adventureMarkers, accessOptions),
@@ -1566,7 +1589,16 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         />
       )}
 
-      <LivingWorldTimeline entries={timelineEntries} races={socialDiscoverySnapshot.races} />
+      <QuestoryIdentityPanel
+        identity={questoryIdentitySnapshot}
+        onNavigateLeaderboard={nav ? () => nav('leaderboard') : null}
+      />
+
+      <LivingWorldTimeline
+        entries={timelineEntries}
+        races={socialDiscoverySnapshot.races}
+        boss={questoryIdentitySnapshot.boss}
+      />
 
       <div
         className={`map-stage${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}`}
@@ -1590,6 +1622,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           livingCluster={livingCluster}
           livingWorld={livingWorld}
           socialDiscovery={socialDiscoverySnapshot}
+          questoryIdentity={questoryIdentitySnapshot}
           isAdmin={isAdmin}
           userId={userId}
           showUserLocation
@@ -1669,10 +1702,10 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         </div>
       )}
 
-      {livingWorld.revealedCount > 0 && (
+      {questoryIdentitySnapshot.cityPct > 0 && (
         <p className="admin-meta map-fog-hint">
-          🗺️ {livingWorld.revealedCount} area
-          {livingWorld.revealedCount === 1 ? '' : 's'} explored on your map
+          🌍 {questoryIdentitySnapshot.cityLabel} is {questoryIdentitySnapshot.cityPct}% explored ·{' '}
+          {livingWorld.revealedCount} area{livingWorld.revealedCount === 1 ? '' : 's'} on your map
         </p>
       )}
     </>

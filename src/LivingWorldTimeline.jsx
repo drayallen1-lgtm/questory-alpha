@@ -1,7 +1,7 @@
 import React from 'react';
-import { Clock, Flame, Map, Radio, Sparkles, Swords, Users, Zap } from 'lucide-react';
+import { Clock, Crown, Flame, Map, Radio, Smartphone, Sparkles, Swords, Users, Zap } from 'lucide-react';
 import { getLiveRaceEvents } from './socialWorldEngine';
-import { getSeasonMapBadge, getWorldBossTeaser } from './seasonEngine';
+import { getSeasonMapBadge } from './seasonEngine';
 
 function timelineIcon(kind) {
   switch (kind) {
@@ -15,6 +15,16 @@ function timelineIcon(kind) {
       return <Users size={14} />;
     case 'race':
       return <Zap size={14} />;
+    case 'boss':
+      return <Crown size={14} />;
+    case 'hall':
+      return <Crown size={14} />;
+    case 'city':
+      return <Map size={14} />;
+    case 'ar':
+      return <Smartphone size={14} />;
+    case 'community':
+      return <Radio size={14} />;
     case 'event':
       return <Radio size={14} />;
     case 'sponsor':
@@ -33,10 +43,16 @@ function formatTimeAgo(minutesAgo) {
   return `${minutesAgo} min ago`;
 }
 
-export function LivingWorldTimeline({ entries = [], races = null, showRaces = true, showBossTeaser = true }) {
+export function LivingWorldTimeline({
+  entries = [],
+  races = null,
+  boss = null,
+  showRaces = true,
+  showBossTeaser = true,
+}) {
   const season = getSeasonMapBadge();
-  const boss = getWorldBossTeaser();
   const raceRows = races ?? (showRaces ? getLiveRaceEvents() : []);
+  const showBossCard = showBossTeaser && boss?.status === 'active';
 
   if (!entries.length && !raceRows.length) return null;
 
@@ -49,11 +65,13 @@ export function LivingWorldTimeline({ entries = [], races = null, showRaces = tr
         </span>
       </div>
 
-      {showBossTeaser && boss.status === 'teaser' && (
-        <div className="living-world-boss-teaser">
+      {showBossCard && (
+        <div className="living-world-boss-teaser living-world-boss-active">
           <strong>{boss.title}</strong>
           <p>{boss.description}</p>
-          <span className="living-world-boss-reward">{boss.rewardLabel} · limited time</span>
+          <span className="living-world-boss-reward">
+            {boss.rewardLabel} · {boss.hoursRemaining}h left · {boss.communityProgress}% progress
+          </span>
         </div>
       )}
 

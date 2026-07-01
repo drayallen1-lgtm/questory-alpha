@@ -82,6 +82,7 @@ const DEMO_EXPLORER_NAMES = [
   'Alex', 'Maya', 'Jordan', 'Riley', 'Casey', 'Sam', 'Quinn', 'Nova', 'Finn', 'Sky', 'Drew', 'Rowan',
 ];
 
+export const DEFAULT_LIVE_RACES = [
   {
     id: 'race-treasure-sprint',
     type: 'first_claim',
