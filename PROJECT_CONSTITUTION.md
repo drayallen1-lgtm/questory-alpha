@@ -100,6 +100,7 @@ Every new system must connect to the platform pillars:
 | Economy | `economy.js`, `explorerEconomyEngine.js` |
 | Progression | `playerProgressionEngine.js`, `progressionEngine.js` |
 | Crafting | `craftingEngine.js` |
+| Living Earth (presentation) | `livingEarthEngine.js`, `LivingEarthUI.jsx` |
 
 If a feature cannot hook into at least one pillar, it is probably out of scope.
 

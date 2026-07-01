@@ -36,7 +36,7 @@ React panels + Map layers
 claimFlow.js (victory orchestrator)
 ```
 
-**Platform pillars:** Living World · Social Discovery · Questory Identity · Codex · Economy · Progression · Crafting
+**Platform pillars:** Living World · Social Discovery · Questory Identity · Codex · Economy · Progression · Crafting · Living Earth
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full engine map.
 
