@@ -26,8 +26,8 @@ function BossAura({ marker, map }) {
     <div className="world-boss-marker" style={{ left: pos.x, top: pos.y }} aria-hidden="true">
       <span className="world-boss-ring world-boss-ring-a" />
       <span className="world-boss-ring world-boss-ring-b" />
-      <span className="world-boss-core">🏮</span>
-      <span className="world-boss-label">World Boss</span>
+      <span className="world-boss-core">{marker.icon || '🏮'}</span>
+      <span className="world-boss-label">{marker.title || 'World Boss'}</span>
     </div>
   );
 }

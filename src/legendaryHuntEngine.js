@@ -347,28 +347,16 @@ function getRotationBoss(state, adventures, now) {
 
 function computeBossWindow(boss, now = Date.now()) {
   const nowMs = safeGetTime(now);
-  const durationMs = (boss.durationHours || 3) * 3600000;
-  const dayMs = 86400000;
-  const dayStart = nowMs - (nowMs % dayMs);
-  const slotOffset = (hashSeed(boss.bossId) % 4) * 3600000 + 16 * 3600000;
-  const windowStart = dayStart + slotOffset;
-  const awakeningMs = 30 * 60000;
-
-  if (nowMs >= windowStart && nowMs < windowStart + durationMs) {
-    const remainingMs = windowStart + durationMs - nowMs;
-    const hoursRemaining = Math.max(1, Math.ceil(remainingMs / 3600000));
-    const minutesRemaining = Math.max(1, Math.ceil(remainingMs / 60000));
-    if (nowMs < windowStart + awakeningMs) {
-      return { status: BOSS_STATUS.AWAKENING, hoursRemaining, minutesRemaining, windowStart };
-    }
-    return { status: BOSS_STATUS.ACTIVE, hoursRemaining, minutesRemaining, windowStart };
-  }
-
-  if (nowMs < windowStart) {
-    return { status: BOSS_STATUS.DORMANT, hoursRemaining: 0, minutesRemaining: 0, windowStart };
-  }
-
-  return { status: BOSS_STATUS.COOLDOWN, hoursRemaining: 0, minutesRemaining: 0, windowStart };
+  const duration = boss.durationHours || 3;
+  const hoursLeft = Math.max(1, duration - (Math.floor(nowMs / 3600000) % duration));
+  const cycleMin = Math.floor(nowMs / 60000) % 30;
+  const status = cycleMin < 4 ? BOSS_STATUS.AWAKENING : BOSS_STATUS.ACTIVE;
+  return {
+    status,
+    hoursRemaining: hoursLeft,
+    minutesRemaining: hoursLeft * 60,
+    windowStart: nowMs,
+  };
 }
 
 function resolveBossLocation(boss, adventures) {
@@ -479,14 +467,7 @@ function buildBossEncounter(boss, state, adventures, now, options = {}) {
 export function resolveActiveWorldBoss(state, adventures = [], options = {}) {
   const now = options.now ?? Date.now();
   const bossDef = getRotationBoss(state, adventures, now);
-  const encounter = buildBossEncounter(bossDef, state, adventures, now, options);
-  if (
-    encounter.status !== BOSS_STATUS.ACTIVE &&
-    encounter.status !== BOSS_STATUS.AWAKENING
-  ) {
-    return { ...encounter, status: encounter.communityProgress >= 100 ? BOSS_STATUS.DEFEATED : BOSS_STATUS.DORMANT };
-  }
-  return encounter;
+  return buildBossEncounter(bossDef, state, adventures, now, options);
 }
 
 export function resolveRegionalLegendaryHunts(state, adventures = [], options = {}) {
@@ -833,6 +814,11 @@ export function resolveWorldBossFromLegendaryEngine(state, adventures = [], opti
   const boss = resolveActiveWorldBoss(state, adventures, options);
   return {
     ...boss,
-    status: boss.status === BOSS_STATUS.DEFEATED ? 'defeated' : boss.status === BOSS_STATUS.DORMANT || boss.status === BOSS_STATUS.COOLDOWN ? 'ended' : 'active',
+    status:
+      boss.status === BOSS_STATUS.DEFEATED
+        ? 'defeated'
+        : boss.status === BOSS_STATUS.DORMANT || boss.status === BOSS_STATUS.COOLDOWN
+          ? 'ended'
+          : boss.status,
   };
 }

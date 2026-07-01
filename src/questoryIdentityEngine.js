@@ -229,12 +229,12 @@ export function getCreatorWorldsProgress(state, adventures = []) {
 export function buildIdentityFeed(snapshot) {
   const feed = [];
 
-  if (snapshot.boss?.status === 'active') {
+  if (snapshot.boss?.status === 'active' || snapshot.boss?.status === 'awakening') {
     feed.push({
       id: 'identity-boss',
       kind: 'boss',
       minutesAgo: 2,
-      text: `${snapshot.boss.title} — ${snapshot.boss.participantsEstimate} explorers joined the hunt`,
+      text: `${snapshot.boss.name || snapshot.boss.title} — ${snapshot.boss.participantsEstimate || snapshot.boss.participants} explorers joined the hunt`,
     });
   }
 
@@ -299,11 +299,11 @@ export function buildIdentityBanners(snapshot) {
     });
   }
 
-  if (snapshot.boss?.status === 'active') {
+  if (snapshot.boss?.status === 'active' || snapshot.boss?.status === 'awakening') {
     banners.push({
       id: 'identity-boss-banner',
-      icon: '🏮',
-      text: `World Boss: ${snapshot.boss.title} · ${snapshot.boss.hoursRemaining}h left`,
+      icon: snapshot.boss.icon || '🏮',
+      text: `World Boss: ${snapshot.boss.name || snapshot.boss.title} · ${snapshot.boss.hoursRemaining}h left`,
       kind: 'boss',
       priority: 96,
       ttlMs: 14000,
@@ -369,14 +369,16 @@ export function getQuestoryIdentitySnapshot(state, adventures = [], options = {}
     feed: buildIdentityFeed(snapshot),
     banners: buildIdentityBanners(snapshot),
     bossMarker:
-      boss.status === 'active' && boss.latitude != null
+      (boss.status === 'active' || boss.status === 'awakening') && boss.latitude != null
         ? {
-            id: boss.id,
+            id: boss.id || boss.bossId,
             latitude: boss.latitude,
             longitude: boss.longitude,
             progress: boss.communityProgress,
             hoursRemaining: boss.hoursRemaining,
-            title: boss.title,
+            title: boss.name || boss.title,
+            icon: boss.icon || '🏮',
+            mapAtmosphere: boss.mapAtmosphere,
           }
         : null,
   };

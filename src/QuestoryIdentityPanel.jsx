@@ -20,7 +20,7 @@ function CityCompletionRing({ pct }) {
   );
 }
 
-export function QuestoryIdentityPanel({ identity, onNavigateLeaderboard }) {
+export function QuestoryIdentityPanel({ identity, onNavigateLeaderboard, onOpenLegendaryHunt }) {
   if (!identity) return null;
 
   const { season, boss, cityPct, cityLabel, hallOfFame, creatorWorlds, communityEvents, sponsoredCampaigns } =
@@ -42,21 +42,26 @@ export function QuestoryIdentityPanel({ identity, onNavigateLeaderboard }) {
         <strong>{cityLabel}</strong> is <strong>{cityPct}%</strong> explored by the community
       </p>
 
-      {boss?.status === 'active' && (
+      {boss?.status === 'active' || boss?.status === 'awakening' ? (
         <div className="questory-identity-boss-card">
           <div className="questory-identity-boss-head">
-            <span aria-hidden="true">🏮</span>
-            <strong>{boss.title}</strong>
+            <span aria-hidden="true">{boss.icon || '🏮'}</span>
+            <strong>{boss.name || boss.title}</strong>
             <span className="questory-identity-boss-timer">{boss.hoursRemaining}h left</span>
           </div>
           <p>{boss.description}</p>
           <div className="questory-identity-boss-meta">
-            <span>{boss.participantsEstimate} explorers</span>
+            <span>{boss.participantsEstimate || boss.participants} explorers</span>
             <span>{boss.communityProgress}% community progress</span>
             <span>{boss.rewardLabel}</span>
           </div>
+          {onOpenLegendaryHunt && (
+            <button type="button" className="questory-identity-boss-join" onClick={onOpenLegendaryHunt}>
+              Join Legendary Hunt
+            </button>
+          )}
         </div>
-      )}
+      ) : null}
 
       {communityEvents.slice(0, 1).map((event) => (
         <div key={event.id} className="questory-identity-community-row">

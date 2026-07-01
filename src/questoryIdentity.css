@@ -107,6 +107,19 @@
   color: #94a3b8;
 }
 
+.questory-identity-boss-join {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
 .questory-identity-community-row {
   display: flex;
   gap: 8px;

@@ -71,6 +71,10 @@ import { InvitationEmptyState, InvitationHomeBanner } from './InvitationUI';
 import { GrowthHomeBanner, QuestCodeBadge, FollowingFeedSection } from './GrowthUI';
 import { LaunchFunnelCard } from './StabilityUI';
 import { TodaysWorldPanel, WorldEventNotificationBar } from './WorldEventUI';
+import {
+  LegendaryHuntAlertBanner,
+  LegendaryHuntHomeCard,
+} from './LegendaryHuntUI';
 import { isAdventureUnlocked } from './worldEngine';
 import { CodexHub } from './CodexUI';
 import { ExplorerEconomyPanel, ExplorerWalletStrip } from './ExplorerEconomyPanel';
@@ -100,6 +104,12 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
 
       <GrowthHomeBanner state={state} setState={setState} nav={nav} adventures={adventures} />
       <WorldEventNotificationBar state={state} setState={setState} adventures={adventures} />
+      <LegendaryHuntAlertBanner
+        state={state}
+        adventures={adventures}
+        setState={setState}
+        nav={nav}
+      />
       <TodaysWorldPanel state={state} adventures={adventures} nav={nav} setState={setState} />
       <LaunchFunnelCard state={state} />
       <InvitationHomeBanner state={state} setState={setState} nav={nav} />
@@ -107,6 +117,7 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
 
       <PremiumSubscriptionBadge state={state} />
       <PlayerProgressionHomeCard state={state} adventures={adventures} nav={nav} />
+      <LegendaryHuntHomeCard state={state} adventures={adventures} nav={nav} />
       <SeasonRankCard state={state} />
 
       <div className="card streak-card">

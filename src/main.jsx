@@ -170,6 +170,8 @@ import './worldDiscovery.css';
 import './codex.css';
 import './progression.css';
 import './crafting.css';
+import './legendaryHunt.css';
+import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import {
   draftSyncBadgeLabel,
@@ -860,6 +862,14 @@ function QuestoryApp() {
               nav={nav}
             />
           )
+        )}
+        {state.screen === 'legendary-hunt' && (
+          <LegendaryHuntPanel
+            state={state}
+            adventures={state.adventures}
+            setState={setState}
+            nav={nav}
+          />
         )}
         {state.screen === 'sponsor' &&
           (isSupabaseMode && !user ? (

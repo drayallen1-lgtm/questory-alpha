@@ -62,9 +62,12 @@ import { ArTreasureLayer } from './ArTreasureLayer';
 import { QuestoryIdentityPanel } from './QuestoryIdentityPanel';
 import {
   buildRaceActivityBanners,
+  buildRaceMarkers,
   getSocialDiscoverySnapshot,
 } from './socialWorldEngine';
 import { getQuestoryIdentitySnapshot } from './questoryIdentityEngine';
+import { getLegendaryHuntSnapshot } from './legendaryHuntEngine';
+import { LegendaryHuntMapHud } from './LegendaryHuntUI';
 import { DiscoveryHud } from './DiscoveryHud';
 import { CityDiscoveryRingLayer } from './CityDiscoveryRingLayer';
 import { DiscoveredWorldPanel, DiscoveryCeremonyToast } from './DiscoveredWorldPanel';
@@ -1152,6 +1155,29 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     [state, adventures, worldNow]
   );
 
+  const legendaryHuntSnapshot = useMemo(
+    () => getLegendaryHuntSnapshot(state, adventures, { now: worldNow }),
+    [state, adventures, worldNow]
+  );
+
+  const mergedRaces = useMemo(() => {
+    const seen = new Set();
+    return [...legendaryHuntSnapshot.races, ...socialDiscoverySnapshot.races].filter((r) => {
+      if (seen.has(r.id)) return false;
+      seen.add(r.id);
+      return true;
+    }).slice(0, 6);
+  }, [legendaryHuntSnapshot.races, socialDiscoverySnapshot.races]);
+
+  const mergedSocialDiscovery = useMemo(
+    () => ({
+      ...socialDiscoverySnapshot,
+      races: mergedRaces,
+      raceMarkers: buildRaceMarkers(mergedRaces),
+    }),
+    [socialDiscoverySnapshot, mergedRaces]
+  );
+
   const worldDiscoverySnapshot = useMemo(
     () =>
       getWorldDiscoverySnapshot({
@@ -1191,10 +1217,19 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   );
 
   const activityBanners = useMemo(() => {
-    const raceBanners = buildRaceActivityBanners(socialDiscoverySnapshot.races);
+    const raceBanners = buildRaceActivityBanners(mergedRaces);
     const identityBanners = questoryIdentitySnapshot.banners || [];
+    const legendaryBanners = (legendaryHuntSnapshot.alerts || []).map((a) => ({
+      id: a.id,
+      icon: a.icon,
+      text: `${a.title} — ${a.body}`,
+      kind: 'legendary',
+      priority: a.priority ?? 95,
+      ttlMs: a.ttlMs ?? 15000,
+    }));
     const merged = [
       ...(livingWorld.ambientBanners || []),
+      ...legendaryBanners,
       ...identityBanners,
       ...raceBanners,
     ];
@@ -1206,7 +1241,12 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         return true;
       })
       .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-  }, [livingWorld.ambientBanners, questoryIdentitySnapshot.banners, socialDiscoverySnapshot.races]);
+  }, [
+    livingWorld.ambientBanners,
+    questoryIdentitySnapshot.banners,
+    mergedRaces,
+    legendaryHuntSnapshot.alerts,
+  ]);
 
   const mapNotifications = useMemo(() => {
     const socialToasts = socialDiscoverySnapshot.toasts || [];
@@ -1233,6 +1273,11 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         merged.push({ ...item, kind: item.kind || 'milestone' });
       }
     });
+    (legendaryHuntSnapshot.timeline || []).forEach((item) => {
+      if (!merged.some((e) => e.id === item.id)) {
+        merged.push({ ...item, kind: item.kind || 'boss' });
+      }
+    });
     return merged
       .sort((a, b) => (a.minutesAgo ?? 99) - (b.minutesAgo ?? 99))
       .slice(0, 16);
@@ -1241,6 +1286,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     socialDiscoverySnapshot.feed,
     questoryIdentitySnapshot.feed,
     worldDiscoverySnapshot.timelineEntries,
+    legendaryHuntSnapshot.timeline,
   ]);
 
   const pinStats = useMemo(
@@ -1638,7 +1684,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       {state && setState && (
         <LiveMapOverlay
           presence={livePresence}
-          socialDiscovery={socialDiscoverySnapshot}
+          socialDiscovery={mergedSocialDiscovery}
           visibility={visibility}
           onVisibilityChange={(mode) =>
             setState((s) => ({
@@ -1654,17 +1700,19 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       <QuestoryIdentityPanel
         identity={questoryIdentitySnapshot}
         onNavigateLeaderboard={nav ? () => nav('leaderboard') : null}
+        onOpenLegendaryHunt={nav ? () => nav('legendary-hunt') : null}
       />
 
       <LivingWorldTimeline
         entries={timelineEntries}
-        races={socialDiscoverySnapshot.races}
+        races={mergedRaces}
         boss={questoryIdentitySnapshot.boss}
       />
 
       <div
-        className={`map-stage map-stage-has-discovery-hud${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}`}
+        className={`map-stage map-stage-has-discovery-hud${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}`}
       >
+        <LegendaryHuntMapHud snapshot={legendaryHuntSnapshot} />
         <DiscoveryHud
           snapshot={worldDiscoverySnapshot}
           compact={Boolean(livingCluster || selectedAdventure)}
@@ -1693,7 +1741,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           onBlossomOverflow={handleBlossomOverflow}
           livingCluster={livingCluster}
           livingWorld={livingWorld}
-          socialDiscovery={socialDiscoverySnapshot}
+          socialDiscovery={mergedSocialDiscovery}
           questoryIdentity={questoryIdentitySnapshot}
           worldDiscovery={worldDiscoverySnapshot}
           onMapZoomChange={setMapZoom}
