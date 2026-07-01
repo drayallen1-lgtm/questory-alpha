@@ -6,7 +6,7 @@ import {
 } from './claimSystem';
 import { applyAdventureCompletion } from './engagement';
 import { enrichCouponReward, applySeasonalProgress } from './economy';
-import { addSeasonPoints } from './social';
+import { addSeasonPoints, recordSocialMapActivity } from './social';
 import { applyExpansionOnCompletion, recordArCapture, usesArFinder } from './expansion';
 import { applyGrowthOnCompletion } from './growth';
 import {
@@ -154,6 +154,18 @@ export function buildClaimSuccessState(
   nextState = applyBranchVictoryEffects(nextState, freshAdventure, p);
   const eventContext = safeGetWorldEventContext(nextState, nextState.adventures || []);
   nextState = recordWorldEventVictory(nextState, freshAdventure, eventContext);
+
+  const playerName =
+    nextState.playerName || certificate?.playerName || 'You';
+  nextState = recordSocialMapActivity(nextState, {
+    id: `completion-${freshAdventure.id}-${claimedAt}`,
+    kind: 'completion',
+    text: `${playerName} completed ${freshAdventure.title}`,
+    adventureId: freshAdventure.id,
+    playerName,
+    at: claimedAt,
+    minutesAgo: 1,
+  });
 
   return nextState;
 }

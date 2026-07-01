@@ -421,29 +421,83 @@ export function SeasonRankCard({ state }) {
   );
 }
 
-export function LiveMapOverlay({ presence, visibility, onVisibilityChange }) {
+export function SocialDiscoveryPanel({ social }) {
+  if (!social) return null;
+
+  const { guild, cityPct, myTeam, primaryRace, controllingTeam, explorersRacing } = social;
+
   return (
-    <div className="card live-map-overlay">
-      <h4>Questory Live</h4>
-      <p className="living-world-live-stat">
-        <span aria-hidden="true">🧭</span>
-        {presence.explorersNearby} explorers nearby
-      </p>
-      <p className="living-world-live-stat">
-        <span aria-hidden="true">🔥</span>
-        {presence.activeHunts} active hunts
-      </p>
-      <p className="living-world-live-stat">
-        <span aria-hidden="true">⚔️</span>
-        {presence.teamsCompeting} teams competing
-      </p>
-      <label>Map visibility</label>
-      <select value={visibility} onChange={(e) => onVisibilityChange(e.target.value)}>
-        <option value={VISIBILITY_MODES.HIDDEN}>Hidden</option>
-        <option value={VISIBILITY_MODES.ANONYMOUS}>Anonymous Explorer</option>
-        <option value={VISIBILITY_MODES.TEAM}>Team Visible</option>
-      </select>
+    <div className="card social-discovery-panel">
+      <div className="social-discovery-panel-head">
+        <h4>Shared World</h4>
+        <span className="social-discovery-guild-pct">{cityPct}% explored</span>
+      </div>
+      {guild && (
+        <p className="social-discovery-stat-row">
+          <span aria-hidden="true">🗺️</span>
+          <span>
+            <strong>{guild.label}</strong> has discovered {guild.pct}% of Parsons
+          </span>
+        </p>
+      )}
+      {controllingTeam && (
+        <p className="social-discovery-stat-row">
+          <span aria-hidden="true">🏙️</span>
+          <span>
+            <strong>{controllingTeam.teamName}</strong> controls {controllingTeam.primaryAreaLabel}
+          </span>
+        </p>
+      )}
+      {primaryRace && (
+        <p className="social-discovery-stat-row">
+          <span aria-hidden="true">⚡</span>
+          <span>
+            {primaryRace.explorersRacing || primaryRace.teamsCompeting} explorers racing to{' '}
+            <strong>{primaryRace.adventureTitle}</strong>
+          </span>
+        </p>
+      )}
+      {myTeam && (
+        <span className="social-discovery-team-chip">
+          {myTeam.banner} Your team · #{myTeam.rank}
+        </span>
+      )}
+      {!myTeam && explorersRacing > 0 && (
+        <p className="social-discovery-stat-row">
+          <span aria-hidden="true">👥</span>
+          <span>{explorersRacing} explorers competing right now</span>
+        </p>
+      )}
     </div>
+  );
+}
+
+export function LiveMapOverlay({ presence, visibility, onVisibilityChange, socialDiscovery = null }) {
+  return (
+    <>
+      {socialDiscovery && <SocialDiscoveryPanel social={socialDiscovery} />}
+      <div className="card live-map-overlay">
+        <h4>Questory Live</h4>
+        <p className="living-world-live-stat">
+          <span aria-hidden="true">🧭</span>
+          {presence.explorersNearby} explorers nearby
+        </p>
+        <p className="living-world-live-stat">
+          <span aria-hidden="true">🔥</span>
+          {presence.activeHunts} active hunts
+        </p>
+        <p className="living-world-live-stat">
+          <span aria-hidden="true">⚔️</span>
+          {presence.teamsCompeting} teams competing
+        </p>
+        <label>Map visibility</label>
+        <select value={visibility} onChange={(e) => onVisibilityChange(e.target.value)}>
+          <option value={VISIBILITY_MODES.HIDDEN}>Hidden</option>
+          <option value={VISIBILITY_MODES.ANONYMOUS}>Anonymous Explorer</option>
+          <option value={VISIBILITY_MODES.TEAM}>Team Visible</option>
+        </select>
+      </div>
+    </>
   );
 }
 

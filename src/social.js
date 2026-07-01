@@ -166,6 +166,30 @@ export function normalizeSocial(social = {}) {
     ghostStats: social.ghostStats || {},
     pinnedComments: social.pinnedComments || {},
     mapPresence: { ...DEFAULT_SOCIAL.mapPresence, ...(social.mapPresence || {}) },
+    activityFeed: Array.isArray(social.activityFeed) ? social.activityFeed : [],
+    customTeams: Array.isArray(social.customTeams) ? social.customTeams : [],
+  };
+}
+
+/** Record a map-visible social activity entry (completions, team events). */
+export function recordSocialMapActivity(state, entry) {
+  const social = normalizeSocial(state.social);
+  const note = {
+    id: entry.id || `activity-${Date.now()}`,
+    kind: entry.kind || 'completion',
+    text: entry.text,
+    at: entry.at || new Date().toISOString(),
+    minutesAgo: entry.minutesAgo ?? 1,
+    adventureId: entry.adventureId || null,
+    playerName: entry.playerName || null,
+    teamId: entry.teamId || social.myTeamId || null,
+  };
+  return {
+    ...state,
+    social: {
+      ...social,
+      activityFeed: [note, ...social.activityFeed.filter((a) => a.id !== note.id)].slice(0, 40),
+    },
   };
 }
 

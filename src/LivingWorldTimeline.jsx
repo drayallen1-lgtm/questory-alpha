@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Flame, Radio, Sparkles, Swords, Users } from 'lucide-react';
+import { Clock, Flame, Map, Radio, Sparkles, Swords, Users, Zap } from 'lucide-react';
 import { getLiveRaceEvents } from './socialWorldEngine';
 import { getSeasonMapBadge, getWorldBossTeaser } from './seasonEngine';
 
@@ -9,6 +9,12 @@ function timelineIcon(kind) {
       return <Flame size={14} />;
     case 'team':
       return <Users size={14} />;
+    case 'territory':
+      return <Map size={14} />;
+    case 'guild':
+      return <Users size={14} />;
+    case 'race':
+      return <Zap size={14} />;
     case 'event':
       return <Radio size={14} />;
     case 'sponsor':
@@ -27,12 +33,12 @@ function formatTimeAgo(minutesAgo) {
   return `${minutesAgo} min ago`;
 }
 
-export function LivingWorldTimeline({ entries = [], showRaces = true, showBossTeaser = true }) {
+export function LivingWorldTimeline({ entries = [], races = null, showRaces = true, showBossTeaser = true }) {
   const season = getSeasonMapBadge();
   const boss = getWorldBossTeaser();
-  const races = showRaces ? getLiveRaceEvents() : [];
+  const raceRows = races ?? (showRaces ? getLiveRaceEvents() : []);
 
-  if (!entries.length && !races.length) return null;
+  if (!entries.length && !raceRows.length) return null;
 
   return (
     <div className="card living-world-timeline">
@@ -51,11 +57,12 @@ export function LivingWorldTimeline({ entries = [], showRaces = true, showBossTe
         </div>
       )}
 
-      {races.map((race) => (
+      {raceRows.map((race) => (
         <div key={race.id} className="living-world-race-row">
-          <Swords size={14} />
+          <Zap size={14} />
           <span>
-            <b>{race.title}</b> — {race.teamsCompeting} teams competing · {race.countdownMinutes}m left
+            <b>{race.title}</b> — {race.explorersRacing || race.teamsCompeting} racing to{' '}
+            {race.adventureTitle} · {race.countdownMinutes}m left
           </span>
         </div>
       ))}

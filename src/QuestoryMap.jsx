@@ -45,6 +45,8 @@ import { LivingClusterBlossomOverlay } from './LivingClusterBlossom';
 import { LivingWorldLayer } from './LivingWorldLayer';
 import { MapDiscoveryPulse } from './MapDiscoveryPulse';
 import { DiscoveryTrailLayer } from './DiscoveryTrailLayer';
+import { TerritoryLayer } from './TerritoryLayer';
+import { SocialRaceLayer } from './SocialRaceLayer';
 import {
   LivingWorldActivityFeed,
   LivingWorldNotifications,
@@ -55,7 +57,10 @@ import { LivingWorldTimeline } from './LivingWorldTimeline';
 import { formatHeatTooltip, getLivingWorldSnapshot } from './livingWorldEngine';
 import { getLivingWorldEventsSnapshot } from './livingWorldEventsEngine';
 import { triggerDiscoveryPulse } from './MapDiscoveryPulse';
-import { buildSocialDiscoveryFeed, getTeamTerritories } from './socialWorldEngine';
+import {
+  buildRaceActivityBanners,
+  getSocialDiscoverySnapshot,
+} from './socialWorldEngine';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -304,6 +309,7 @@ export function QuestoryMap({
   onBlossomOverflow,
   livingCluster = null,
   livingWorld = null,
+  socialDiscovery = null,
   isAdmin = false,
   userId = null,
 }) {
@@ -1002,6 +1008,12 @@ export function QuestoryMap({
             fogDecayLevel={livingWorld.fogDecayLevel}
             nightMode={livingWorld.nightMode}
           />
+          {socialDiscovery?.territoryOverlays?.length > 0 && (
+            <TerritoryLayer map={mapRef.current} overlays={socialDiscovery.territoryOverlays} />
+          )}
+          {socialDiscovery?.raceMarkers?.length > 0 && (
+            <SocialRaceLayer map={mapRef.current} markers={socialDiscovery.raceMarkers} />
+          )}
           <DiscoveryTrailLayer map={mapRef.current} trail={livingWorld.discoveryTrail} />
           <MapDiscoveryPulse map={mapRef.current} pulses={livingWorld.pulses} />
         </>
@@ -1088,20 +1100,57 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     [visibleAdventures, state, adventureMarkers, location, pulseTrigger, worldNow]
   );
 
-  const livePresence = livingWorld.presence;
-
-  const socialFeed = useMemo(
+  const socialDiscoverySnapshot = useMemo(
     () =>
-      buildSocialDiscoveryFeed(visibleAdventures, {
+      getSocialDiscoverySnapshot(state, visibleAdventures, {
         timeline: livingWorld.timeline,
-        territories: getTeamTerritories(),
+        now: worldNow,
       }),
-    [visibleAdventures, livingWorld.timeline]
+    [state, visibleAdventures, livingWorld.timeline, worldNow]
   );
+
+  const livePresence = useMemo(
+    () => ({
+      ...livingWorld.presence,
+      activeHunts: Math.max(
+        livingWorld.presence.activeHunts,
+        socialDiscoverySnapshot.presenceBoost?.activeHunts ?? 0
+      ),
+      teamsCompeting: Math.max(
+        livingWorld.presence.teamsCompeting,
+        socialDiscoverySnapshot.presenceBoost?.teamsCompeting ?? 0
+      ),
+    }),
+    [livingWorld.presence, socialDiscoverySnapshot]
+  );
+
+  const activityBanners = useMemo(() => {
+    const raceBanners = buildRaceActivityBanners(socialDiscoverySnapshot.races);
+    const merged = [...(livingWorld.ambientBanners || []), ...raceBanners];
+    const seen = new Set();
+    return merged.filter((b) => {
+      if (seen.has(b.id)) return false;
+      seen.add(b.id);
+      return true;
+    });
+  }, [livingWorld.ambientBanners, socialDiscoverySnapshot.races]);
+
+  const mapNotifications = useMemo(() => {
+    const socialToasts = socialDiscoverySnapshot.toasts || [];
+    const worldNotes = livingWorld.notifications || [];
+    const seen = new Set();
+    return [...socialToasts, ...worldNotes]
+      .filter((n) => {
+        if (seen.has(n.id)) return false;
+        seen.add(n.id);
+        return true;
+      })
+      .slice(0, 4);
+  }, [socialDiscoverySnapshot.toasts, livingWorld.notifications]);
 
   const timelineEntries = useMemo(() => {
     const merged = [...livingWorld.timeline];
-    socialFeed.forEach((item) => {
+    socialDiscoverySnapshot.feed.forEach((item) => {
       if (!merged.some((e) => e.id === item.id)) {
         merged.push({ ...item, kind: item.kind || 'social' });
       }
@@ -1109,7 +1158,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     return merged
       .sort((a, b) => (a.minutesAgo ?? 99) - (b.minutesAgo ?? 99))
       .slice(0, 12);
-  }, [livingWorld.timeline, socialFeed]);
+  }, [livingWorld.timeline, socialDiscoverySnapshot.feed]);
 
   const pinStats = useMemo(
     () => computeMapPinStats(adventures, adventureMarkers, accessOptions),
@@ -1506,6 +1555,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       {state && setState && (
         <LiveMapOverlay
           presence={livePresence}
+          socialDiscovery={socialDiscoverySnapshot}
           visibility={visibility}
           onVisibilityChange={(mode) =>
             setState((s) => ({
@@ -1516,16 +1566,16 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         />
       )}
 
-      <LivingWorldTimeline entries={timelineEntries} />
+      <LivingWorldTimeline entries={timelineEntries} races={socialDiscoverySnapshot.races} />
 
       <div
         className={`map-stage${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}`}
       >
         <LivingWorldActivityFeed
-          banners={livingWorld.ambientBanners}
+          banners={activityBanners}
           paused={Boolean(livingCluster || selectedAdventure)}
         />
-        <LivingWorldNotifications notifications={livingWorld.notifications} />
+        <LivingWorldNotifications notifications={mapNotifications} />
 
         <QuestoryMap
           adventureMarkers={focusedAdventure ? [] : adventureMarkers}
@@ -1539,6 +1589,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           onBlossomOverflow={handleBlossomOverflow}
           livingCluster={livingCluster}
           livingWorld={livingWorld}
+          socialDiscovery={socialDiscoverySnapshot}
           isAdmin={isAdmin}
           userId={userId}
           showUserLocation
