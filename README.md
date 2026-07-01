@@ -55,7 +55,8 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full engine map.
 | 7 — Explorer Economy | ✓ Complete |
 | 8 — Player Progression | ✓ Complete |
 | 9 — Crafting & Inventory | ✓ Complete |
-| 10 — Legendary Hunts Evolution | Upcoming |
+| 10 — Legendary Hunts Evolution | ✓ Complete |
+| 11 — Living Earth | Upcoming |
 
 Full roadmap: [ROADMAP.md](./ROADMAP.md)
 

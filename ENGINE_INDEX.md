@@ -135,7 +135,18 @@ Each entry lists:
 | **Purpose** | Recipe catalog, craft transactions, permanent bonus multipliers |
 | **Primary exports** | `getCraftingSnapshot`, `craftArtifact`, `canCraftRecipe`, `getDiscoveryRadiusMultiplier`, `CRAFT_RECIPES` |
 | **Dependencies** | `explorerEconomyEngine.js` |
-| **Consumers** | `CraftingUI.jsx`, `finderMode.js`, `mapDiscovery.js` |
+| **Consumers** | `CraftingUI.jsx`, `finderMode.js`, `mapDiscovery.js`, `legendaryHuntEngine.js` |
+
+---
+
+### legendaryHuntEngine.js
+
+| | |
+|---|---|
+| **Purpose** | World boss spawn, community progress, multi-stage hunts, live races, legendary rewards |
+| **Primary exports** | `getLegendaryHuntSnapshot`, `joinLegendaryHunt`, `recordLegendaryHuntAction`, `applyLegendaryHuntOnVictory`, `WORLD_BOSSES`, `resolveActiveWorldBoss` |
+| **Dependencies** | `engagement`, `socialWorldEngine`, `craftingEngine`, `explorerEconomyEngine`, `livingWorldEventsEngine` |
+| **Consumers** | `LegendaryHuntUI.jsx`, `questoryIdentityEngine`, `claimFlow.js`, `QuestoryMap.jsx`, `codexEngine` |
 
 ---
 

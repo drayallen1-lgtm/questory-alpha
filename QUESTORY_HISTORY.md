@@ -130,6 +130,14 @@ Materials combine into permanent artifacts — Explorer Compass (+discovery radi
 
 ---
 
+### Legendary Hunts (Phase 10)
+
+World bosses awaken with community progress bars, live map atmosphere, global alerts, and multi-stage hunts. Six bosses: Black Lantern, Iron Conductor, River Sentinel, Hollow King, Forgotten Miner, Chapel Keeper.
+
+**Why it mattered:** The world now occasionally demands the player's attention — the living endgame arrived.
+
+---
+
 ## Timeline Summary
 
 | Era | Milestone | Phase |
@@ -145,7 +153,7 @@ Materials combine into permanent artifacts — Explorer Compass (+discovery radi
 | 2.0 | Explorer economy | 7 |
 | 2.0 | Player progression | 8 |
 | 2.0 | Crafting & inventory | 9 |
-| Next | Legendary hunts evolution | 10 |
+| 2.0 | Legendary hunts & world events | 10 |
 | Next | Living Earth globe | 11 |
 
 ---

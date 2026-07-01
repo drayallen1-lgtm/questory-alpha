@@ -89,17 +89,15 @@ Recipe catalog, material spending ledger, crafted artifacts, permanent bonuses (
 
 ---
 
-## Upcoming Phases
+### Phase 10 — Legendary Hunts & World Events Evolution ✓ Complete
 
-### Phase 10 — Legendary Hunts Evolution
+World boss spawn engine, six legendary bosses, community progress, multi-stage hunts, live map atmosphere, global alert banners, legendary hunt panel, live races, claim/victory hooks, codex boss entries, crafting requirements, AR finale.
 
-Shared endgame events where hundreds of players race legendary hunts. World bosses awaken. Guilds compete. Creator worlds react. Sponsors join.
-
-**Status:** Upcoming
-
-**Depends on:** Phases 5 (identity), 7–9 (economy/progression/crafting), 3 (events)
+**Why it mattered:** The world now demands attention — legendary hunts became the living endgame.
 
 ---
+
+## Upcoming Phases
 
 ### Phase 11 — Living Earth
 
@@ -155,4 +153,4 @@ Multi-city rollout, national passport expansion, regional world bosses, geograph
 
 ---
 
-*Last updated: Phase 9 complete. Next milestone: Phase 10 — Legendary Hunts Evolution.*
+*Last updated: Phase 10 complete. Next milestone: Phase 11 — Living Earth.*

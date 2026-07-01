@@ -78,6 +78,7 @@ These are the integration points every new feature must touch:
 | Economy | `economy.js`, `explorerEconomyEngine` | `EconomyUI`, `ExplorerEconomyPanel` |
 | Progression | `playerProgressionEngine` | `PlayerProgressionUI`, Passport Progress tab |
 | Crafting | `craftingEngine` | `CraftingUI`, Passport Craft tab |
+| Legendary Hunts | `legendaryHuntEngine` | `LegendaryHuntUI`, map HUD, `WorldBossLayer` |
 
 ---
 
@@ -120,6 +121,7 @@ Adventure data is not one monolithic engine. Responsibilities are split:
 - `recordWorldEventVictory` (events)
 - `recordLivingNpcVictory` (NPCs)
 - `applyBranchVictoryEffects` (branching)
+- `applyLegendaryHuntOnVictory` (legendary hunts)
 - `applyProgressionOnVictory` (player progression)
 
 ---
@@ -284,7 +286,17 @@ Adventure data is not one monolithic engine. Responsibilities are split:
 
 **Outputs:** `getCraftingSnapshot`, `craftArtifact`, radius multipliers
 
-**Consumers:** `CraftingUI`, `finderMode.js`, `mapDiscovery.js`
+**Consumers:** `CraftingUI`, `finderMode.js`, `mapDiscovery.js`, `legendaryHuntEngine`
+
+### legendaryHuntEngine.js (Phase 10)
+
+**Purpose:** World boss spawn rotation, community progress, multi-stage hunts, live races, legendary rewards.
+
+**Inputs:** State, adventures, time, crafting progress, city completion
+
+**Outputs:** `getLegendaryHuntSnapshot`, `joinLegendaryHunt`, `recordLegendaryHuntAction`, `claimLegendaryBossReward`
+
+**Consumers:** `LegendaryHuntUI`, `questoryIdentityEngine`, `claimFlow.js`, `QuestoryMap`, `codexEngine`
 
 ---
 
