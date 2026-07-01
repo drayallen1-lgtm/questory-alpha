@@ -61,8 +61,12 @@ export function buildClusterTooltipHtml(meta) {
   const cats = meta.categories?.length
     ? meta.categories.join(' · ')
     : meta.dominant?.label || '';
+  const heat = meta.heatLabel
+    ? `<span class="questory-cluster-tooltip-heat">${meta.heatLabel}</span>`
+    : '';
   return `<div class="questory-cluster-tooltip">
     <strong>${label}</strong>
+    ${heat}
     ${cats ? `<span class="questory-cluster-tooltip-cats">${cats}</span>` : ''}
   </div>`;
 }

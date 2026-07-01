@@ -1,0 +1,327 @@
+/* Living World Layer — visual-only, pointer-events none */
+
+.living-world-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.living-world-fog-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(4, 8, 14, 0) 0%,
+    rgba(4, 8, 14, 0.22) 55%,
+    rgba(4, 8, 14, 0.38) 100%
+  );
+  pointer-events: none;
+}
+
+.living-world-has-revealed .living-world-fog-vignette {
+  opacity: 0.75;
+}
+
+.living-world-fog-on:not(.living-world-has-revealed) .living-world-fog-vignette {
+  opacity: 1;
+}
+
+/* Event atmosphere tints */
+.living-world-atmosphere-halloween {
+  background: radial-gradient(ellipse at 50% 80%, rgba(88, 28, 135, 0.12) 0%, transparent 55%);
+}
+
+.living-world-atmosphere-coins {
+  background: radial-gradient(ellipse at 50% 90%, rgba(251, 191, 36, 0.1) 0%, transparent 50%);
+}
+
+.living-world-atmosphere-founder {
+  background: radial-gradient(ellipse at 50% 70%, rgba(167, 139, 250, 0.1) 0%, transparent 55%);
+}
+
+.living-world-atmosphere-winter {
+  background: radial-gradient(ellipse at 50% 60%, rgba(147, 197, 253, 0.08) 0%, transparent 50%);
+}
+
+/* Explorer dots */
+.living-world-explorer {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--explorer-color, #60a5fa);
+  box-shadow: 0 0 10px var(--explorer-color, #60a5fa);
+  animation: living-explorer-drift 6s ease-in-out infinite;
+  animation-delay: calc(var(--explorer-phase, 0) * -1s);
+  opacity: 0.75;
+}
+
+@keyframes living-explorer-drift {
+  0%, 100% { transform: translate(0, 0); opacity: 0.65; }
+  25% { transform: translate(4px, -3px); opacity: 0.9; }
+  50% { transform: translate(-2px, 4px); opacity: 0.75; }
+  75% { transform: translate(3px, 2px); opacity: 0.85; }
+}
+
+.living-world-explorer.reduced-motion {
+  animation: none;
+  opacity: 0.7;
+}
+
+/* Heat zones */
+.living-world-heat {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  margin: -36px 0 0 -36px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.living-world-heat-warm {
+  background: radial-gradient(circle, rgba(94, 234, 212, 0.18) 0%, transparent 70%);
+  animation: living-heat-breathe 3.5s ease-in-out infinite;
+}
+
+.living-world-heat-hot {
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.22) 0%, transparent 68%);
+  animation: living-heat-pulse 2.2s ease-in-out infinite;
+}
+
+.living-world-heat-legendary {
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.28) 0%, transparent 65%);
+  animation: living-heat-legendary 1.8s ease-in-out infinite;
+}
+
+@keyframes living-heat-breathe {
+  0%, 100% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+@keyframes living-heat-pulse {
+  0%, 100% { transform: scale(0.85); opacity: 0.75; }
+  50% { transform: scale(1.12); opacity: 1; }
+}
+
+@keyframes living-heat-legendary {
+  0%, 100% { transform: scale(0.88); opacity: 0.8; filter: brightness(1); }
+  50% { transform: scale(1.15); opacity: 1; filter: brightness(1.2); }
+}
+
+/* Discovery pulses */
+.map-discovery-pulse-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.map-discovery-pulse {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.map-discovery-pulse-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border-radius: 50%;
+  border: 2px solid rgba(94, 234, 212, 0.65);
+  animation: discovery-pulse-ring 2.8s ease-out forwards;
+}
+
+.map-discovery-pulse-sparkle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: #5eead4;
+  box-shadow: 0 0 12px #5eead4;
+  animation: discovery-pulse-sparkle 2.8s ease-out forwards;
+}
+
+.map-discovery-pulse-label {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #ccfbf1;
+  background: rgba(8, 14, 24, 0.92);
+  border: 1px solid rgba(94, 234, 212, 0.35);
+  border-radius: 8px;
+  padding: 3px 8px;
+  animation: discovery-pulse-label 2.8s ease-out forwards;
+}
+
+@keyframes discovery-pulse-ring {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+@keyframes discovery-pulse-sparkle {
+  0% { opacity: 1; transform: scale(1); }
+  40% { opacity: 1; }
+  100% { opacity: 0; transform: scale(0.5); }
+}
+
+@keyframes discovery-pulse-label {
+  0% { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+}
+
+.map-discovery-pulse-heat .map-discovery-pulse-ring {
+  border-color: rgba(249, 115, 22, 0.7);
+}
+
+/* Timeline panel */
+.living-world-timeline {
+  margin-top: 10px;
+}
+
+.living-world-timeline-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.living-world-timeline-head h4 {
+  margin: 0;
+}
+
+.living-world-season-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #5eead4;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(94, 234, 212, 0.35);
+  background: rgba(94, 234, 212, 0.08);
+}
+
+.living-world-boss-teaser {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.2), rgba(8, 14, 24, 0.9));
+  border: 1px solid rgba(167, 139, 250, 0.35);
+}
+
+.living-world-boss-teaser strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.88rem;
+}
+
+.living-world-boss-teaser p {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.living-world-boss-reward {
+  font-size: 0.72rem;
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.living-world-race-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.living-world-timeline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.living-world-timeline-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: start;
+  font-size: 0.78rem;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.living-world-timeline-item:last-child {
+  border-bottom: none;
+}
+
+.living-world-timeline-icon {
+  color: #5eead4;
+  margin-top: 1px;
+}
+
+.living-world-timeline-text {
+  color: #e2e8f0;
+  line-height: 1.35;
+}
+
+.living-world-timeline-time {
+  color: #64748b;
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.map-fog-hint {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.live-map-overlay .living-world-live-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .living-world-explorer,
+  .living-world-heat-warm,
+  .living-world-heat-hot,
+  .living-world-heat-legendary,
+  .map-discovery-pulse-ring,
+  .map-discovery-pulse-sparkle,
+  .map-discovery-pulse-label {
+    animation: none !important;
+  }
+
+  .living-world-heat-warm,
+  .living-world-heat-hot,
+  .living-world-heat-legendary {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+}

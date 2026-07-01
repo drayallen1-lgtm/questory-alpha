@@ -544,8 +544,9 @@ export function getDefaultMapExploration() {
 
 export function normalizeMapExploration(raw) {
   if (!raw || typeof raw !== 'object') return getDefaultMapExploration();
+  const revealed = Array.isArray(raw.revealed) ? raw.revealed : [];
   return {
-    revealed: Array.isArray(raw.revealed) ? raw.revealed : [],
+    revealed: revealed.slice(0, 20),
   };
 }
 

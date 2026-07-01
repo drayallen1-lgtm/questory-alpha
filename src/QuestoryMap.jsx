@@ -42,8 +42,13 @@ import {
 import { createMapCameraController } from './mapCamera';
 import { ClusterAdventurePicker, MapFilterBar, MapPinCard } from './MapPinCard';
 import { LivingClusterBlossomOverlay } from './LivingClusterBlossom';
+import { LivingWorldLayer } from './LivingWorldLayer';
+import { MapDiscoveryPulse } from './MapDiscoveryPulse';
 import { BLOSSOM_MAX_PINS, groupMarkersByCategory, livingClusterPhase } from './mapClusterBlossom';
 import { DISCOVERY_BLOOM_TIMING, playMapUiCue } from './mapUiCues';
+import { LivingWorldTimeline } from './LivingWorldTimeline';
+import { formatHeatTooltip, getLivingWorldSnapshot } from './livingWorldEngine';
+import { triggerDiscoveryPulse } from './MapDiscoveryPulse';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -59,7 +64,24 @@ function isClusterFeature(props) {
   return props.point_count != null && Number.isFinite(Number(props.point_count));
 }
 
-function setupAdventureLayerInteractions(map, { getMarkerById, getMapState }) {
+function findNearestHeatZone(coords, zones = []) {
+  if (!coords || !zones.length) return null;
+  const [lng, lat] = coords;
+  let best = null;
+  let bestDist = Infinity;
+  for (const zone of zones) {
+    const dlat = (zone.latitude - lat) * 111000;
+    const dlng = (zone.longitude - lng) * 111000 * Math.cos((lat * Math.PI) / 180);
+    const dist = Math.hypot(dlat, dlng);
+    if (dist < bestDist && dist < 2000) {
+      best = zone;
+      bestDist = dist;
+    }
+  }
+  return best;
+}
+
+function setupAdventureLayerInteractions(map, { getMarkerById, getMapState, getHeatZones }) {
   const clusterPopup = new mapboxgl.Popup({
     closeButton: false,
     closeOnClick: false,
@@ -87,6 +109,8 @@ function setupAdventureLayerInteractions(map, { getMarkerById, getMapState }) {
         .filter(Boolean);
       const meta = summarizeClusterMarkers(markers, getMapState?.());
       meta.count = count;
+      const heatZone = findNearestHeatZone(e.features[0].geometry.coordinates, getHeatZones?.());
+      if (heatZone) meta.heatLabel = formatHeatTooltip(heatZone);
       clusterPopup
         .setLngLat(e.features[0].geometry.coordinates)
         .setHTML(buildClusterTooltipHtml(meta))
@@ -271,6 +295,7 @@ export function QuestoryMap({
   onBlossomCategorySelect,
   onBlossomOverflow,
   livingCluster = null,
+  livingWorld = null,
   isAdmin = false,
   userId = null,
 }) {
@@ -282,6 +307,7 @@ export function QuestoryMap({
   const adventureMarkersRef = useRef(adventureMarkers);
   const markerLookupRef = useRef(new Map());
   const mapStateRef = useRef(mapState);
+  const heatZonesRef = useRef([]);
   const userLocationRef = useRef(userLocation);
   const selectedAdventureIdRef = useRef(selectedAdventureId);
   const syncHtmlMarkersRef = useRef(() => {});
@@ -303,6 +329,7 @@ export function QuestoryMap({
   const [mapReady, setMapReady] = useState(false);
   adventureMarkersRef.current = adventureMarkers;
   mapStateRef.current = mapState;
+  heatZonesRef.current = livingWorld?.heatZones || [];
   userLocationRef.current = userLocation;
   selectedAdventureIdRef.current = selectedAdventureId;
   onAdventureClickRef.current = onAdventureClick;
@@ -784,6 +811,7 @@ export function QuestoryMap({
       setupAdventureLayerInteractions(map, {
         getMarkerById: (id) => markerLookupRef.current.get(id),
         getMapState: () => mapStateRef.current,
+        getHeatZones: () => heatZonesRef.current,
       });
 
       map.on('click', MAP_LAYER_IDS.CLUSTERS, (e) => {
@@ -955,6 +983,18 @@ export function QuestoryMap({
   return (
     <div className={`questory-map-wrap ${mini ? 'mini' : ''} ${className}`}>
       <div ref={containerRef} className={`questory-map ${mini ? 'mini' : ''}`} />
+      {!mini && mapReady && mapRef.current && livingWorld && (
+        <>
+          <LivingWorldLayer
+            map={mapRef.current}
+            explorerDots={livingWorld.explorerDots}
+            heatZones={livingWorld.heatZones}
+            atmosphereClass={livingWorld.atmosphereClass}
+            revealedCount={livingWorld.revealedCount}
+          />
+          <MapDiscoveryPulse map={mapRef.current} pulses={livingWorld.pulses} />
+        </>
+      )}
       {!mini && mapReady && livingCluster && !livingCluster.overflowOpen && mapRef.current && (
         <LivingClusterBlossomOverlay
           map={mapRef.current}
@@ -981,17 +1021,13 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [livingCluster, setLivingCluster] = useState(null);
   const [cardEntering, setCardEntering] = useState(false);
+  const [pulseTrigger, setPulseTrigger] = useState(null);
   const [focusedAdventure, setFocusedAdventure] = useState(null);
   const [findMeSignal, setFindMeSignal] = useState(0);
   const [visiblePinCount, setVisiblePinCount] = useState(null);
   const [hoveredPinId, setHoveredPinId] = useState(null);
   const [spatialStats, setSpatialStats] = useState(null);
   const { location } = usePlayerLocation();
-  const presence = state?.social?.mapPresence || {
-    explorersNearby: 12,
-    activeHunts: 4,
-    teamsCompeting: 3,
-  };
   const visibility = state?.social?.visibility || VISIBILITY_MODES.TEAM;
   const follows = state?.economy?.follows || [];
 
@@ -1016,6 +1052,19 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
 
   const adventureMarkers = buildAdventureMarkers(filteredAdventures, accessOptions);
   const clueMarkers = focusedAdventure ? buildClueMarkers(focusedAdventure) : [];
+
+  const livingWorld = useMemo(
+    () =>
+      getLivingWorldSnapshot(filteredAdventures, {
+        state,
+        adventureMarkers,
+        userLocation: location,
+        pulseTrigger,
+      }),
+    [filteredAdventures, state, adventureMarkers, location, pulseTrigger]
+  );
+
+  const livePresence = livingWorld.presence;
 
   const pinStats = useMemo(
     () => computeMapPinStats(adventures, adventureMarkers, accessOptions),
@@ -1105,7 +1154,15 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
 
   function handleClusterDiscover(payload) {
     setSelectedMarker(null);
-    const { categories } = payload;
+    const { categories, coords } = payload;
+    if (coords) {
+      triggerDiscoveryPulse(setPulseTrigger, {
+        latitude: coords[1],
+        longitude: coords[0],
+        label: 'Cluster discovered',
+        kind: 'discovered',
+      });
+    }
     if (categories.length === 1) {
       if (isDev) {
         console.debug('[QuestoryMap]', {
@@ -1197,6 +1254,14 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   function openCardFromBlossomPin(marker) {
     if (!livingCluster) return;
     const clusterId = livingCluster.clusterId;
+    if (marker.latitude != null && marker.longitude != null) {
+      triggerDiscoveryPulse(setPulseTrigger, {
+        latitude: marker.latitude,
+        longitude: marker.longitude,
+        label: marker.title || 'Adventure found',
+        kind: 'selected',
+      });
+    }
     setLivingCluster((lc) =>
       lc ? { ...lc, selectedId: marker.id, pinSelecting: true } : lc
     );
@@ -1239,6 +1304,14 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   function handleOverflowAdventureSelect(marker) {
     if (!livingCluster) return;
     const clusterId = livingCluster.clusterId;
+    if (marker.latitude != null && marker.longitude != null) {
+      triggerDiscoveryPulse(setPulseTrigger, {
+        latitude: marker.latitude,
+        longitude: marker.longitude,
+        label: marker.title || 'Adventure found',
+        kind: 'selected',
+      });
+    }
     setLivingCluster((lc) =>
       lc
         ? {
@@ -1387,7 +1460,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
 
       {state && setState && (
         <LiveMapOverlay
-          presence={presence}
+          presence={livePresence}
           visibility={visibility}
           onVisibilityChange={(mode) =>
             setState((s) => ({
@@ -1397,6 +1470,8 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           }
         />
       )}
+
+      <LivingWorldTimeline entries={livingWorld.timeline} />
 
       <div
         className={`map-stage${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}`}
@@ -1412,6 +1487,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           onBlossomCategorySelect={handleBlossomCategorySelect}
           onBlossomOverflow={handleBlossomOverflow}
           livingCluster={livingCluster}
+          livingWorld={livingWorld}
           isAdmin={isAdmin}
           userId={userId}
           showUserLocation
@@ -1490,10 +1566,10 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         </div>
       )}
 
-      {state?.mapExploration?.revealed?.length > 0 && (
+      {livingWorld.revealedCount > 0 && (
         <p className="admin-meta map-fog-hint">
-          🗺️ {state.mapExploration.revealed.length} area
-          {state.mapExploration.revealed.length === 1 ? '' : 's'} explored on your map
+          🗺️ {livingWorld.revealedCount} area
+          {livingWorld.revealedCount === 1 ? '' : 's'} explored on your map
         </p>
       )}
     </>

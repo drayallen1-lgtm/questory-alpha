@@ -162,6 +162,7 @@ import {
 } from './EconomyUI';
 import './style.css';
 import './discoveryBloom.css';
+import './livingWorld.css';
 import { getInitialState, persistState } from './persistence';
 import {
   draftSyncBadgeLabel,

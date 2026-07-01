@@ -425,9 +425,18 @@ export function LiveMapOverlay({ presence, visibility, onVisibilityChange }) {
   return (
     <div className="card live-map-overlay">
       <h4>Questory Live</h4>
-      <p>{presence.explorersNearby} explorers nearby</p>
-      <p>{presence.activeHunts} active hunts</p>
-      <p>{presence.teamsCompeting} teams competing</p>
+      <p className="living-world-live-stat">
+        <span aria-hidden="true">🧭</span>
+        {presence.explorersNearby} explorers nearby
+      </p>
+      <p className="living-world-live-stat">
+        <span aria-hidden="true">🔥</span>
+        {presence.activeHunts} active hunts
+      </p>
+      <p className="living-world-live-stat">
+        <span aria-hidden="true">⚔️</span>
+        {presence.teamsCompeting} teams competing
+      </p>
       <label>Map visibility</label>
       <select value={visibility} onChange={(e) => onVisibilityChange(e.target.value)}>
         <option value={VISIBILITY_MODES.HIDDEN}>Hidden</option>
