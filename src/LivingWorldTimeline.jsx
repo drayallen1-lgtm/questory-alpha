@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Crown, Flame, Map, Radio, Smartphone, Sparkles, Swords, Users, Zap } from 'lucide-react';
+import { Clock, Crown, Flame, Globe, Map, Radio, Smartphone, Sparkles, Swords, Trophy, Users, Zap } from 'lucide-react';
 import { getLiveRaceEvents } from './socialWorldEngine';
 import { getSeasonMapBadge } from './seasonEngine';
 
@@ -31,6 +31,11 @@ function timelineIcon(kind) {
       return <Sparkles size={14} />;
     case 'completion':
       return <Swords size={14} />;
+    case 'milestone':
+    case 'ceremony':
+      return <Trophy size={14} />;
+    case 'world':
+      return <Globe size={14} />;
     default:
       return <Clock size={14} />;
   }

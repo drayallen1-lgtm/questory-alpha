@@ -65,6 +65,10 @@ import {
   getSocialDiscoverySnapshot,
 } from './socialWorldEngine';
 import { getQuestoryIdentitySnapshot } from './questoryIdentityEngine';
+import { DiscoveryHud } from './DiscoveryHud';
+import { CityDiscoveryRingLayer } from './CityDiscoveryRingLayer';
+import { DiscoveredWorldPanel, DiscoveryCeremonyToast } from './DiscoveredWorldPanel';
+import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -315,6 +319,8 @@ export function QuestoryMap({
   livingWorld = null,
   socialDiscovery = null,
   questoryIdentity = null,
+  worldDiscovery = null,
+  onMapZoomChange,
   isAdmin = false,
   userId = null,
 }) {
@@ -343,6 +349,8 @@ export function QuestoryMap({
   const onAdventureClickRef = useRef(onAdventureClick);
   const onPinHoverChangeRef = useRef(onPinHoverChange);
   const onSpatialStatsChangeRef = useRef(onSpatialStatsChange);
+  const onMapZoomChangeRef = useRef(onMapZoomChange);
+  onMapZoomChangeRef.current = onMapZoomChange;
   const requestCameraMoveRef = useRef(null);
   const [mapInitFailed, setMapInitFailed] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -863,12 +871,16 @@ export function QuestoryMap({
       });
 
       map.on('moveend', syncHtmlMarkers);
-      map.on('zoomend', syncHtmlMarkers);
+      map.on('zoomend', () => {
+        syncHtmlMarkers();
+        onMapZoomChangeRef.current?.(map.getZoom());
+      });
       map.on('sourcedata', (e) => {
         if (e.sourceId === ADVENTURE_SOURCE && e.isSourceLoaded) syncHtmlMarkers();
       });
 
       syncHtmlMarkers();
+      onMapZoomChangeRef.current?.(map.getZoom());
       setMapReady(true);
     });
 
@@ -1025,6 +1037,13 @@ export function QuestoryMap({
           {questoryIdentity?.arMarkers?.length > 0 && (
             <ArTreasureLayer map={mapRef.current} markers={questoryIdentity.arMarkers} />
           )}
+          {worldDiscovery?.cityRings?.length > 0 && (
+            <CityDiscoveryRingLayer
+              map={mapRef.current}
+              rings={worldDiscovery.cityRings}
+              minZoom={8}
+            />
+          )}
           <DiscoveryTrailLayer map={mapRef.current} trail={livingWorld.discoveryTrail} />
           <MapDiscoveryPulse map={mapRef.current} pulses={livingWorld.pulses} />
         </>
@@ -1057,6 +1076,9 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const [cardEntering, setCardEntering] = useState(false);
   const [pulseTrigger, setPulseTrigger] = useState(null);
   const [worldNow, setWorldNow] = useState(() => Date.now());
+  const [mapZoom, setMapZoom] = useState(11);
+  const [ceremonyDismissed, setCeremonyDismissed] = useState(false);
+  const milestonesSeenRef = useRef([]);
   const [focusedAdventure, setFocusedAdventure] = useState(null);
   const [findMeSignal, setFindMeSignal] = useState(0);
   const [visiblePinCount, setVisiblePinCount] = useState(null);
@@ -1067,8 +1089,13 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const follows = state?.economy?.follows || [];
 
   useEffect(() => {
-    const tick = window.setInterval(() => setWorldNow(Date.now()), 30000);
+    const tick = window.setInterval(() => setWorldNow(Date.now()), 60000);
     return () => window.clearInterval(tick);
+  }, []);
+
+  useEffect(() => {
+    const microTick = window.setInterval(() => setWorldNow(Date.now()), 180000);
+    return () => window.clearInterval(microTick);
   }, []);
 
   const accessOptions = {
@@ -1125,6 +1152,29 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     [state, adventures, worldNow]
   );
 
+  const worldDiscoverySnapshot = useMemo(
+    () =>
+      getWorldDiscoverySnapshot({
+        zoom: mapZoom,
+        state,
+        adventures,
+        fog: livingWorld.exploration,
+        now: worldNow,
+        previousMilestones: milestonesSeenRef.current,
+      }),
+    [mapZoom, state, adventures, livingWorld.exploration, worldNow]
+  );
+
+  useEffect(() => {
+    if (worldDiscoverySnapshot.milestones?.length) {
+      milestonesSeenRef.current = [
+        ...milestonesSeenRef.current,
+        ...worldDiscoverySnapshot.milestones,
+      ].slice(-20);
+      setCeremonyDismissed(false);
+    }
+  }, [worldDiscoverySnapshot.milestones]);
+
   const livePresence = useMemo(
     () => ({
       ...livingWorld.presence,
@@ -1178,10 +1228,20 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         merged.push({ ...item, kind: item.kind || 'social' });
       }
     });
+    worldDiscoverySnapshot.timelineEntries.forEach((item) => {
+      if (!merged.some((e) => e.id === item.id)) {
+        merged.push({ ...item, kind: item.kind || 'milestone' });
+      }
+    });
     return merged
       .sort((a, b) => (a.minutesAgo ?? 99) - (b.minutesAgo ?? 99))
-      .slice(0, 14);
-  }, [livingWorld.timeline, socialDiscoverySnapshot.feed, questoryIdentitySnapshot.feed]);
+      .slice(0, 16);
+  }, [
+    livingWorld.timeline,
+    socialDiscoverySnapshot.feed,
+    questoryIdentitySnapshot.feed,
+    worldDiscoverySnapshot.timelineEntries,
+  ]);
 
   const pinStats = useMemo(
     () => computeMapPinStats(adventures, adventureMarkers, accessOptions),
@@ -1589,6 +1649,8 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         />
       )}
 
+      <DiscoveredWorldPanel snapshot={worldDiscoverySnapshot} />
+
       <QuestoryIdentityPanel
         identity={questoryIdentitySnapshot}
         onNavigateLeaderboard={nav ? () => nav('leaderboard') : null}
@@ -1601,8 +1663,18 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       />
 
       <div
-        className={`map-stage${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}`}
+        className={`map-stage map-stage-has-discovery-hud${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}`}
       >
+        <DiscoveryHud
+          snapshot={worldDiscoverySnapshot}
+          compact={Boolean(livingCluster || selectedAdventure)}
+        />
+        {!ceremonyDismissed && worldDiscoverySnapshot.ceremony && (
+          <DiscoveryCeremonyToast
+            ceremony={worldDiscoverySnapshot.ceremony}
+            onDismiss={() => setCeremonyDismissed(true)}
+          />
+        )}
         <LivingWorldActivityFeed
           banners={activityBanners}
           paused={Boolean(livingCluster || selectedAdventure)}
@@ -1623,6 +1695,8 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           livingWorld={livingWorld}
           socialDiscovery={socialDiscoverySnapshot}
           questoryIdentity={questoryIdentitySnapshot}
+          worldDiscovery={worldDiscoverySnapshot}
+          onMapZoomChange={setMapZoom}
           isAdmin={isAdmin}
           userId={userId}
           showUserLocation
@@ -1702,10 +1776,13 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         </div>
       )}
 
-      {questoryIdentitySnapshot.cityPct > 0 && (
+      {worldDiscoverySnapshot.currentRegion && (
         <p className="admin-meta map-fog-hint">
-          🌍 {questoryIdentitySnapshot.cityLabel} is {questoryIdentitySnapshot.cityPct}% explored ·{' '}
-          {livingWorld.revealedCount} area{livingWorld.revealedCount === 1 ? '' : 's'} on your map
+          🌍 {worldDiscoverySnapshot.currentRegion.label}{' '}
+          {Math.round(worldDiscoverySnapshot.currentRegion.completionPercent)}% discovered · Earth{' '}
+          {worldDiscoverySnapshot.worldRegion.animatedDisplayPercent?.toFixed(2)}% ·{' '}
+          {livingWorld.revealedCount} fog tile{livingWorld.revealedCount === 1 ? '' : 's'} revealed
+          by you
         </p>
       )}
     </>

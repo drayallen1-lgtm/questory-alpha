@@ -585,7 +585,7 @@ export function buildDiscoveryTrail(exploration, now = Date.now()) {
 }
 
 export function getDefaultMapExploration() {
-  return { revealed: [] };
+  return { revealed: [], firstDiscoveries: [], milestones: [] };
 }
 
 export function normalizeMapExploration(raw) {
@@ -593,6 +593,8 @@ export function normalizeMapExploration(raw) {
   const revealed = Array.isArray(raw.revealed) ? raw.revealed : [];
   return {
     revealed: revealed.slice(0, 20),
+    firstDiscoveries: Array.isArray(raw.firstDiscoveries) ? raw.firstDiscoveries : [],
+    milestones: Array.isArray(raw.milestones) ? raw.milestones : [],
   };
 }
 

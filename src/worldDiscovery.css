@@ -1,0 +1,384 @@
+/* Phase 6 — The Discovered World */
+
+.discovery-hud {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 17;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: min(92%, 380px);
+  max-width: 420px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(6, 10, 18, 0.88);
+  border: 1px solid rgba(94, 234, 212, 0.28);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+
+.discovery-hud-compact {
+  min-width: auto;
+  max-width: 280px;
+}
+
+.discovery-hud-globe {
+  font-size: 1.35rem;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.discovery-hud-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.discovery-hud-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.discovery-hud-region {
+  font-size: 0.88rem;
+  color: #f8fafc;
+}
+
+.discovery-hud-pct {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #5eead4;
+  font-variant-numeric: tabular-nums;
+}
+
+.discovery-hud-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.discovery-hud-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #14b8a6, #5eead4);
+  transition: width 0.35s ease;
+}
+
+.discovery-tier-gold .discovery-hud-bar-fill,
+.discovery-tier-diamond .discovery-hud-bar-fill,
+.discovery-tier-legendary .discovery-hud-bar-fill {
+  background: linear-gradient(90deg, #f59e0b, #fde68a);
+}
+
+.discovery-hud-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 0.66rem;
+  color: #94a3b8;
+}
+
+.discovery-hud-stat strong {
+  color: #cbd5e1;
+}
+
+.discovery-hud-delta {
+  color: #34d399;
+  font-weight: 600;
+}
+
+.discovery-hud-community {
+  color: #7dd3fc;
+}
+
+.discovery-hud-world .discovery-hud-pct {
+  font-size: 1.05rem;
+}
+
+.city-discovery-ring-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.city-discovery-ring {
+  position: absolute;
+  display: grid;
+  place-items: center;
+}
+
+.city-discovery-ring-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(148, 163, 184, 0.25);
+  box-shadow: inset 0 0 24px rgba(94, 234, 212, 0.08);
+  animation: city-ring-breathe 4s ease-in-out infinite;
+}
+
+.city-discovery-tier-bronze .city-discovery-ring-glow {
+  border-color: rgba(180, 83, 9, 0.45);
+  box-shadow: 0 0 20px rgba(180, 83, 9, 0.2);
+}
+
+.city-discovery-tier-silver .city-discovery-ring-glow {
+  border-color: rgba(148, 163, 184, 0.55);
+  box-shadow: 0 0 22px rgba(148, 163, 184, 0.25);
+}
+
+.city-discovery-tier-gold .city-discovery-ring-glow {
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: 0 0 26px rgba(245, 158, 11, 0.3);
+}
+
+.city-discovery-tier-diamond .city-discovery-ring-glow,
+.city-discovery-tier-legendary .city-discovery-ring-glow {
+  border-color: rgba(167, 139, 250, 0.65);
+  box-shadow: 0 0 30px rgba(167, 139, 250, 0.35);
+}
+
+.city-discovery-fog-mastered .city-discovery-ring-glow {
+  opacity: 0.95;
+}
+
+@keyframes city-ring-breathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.75; }
+  50% { transform: scale(1.02); opacity: 1; }
+}
+
+.discovered-world-panel {
+  margin-bottom: 10px;
+}
+
+.discovered-world-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.discovered-world-head h4 {
+  margin: 0;
+}
+
+.discovered-world-tier {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #cbd5e1;
+}
+
+.discovered-world-tier-gold,
+.discovered-world-tier-diamond,
+.discovered-world-tier-legendary {
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fde68a;
+}
+
+.discovered-world-tagline {
+  margin: 0 0 10px;
+  font-size: 0.76rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.discovered-world-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.discovered-world-stat {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.discovered-world-stat-label {
+  display: block;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.discovered-world-stat strong {
+  display: block;
+  font-size: 1.1rem;
+  color: #f8fafc;
+}
+
+.discovered-world-stat code {
+  display: block;
+  font-size: 0.62rem;
+  color: #5eead4;
+  margin: 4px 0;
+  letter-spacing: 0.04em;
+}
+
+.discovered-world-stat small {
+  font-size: 0.64rem;
+  color: #64748b;
+}
+
+.discovered-world-unknown {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(30, 27, 75, 0.35);
+  border: 1px dashed rgba(129, 140, 248, 0.25);
+}
+
+.discovered-world-goals h5,
+.discovered-world-leaderboards h5,
+.discovered-world-founders h5 {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.discovered-world-goal-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.74rem;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+
+.discovered-world-goal-pct {
+  color: #5eead4;
+  font-weight: 700;
+}
+
+.discovered-world-leaderboards ol {
+  margin: 0 0 10px;
+  padding-left: 1.2rem;
+  font-size: 0.76rem;
+  color: #cbd5e1;
+}
+
+.discovered-world-founder-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.74rem;
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(20, 184, 166, 0.08);
+  border: 1px solid rgba(94, 234, 212, 0.2);
+}
+
+.discovered-world-founder-row span {
+  color: #94a3b8;
+  font-size: 0.68rem;
+}
+
+.discovered-world-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.discovered-world-badge-chip {
+  font-size: 0.66rem;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(51, 65, 85, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  color: #e2e8f0;
+}
+
+.discovery-ceremony-toast {
+  position: absolute;
+  top: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 18;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  max-width: min(92%, 360px);
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(20, 10, 40, 0.92);
+  border: 1px solid rgba(167, 139, 250, 0.45);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+  animation: discovery-ceremony-in 0.5s ease;
+}
+
+@keyframes discovery-ceremony-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.discovery-ceremony-confetti {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.discovery-ceremony-toast strong {
+  display: block;
+  font-size: 0.82rem;
+  color: #f8fafc;
+  margin-bottom: 2px;
+}
+
+.discovery-ceremony-toast p {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #cbd5e1;
+}
+
+.discovery-ceremony-dismiss {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.map-stage-has-discovery-hud .living-world-activity-feed {
+  top: 78px;
+}
+
+.living-world-timeline-item.kind-milestone .living-world-timeline-text,
+.living-world-timeline-item.kind-ceremony .living-world-timeline-text,
+.living-world-timeline-item.kind-world .living-world-timeline-text {
+  color: #e2e8f0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-discovery-ring-glow,
+  .discovery-ceremony-toast {
+    animation: none !important;
+  }
+
+  .discovery-hud-bar-fill {
+    transition: none;
+  }
+}

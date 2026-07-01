@@ -166,6 +166,7 @@ import './livingWorld.css';
 import './livingWorldEvents.css';
 import './socialDiscovery.css';
 import './questoryIdentity.css';
+import './worldDiscovery.css';
 import { getInitialState, persistState } from './persistence';
 import {
   draftSyncBadgeLabel,
