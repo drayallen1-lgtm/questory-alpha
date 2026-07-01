@@ -22,6 +22,10 @@ import { recordLivingNpcVictory } from './livingNpcEngine';
 import { applyBranchVictoryEffects } from './branchingEngine';
 import { applyProgressionOnVictory } from './playerProgressionEngine';
 import {
+  applyLegendaryHuntOnVictory,
+  getLegendaryHuntSnapshot,
+} from './legendaryHuntEngine';
+import {
   resolveClaimRewards,
   resolveClaimRewardsAsync,
   isAdventureEnded,
@@ -155,8 +159,16 @@ export function buildClaimSuccessState(
   nextState = applyBranchVictoryEffects(nextState, freshAdventure, p);
   const eventContext = safeGetWorldEventContext(nextState, nextState.adventures || []);
   nextState = recordWorldEventVictory(nextState, freshAdventure, eventContext);
+  nextState = applyLegendaryHuntOnVictory(nextState, freshAdventure, {
+    isFirstFinder: (freshAdventure.playersCompleted || 0) <= 1,
+  });
+  const legendarySnapshot = getLegendaryHuntSnapshot(nextState, nextState.adventures || []);
+  const worldBossLinked =
+    legendarySnapshot.hasActiveBoss &&
+    legendarySnapshot.worldBoss.linkedAdventureIds?.includes(freshAdventure.id);
   nextState = applyProgressionOnVictory(nextState, freshAdventure, {
     isFirstFinder: (freshAdventure.playersCompleted || 0) <= 1,
+    worldBoss: worldBossLinked,
   });
 
   const playerName =

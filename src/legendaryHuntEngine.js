@@ -809,6 +809,21 @@ export function markLegendaryAlertSeen(state, alertId) {
   };
 }
 
+export function markLegendaryArFinaleSeen(state, bossId) {
+  const hunt = normalizeLegendaryHunt(state.legendaryHunt);
+  const prev = getBossProgressRecord(state, bossId);
+  return {
+    ...state,
+    legendaryHunt: {
+      ...hunt,
+      bossProgress: {
+        ...hunt.bossProgress,
+        [bossId]: { ...prev, arFinaleSeen: true },
+      },
+    },
+  };
+}
+
 /** Back-compat wrapper for questoryIdentityEngine.resolveWorldBoss */
 export function resolveWorldBossFromLegendaryEngine(state, adventures = [], options = {}) {
   const boss = resolveActiveWorldBoss(state, adventures, options);

@@ -10,7 +10,12 @@ import { HIDDEN_DISCOVERIES, SEED_NPCS, SECRET_COLLECTIONS } from './worldEngine
 import { AR_SCENE_TYPE_LABELS } from './arEngine';
 import { CREATOR_WORLDS, getCurrentSeason } from './seasonEngine';
 import { getFirstDiscoveries, DISCOVERY_BADGES } from './worldDiscoveryEngine';
-import { getSeasonProgress, resolveWorldBoss } from './questoryIdentityEngine';
+import { getSeasonProgress } from './questoryIdentityEngine';
+import {
+  normalizeLegendaryHunt,
+  resolveActiveWorldBoss,
+  WORLD_BOSSES,
+} from './legendaryHuntEngine';
 import { getNationalPassportView } from './expansion';
 
 export const CODEX_LIMITS = {
@@ -334,20 +339,25 @@ function buildSponsorEntries(state, adventures) {
 }
 
 function buildBossEntries(state, adventures) {
-  const boss = resolveWorldBoss(adventures, { state });
-  const completions = state?.world?.eventCompletions || {};
-  const defeated = Boolean(completions[boss.id] || completions['black-lantern-parsons']);
-  return [
-    entryBase(boss.id, CODEX_CATEGORIES.BOSSES, {
-      title: boss.title,
-      subtitle: boss.subtitle,
-      icon: '🏮',
-      unlocked: defeated || boss.communityProgress >= 100,
+  const hunt = normalizeLegendaryHunt(state?.legendaryHunt);
+  const active = resolveActiveWorldBoss(state, adventures);
+  return WORLD_BOSSES.map((def) => {
+    const defeated =
+      hunt.defeatedBossIds.includes(def.bossId) || hunt.rewardsClaimed.includes(def.bossId);
+    const isLive =
+      active.bossId === def.bossId &&
+      (active.status === 'active' || active.status === 'awakening');
+    const progress = isLive ? active.communityProgress : defeated ? 100 : 0;
+    return entryBase(def.bossId, CODEX_CATEGORIES.BOSSES, {
+      title: def.name,
+      subtitle: def.difficulty,
+      icon: def.icon,
+      unlocked: defeated || isLive,
       rarity: 'legendary',
-      body: boss.description,
-      meta: { progress: boss.communityProgress, hoursRemaining: boss.hoursRemaining },
-    }),
-  ];
+      body: def.story,
+      meta: { progress, lore: def.lore },
+    });
+  });
 }
 
 function buildSeasonEntries(state) {

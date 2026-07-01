@@ -173,6 +173,7 @@ import './crafting.css';
 import './legendaryHunt.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
+import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';
 import {
   draftSyncBadgeLabel,
   getDraftSyncBadge,
@@ -447,7 +448,10 @@ function QuestoryApp() {
       if (screen === 'detail' && adventureId) {
         next = recordAdventureView(next, adventureId);
         const adv = next.adventures.find((a) => a.id === adventureId);
-        if (adv) next = recordMapReveal(next, adv);
+        if (adv) {
+          next = recordMapReveal(next, adv);
+          next = applyLegendaryHuntOnMapReveal(next, adv);
+        }
       }
       if (screen === 'play' && adventureId) {
         next = recordAdventureStart(next, adventureId);

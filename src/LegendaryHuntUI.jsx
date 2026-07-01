@@ -16,7 +16,10 @@ import {
   claimLegendaryBossReward,
   getLegendaryHuntSnapshot,
   joinLegendaryHunt,
+  markLegendaryArFinaleSeen,
+  recordLegendaryHuntAction,
   BOSS_STATUS,
+  HUNT_STAGE_ACTIONS,
 } from './legendaryHuntEngine';
 import { CRAFT_RECIPES } from './craftingEngine';
 
@@ -254,6 +257,31 @@ export function LegendaryHuntPanel({ state, adventures, setState, nav }) {
         </h4>
         <p>{boss.lore}</p>
       </div>
+
+      {boss.joined && boss.communityProgress >= 40 && (
+        <div className="card legendary-ar-finale">
+          <h4>
+            <Sparkles size={16} /> AR Boss Finale
+          </h4>
+          <p className="admin-meta">
+            Cinematic AR reveal — {boss.arFinaleSceneId || 'boss-finale'}
+          </p>
+          <button
+            type="button"
+            className="legendary-ar-btn"
+            onClick={() => {
+              let next = markLegendaryArFinaleSeen(state, boss.bossId);
+              next = recordLegendaryHuntAction(next, HUNT_STAGE_ACTIONS.AR_SCENE, {
+                bossId: boss.bossId,
+              });
+              setState(next);
+              setMessage('AR finale witnessed — community progress updated!');
+            }}
+          >
+            Launch AR Finale
+          </button>
+        </div>
+      )}
 
       {snapshot.regionalHunts.length > 0 && (
         <div className="card legendary-regional">
