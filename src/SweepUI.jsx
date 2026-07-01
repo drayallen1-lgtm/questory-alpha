@@ -74,6 +74,11 @@ import { TodaysWorldPanel, WorldEventNotificationBar } from './WorldEventUI';
 import { isAdventureUnlocked } from './worldEngine';
 import { CodexHub } from './CodexUI';
 import { ExplorerEconomyPanel, ExplorerWalletStrip } from './ExplorerEconomyPanel';
+import {
+  ExplorerLevelStrip,
+  PlayerProgressionHomeCard,
+  PlayerProgressionPanel,
+} from './PlayerProgressionUI';
 
 export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
   const greeting = getTimeGreeting();
@@ -100,6 +105,7 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
       <GlobalLoreBanner state={state} setState={setState} />
 
       <PremiumSubscriptionBadge state={state} />
+      <PlayerProgressionHomeCard state={state} adventures={adventures} nav={nav} />
       <SeasonRankCard state={state} />
 
       <div className="card streak-card">
@@ -317,7 +323,13 @@ function SponsorBlockCompact({ adventure }) {
 }
 
 export function QuestoryPassport({ state, adventures, onRedeem, setState, nav }) {
-  const [tab, setTab] = useState('passport');
+  const [tab, setTab] = useState(state.vaultTab || 'passport');
+
+  useEffect(() => {
+    if (state.vaultTab && state.vaultTab !== tab) {
+      setTab(state.vaultTab);
+    }
+  }, [state.vaultTab, tab]);
   const passport = getPassportData(state, adventures);
   const collections = getAllCollectionProgress(state, adventures);
   const featuredCollections = getFeaturedCollectionProgress(state, adventures);
@@ -342,6 +354,9 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
         <button type="button" className={tab === 'economy' ? 'active' : ''} onClick={() => setTab('economy')}>
           Economy
         </button>
+        <button type="button" className={tab === 'progression' ? 'active' : ''} onClick={() => setTab('progression')}>
+          Progress
+        </button>
         <button type="button" className={tab === 'rewards' ? 'active' : ''} onClick={() => setTab('rewards')}>
           Rewards
         </button>
@@ -350,11 +365,12 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
         </button>
       </div>
 
-      {tab !== 'economy' && (
+      {tab !== 'economy' && tab !== 'progression' && (
         <div className="card balance">
           <h3>{state.coins} Coins</h3>
           <p>{state.entries} Community Pot Entries</p>
           <ExplorerWalletStrip state={state} adventures={adventures} />
+          <ExplorerLevelStrip state={state} adventures={adventures} />
         </div>
       )}
 
@@ -475,6 +491,10 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
 
       {tab === 'economy' && (
         <ExplorerEconomyPanel state={state} adventures={adventures} />
+      )}
+
+      {tab === 'progression' && (
+        <PlayerProgressionPanel state={state} adventures={adventures} />
       )}
     </>
   );

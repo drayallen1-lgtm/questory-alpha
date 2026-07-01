@@ -1,0 +1,287 @@
+/* Questory 2.0 — Phase 8 Player Progression */
+
+.player-progression-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progression-hero {
+  background: linear-gradient(145deg, rgba(20, 80, 90, 0.35), rgba(10, 30, 40, 0.6));
+}
+
+.progression-hero-head {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.progression-level-ring {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--questory-accent);
+  box-shadow: 0 0 20px rgba(80, 200, 190, 0.25);
+  flex-shrink: 0;
+}
+
+.progression-level-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.progression-hero h3 {
+  margin: 0 0 4px;
+}
+
+.progression-hero p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.progression-level-up {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--questory-accent);
+}
+
+.progression-xp-bar small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.progression-rank-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .progression-rank-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.progression-rank-card {
+  padding: 14px;
+}
+
+.progression-rank-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progression-rank-icon {
+  font-size: 1.6rem;
+}
+
+.progression-rank-head small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.progression-rank-head strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.progression-season-card .progression-season-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.progression-season-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.progression-season-tier {
+  margin-left: auto;
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.progression-reputation-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+}
+
+.progression-reputation-card {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.progression-reputation-card:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.progression-reputation-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.progression-reputation-icon {
+  font-size: 1.3rem;
+}
+
+.progression-reputation-head strong {
+  display: block;
+}
+
+.progression-reputation-head small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.progression-reputation-score {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--questory-accent);
+}
+
+.progression-tier-label {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.progression-stat-cells {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 520px) {
+  .progression-stat-cells {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.progression-stat-cells div {
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+}
+
+.progression-stat-cells strong {
+  display: block;
+  font-size: 1.1rem;
+}
+
+.progression-stat-cells small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.progression-milestone-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progression-milestone-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  font-size: 0.85rem;
+}
+
+.progression-milestone-list li.is-new {
+  border-color: var(--questory-accent);
+  box-shadow: 0 0 10px rgba(80, 200, 190, 0.12);
+}
+
+.explorer-level-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.explorer-level-badge,
+.explorer-rank-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.explorer-level-badge {
+  border-color: var(--questory-accent);
+  color: var(--questory-accent);
+}
+
+.progression-home-card {
+  margin-bottom: 12px;
+}
+
+.progression-home-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.progression-home-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.progression-home-link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.8rem;
+}
+
+.progression-home-rep {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.progression-home-rep span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}

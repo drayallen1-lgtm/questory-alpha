@@ -168,6 +168,7 @@ import './socialDiscovery.css';
 import './questoryIdentity.css';
 import './worldDiscovery.css';
 import './codex.css';
+import './progression.css';
 import { getInitialState, persistState } from './persistence';
 import {
   draftSyncBadgeLabel,
@@ -438,6 +439,7 @@ function QuestoryApp() {
         adminTab: options.adminTab ?? s.adminTab,
         quickSponsor: 'quickSponsor' in options ? options.quickSponsor : s.quickSponsor,
         growthTab: options.growthTab ?? s.growthTab,
+        vaultTab: options.tab ?? s.vaultTab,
       };
       if (screen === 'detail' && adventureId) {
         next = recordAdventureView(next, adventureId);

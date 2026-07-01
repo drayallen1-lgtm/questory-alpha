@@ -20,6 +20,7 @@ import { unlockLoreOnVictory } from './loreCollectionsEngine';
 import { safeGetWorldEventContext, recordWorldEventVictory } from './worldEventEngine';
 import { recordLivingNpcVictory } from './livingNpcEngine';
 import { applyBranchVictoryEffects } from './branchingEngine';
+import { applyProgressionOnVictory } from './playerProgressionEngine';
 import {
   resolveClaimRewards,
   resolveClaimRewardsAsync,
@@ -154,6 +155,9 @@ export function buildClaimSuccessState(
   nextState = applyBranchVictoryEffects(nextState, freshAdventure, p);
   const eventContext = safeGetWorldEventContext(nextState, nextState.adventures || []);
   nextState = recordWorldEventVictory(nextState, freshAdventure, eventContext);
+  nextState = applyProgressionOnVictory(nextState, freshAdventure, {
+    isFirstFinder: (freshAdventure.playersCompleted || 0) <= 1,
+  });
 
   const playerName =
     nextState.playerName || certificate?.playerName || 'You';
