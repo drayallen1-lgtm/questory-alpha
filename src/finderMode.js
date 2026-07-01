@@ -1,4 +1,5 @@
 import { haversineDistanceMeters } from './geolocation';
+import { getDiscoveryRadiusMultiplier } from './craftingEngine';
 
 export const FINDER_SEARCH_RADIUS_M = 200;
 export const FINDER_HOT_ZONE_M = 75;
@@ -29,9 +30,11 @@ export function getMedallionLocation(adventure) {
   };
 }
 
-export function getFinderSearchRadius(adventure) {
+export function getFinderSearchRadius(adventure, state = null) {
   const value = Number(adventure?.finderSearchRadiusM);
-  return Number.isFinite(value) && value > 0 ? value : FINDER_SEARCH_RADIUS_M;
+  const base = Number.isFinite(value) && value > 0 ? value : FINDER_SEARCH_RADIUS_M;
+  if (!state) return base;
+  return Math.round(base * getDiscoveryRadiusMultiplier(state));
 }
 
 export function getFinderCaptureBase(adventure) {

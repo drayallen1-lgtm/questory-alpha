@@ -827,6 +827,7 @@ function QuestoryApp() {
             nav={nav}
             adminPreview={state.adminPreview}
             isDevMode={state.adminPreview || isAdmin}
+            state={state}
           />
         )}
         {state.screen === 'finder' && selected && (
@@ -837,6 +838,7 @@ function QuestoryApp() {
             adminPreview={state.adminPreview}
             isDevMode={state.adminPreview || isAdmin}
             setState={setState}
+            state={state}
             onMedallionTap={(context) => handleMedallionCapture(selected, context)}
           />
         )}
@@ -1836,6 +1838,7 @@ function AdventurePlay({
             nav={nav}
             adminPreview={adminPreview}
             isDevMode={isDevMode}
+            state={state}
           />
         )}
 

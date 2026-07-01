@@ -7,6 +7,7 @@ import { haversineDistanceMeters } from './geolocation';
 import { getAdventureMapCenter } from './mapUtils';
 import { safeGetWorldEventContext } from './worldEventEngine';
 import { safeGetTime } from './dateUtils';
+import { getFogRevealRadiusMultiplier } from './craftingEngine';
 
 export const MAP_FILTERS = {
   ALL: 'all',
@@ -608,7 +609,8 @@ export function recordMapReveal(state, adventure) {
   const exploration = normalizeMapExploration(state.mapExploration);
   const key = `${center.latitude.toFixed(3)},${center.longitude.toFixed(3)}`;
   if (exploration.revealed.some((r) => r.key === key)) return state;
-  const radiusM = Number(adventure.finderSearchRadiusM) || 500;
+  const baseRadius = Number(adventure.finderSearchRadiusM) || 500;
+  const radiusM = Math.round(baseRadius * getFogRevealRadiusMultiplier(state));
   return {
     ...state,
     mapExploration: {

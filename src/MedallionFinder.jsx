@@ -43,12 +43,12 @@ import {
 import { getAdventureArFinaleForProgress } from './branchingEngine';
 import { DirectorMoodBadge } from './ExperienceUI';
 
-function useMedallionGps(adventure, watching = true) {
+function useMedallionGps(adventure, watching = true, state = null) {
   const [distance, setDistance] = useState(null);
   const [accuracy, setAccuracy] = useState(null);
   const [gpsError, setGpsError] = useState('');
   const medallion = getMedallionLocation(adventure);
-  const searchRadius = getFinderSearchRadius(adventure);
+  const searchRadius = getFinderSearchRadius(adventure, state);
 
   useEffect(() => {
     if (!watching || !medallion) return undefined;
@@ -168,11 +168,11 @@ function buildFinderContext({
   return { phase, phaseUi };
 }
 
-export function MedallionSignalScreen({ adventure, nav, adminPreview, isDevMode = false }) {
+export function MedallionSignalScreen({ adventure, nav, adminPreview, isDevMode = false, state = null }) {
   const [devOverride, setDevOverride] = useState(false);
   const physical = isPhysicalMedallionClaim(adventure);
   const { distance, accuracy, gpsError, searchRadius, medallion, inSearchArea, signal, locating } =
-    useMedallionGps(adventure);
+    useMedallionGps(adventure, true, state);
   const effectiveInSearchArea = inSearchArea || devOverride;
   const captureRadius = getCaptureRadius(adventure, accuracy);
   const { phase, phaseUi } = buildFinderContext({
@@ -282,11 +282,11 @@ export function MedallionSignalScreen({ adventure, nav, adminPreview, isDevMode 
 }
 
 /** Play-screen panel: enter Finder when inside search area, not capture range. */
-export function FinderAwaitingPanel({ adventure, nav, adminPreview, isDevMode = false }) {
+export function FinderAwaitingPanel({ adventure, nav, adminPreview, isDevMode = false, state = null }) {
   const [devOverride, setDevOverride] = useState(false);
   const physical = isPhysicalMedallionClaim(adventure);
   const { distance, gpsError, searchRadius, medallion, inSearchArea, signal, locating, accuracy } =
-    useMedallionGps(adventure);
+    useMedallionGps(adventure, true, state);
   const effectiveInSearchArea = inSearchArea || devOverride;
   const captureRadius = getCaptureRadius(adventure, accuracy);
   const { phase, phaseUi } = buildFinderContext({
@@ -373,6 +373,7 @@ export function FinderModeScreen({
   isDevMode = false,
   onMedallionTap,
   setState,
+  state: appState = null,
 }) {
   const [watching, setWatching] = useState(true);
   const [devOverride, setDevOverride] = useState(false);
@@ -384,7 +385,8 @@ export function FinderModeScreen({
 
   const { distance, accuracy, gpsError, searchRadius, medallion } = useMedallionGps(
     adventure,
-    watching
+    watching,
+    appState
   );
   const effectiveDistance = devOverride ? 10 : distance;
   const effectiveAccuracy = devOverride ? 5 : accuracy;
