@@ -72,6 +72,8 @@ import { GrowthHomeBanner, QuestCodeBadge, FollowingFeedSection } from './Growth
 import { LaunchFunnelCard } from './StabilityUI';
 import { TodaysWorldPanel, WorldEventNotificationBar } from './WorldEventUI';
 import { isAdventureUnlocked } from './worldEngine';
+import { CodexHub } from './CodexUI';
+import { ExplorerEconomyPanel, ExplorerWalletStrip } from './ExplorerEconomyPanel';
 
 export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
   const greeting = getTimeGreeting();
@@ -161,8 +163,8 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
         </button>
         <button type="button" className="card mini home-quick-btn" onClick={() => nav('vault')}>
           <Medal size={20} />
-          <b>Passport</b>
-          <p>Track collections by city</p>
+          <b>Passport & Codex</b>
+          <p>Archive every discovery and relic</p>
         </button>
         <button type="button" className="card mini home-quick-btn" onClick={() => nav('platform')}>
           <Building2 size={20} />
@@ -314,7 +316,7 @@ function SponsorBlockCompact({ adventure }) {
   return <p className="feed-sponsor">Sponsored by {sponsor.name}</p>;
 }
 
-export function QuestoryPassport({ state, adventures, onRedeem }) {
+export function QuestoryPassport({ state, adventures, onRedeem, setState, nav }) {
   const [tab, setTab] = useState('passport');
   const passport = getPassportData(state, adventures);
   const collections = getAllCollectionProgress(state, adventures);
@@ -327,12 +329,18 @@ export function QuestoryPassport({ state, adventures, onRedeem }) {
     <>
       <div className="section-head">
         <h2>Questory Passport</h2>
-        <p>Collections, badges, and rewards across your journey</p>
+        <p>Collections, codex archive, economy, badges, and rewards</p>
       </div>
 
-      <div className="vault-tabs">
+      <div className="vault-tabs-scroll vault-tabs-codex">
         <button type="button" className={tab === 'passport' ? 'active' : ''} onClick={() => setTab('passport')}>
           Passport
+        </button>
+        <button type="button" className={tab === 'codex' ? 'active' : ''} onClick={() => setTab('codex')}>
+          Codex
+        </button>
+        <button type="button" className={tab === 'economy' ? 'active' : ''} onClick={() => setTab('economy')}>
+          Economy
         </button>
         <button type="button" className={tab === 'rewards' ? 'active' : ''} onClick={() => setTab('rewards')}>
           Rewards
@@ -342,10 +350,13 @@ export function QuestoryPassport({ state, adventures, onRedeem }) {
         </button>
       </div>
 
-      <div className="card balance">
-        <h3>{state.coins} Coins</h3>
-        <p>{state.entries} Community Pot Entries · Display only for now</p>
-      </div>
+      {tab !== 'economy' && (
+        <div className="card balance">
+          <h3>{state.coins} Coins</h3>
+          <p>{state.entries} Community Pot Entries</p>
+          <ExplorerWalletStrip state={state} adventures={adventures} />
+        </div>
+      )}
 
       {tab === 'passport' && (
         <>
@@ -451,6 +462,19 @@ export function QuestoryPassport({ state, adventures, onRedeem }) {
 
       {tab === 'rewards' && (
         <ExpandedVaultTabs state={state} adventures={adventures} onRedeem={onRedeem} />
+      )}
+
+      {tab === 'codex' && (
+        <CodexHub
+          state={state}
+          adventures={adventures}
+          onStateChange={setState}
+          nav={nav}
+        />
+      )}
+
+      {tab === 'economy' && (
+        <ExplorerEconomyPanel state={state} adventures={adventures} />
       )}
     </>
   );

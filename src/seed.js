@@ -46,6 +46,8 @@ import { normalizeArScene } from './arEngine';
 import { normalizeMediaManifest } from './mediaStudio';
 import { normalizeAccessType } from './accessRules';
 import { normalizeMapExploration } from './mapDiscovery';
+import { DEFAULT_CODEX, normalizeCodex } from './codexEngine';
+import { DEFAULT_EXPLORER_ECONOMY, normalizeExplorerEconomy } from './explorerEconomyEngine';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -83,6 +85,8 @@ export const defaultState = {
   editingAdventureId: null,
   quickSponsor: false,
   mapExploration: { revealed: [] },
+  codex: { ...DEFAULT_CODEX },
+  explorerEconomy: { ...DEFAULT_EXPLORER_ECONOMY },
   adventures: ensureDemoAdventure([
     {
       id: 'parsons-gold-rush',
@@ -763,6 +767,8 @@ export function loadState() {
       growth: normalizeGrowth(saved.growth),
       launchFunnel: normalizeLaunchFunnel(saved.launchFunnel),
       mapExploration: normalizeMapExploration(saved.mapExploration),
+      codex: normalizeCodex(saved.codex),
+      explorerEconomy: normalizeExplorerEconomy(saved.explorerEconomy),
       growthTab: saved.growthTab || 'referrals',
       pendingInviteAdventureId: saved.pendingInviteAdventureId || null,
       claimHistory: buildClaimHistory(rewards, saved.claimHistory),

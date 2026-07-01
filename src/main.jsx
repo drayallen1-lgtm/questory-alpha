@@ -167,6 +167,7 @@ import './livingWorldEvents.css';
 import './socialDiscovery.css';
 import './questoryIdentity.css';
 import './worldDiscovery.css';
+import './codex.css';
 import { getInitialState, persistState } from './persistence';
 import {
   draftSyncBadgeLabel,
@@ -850,6 +851,8 @@ function QuestoryApp() {
               state={state}
               adventures={state.adventures}
               onRedeem={redeemReward}
+              setState={setState}
+              nav={nav}
             />
           )
         )}

@@ -1,0 +1,366 @@
+/* Questory 2.0 — Codex archive */
+
+.codex-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.codex-hub-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+}
+
+.codex-hub-head p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.codex-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.codex-stat {
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+}
+
+.codex-stat strong {
+  display: block;
+  font-size: 1.1rem;
+}
+
+.codex-stat small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.codex-overall-bar {
+  margin-top: 4px;
+}
+
+.codex-new-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  color: var(--questory-accent);
+  font-size: 0.85rem;
+}
+
+.codex-tabs {
+  margin: 4px 0;
+}
+
+.codex-tabs button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 72px;
+  font-size: 0.78rem;
+}
+
+.codex-tabs button small {
+  opacity: 0.75;
+  font-size: 0.68rem;
+}
+
+.codex-featured-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.codex-featured-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: inherit;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.codex-featured-chip small {
+  display: block;
+  color: var(--questory-accent);
+}
+
+.codex-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.codex-badge-chip {
+  font-size: 0.72rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.codex-badge-chip.locked {
+  opacity: 0.45;
+  filter: grayscale(0.8);
+}
+
+.codex-badge-chip.unlocked {
+  border-color: var(--questory-accent);
+}
+
+.codex-category-progress {
+  margin-bottom: 12px;
+}
+
+.codex-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.codex-entry-list.compact .codex-entry-row {
+  padding: 8px 10px;
+}
+
+.codex-entry-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  cursor: pointer;
+}
+
+.codex-entry-row.locked {
+  opacity: 0.55;
+}
+
+.codex-entry-row.unlocked:hover {
+  border-color: var(--questory-accent);
+}
+
+.codex-entry-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.codex-entry-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.codex-entry-body strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.codex-entry-body small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.codex-entry-status {
+  opacity: 0.7;
+}
+
+.codex-rarity-legendary.unlocked {
+  border-color: rgba(255, 200, 80, 0.5);
+  box-shadow: 0 0 12px rgba(255, 180, 50, 0.12);
+}
+
+.codex-rarity-rare.unlocked {
+  border-color: rgba(120, 180, 255, 0.4);
+}
+
+.codex-entry-detail .codex-detail-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.codex-detail-icon {
+  font-size: 2rem;
+}
+
+.codex-detail-body {
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.codex-detail-chip {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.codex-detail-locked {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.codex-detail-close {
+  background: none;
+  border: none;
+  color: var(--questory-accent);
+  cursor: pointer;
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.codex-empty {
+  padding: 12px 0;
+}
+
+.codex-world-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.vault-tabs-codex {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+
+.vault-tabs-codex button {
+  flex: 0 0 auto;
+  min-width: 72px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+}
+
+
+.explorer-economy-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.explorer-economy-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+}
+
+.explorer-wealth {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.explorer-wallet-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 520px) {
+  .codex-stats-grid,
+  .explorer-wallet-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.explorer-wallet-card {
+  text-align: center;
+  padding: 12px 8px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.explorer-wallet-icon {
+  display: block;
+  font-size: 1.4rem;
+  margin-bottom: 4px;
+}
+
+.explorer-wallet-card strong {
+  display: block;
+  font-size: 1.15rem;
+}
+
+.explorer-wallet-card small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.explorer-relic-grid,
+.explorer-material-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.explorer-relic-chip,
+.explorer-material-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.explorer-material-chip.rarity-legendary {
+  border-color: rgba(255, 200, 80, 0.45);
+}
+
+.explorer-material-chip.rarity-rare {
+  border-color: rgba(120, 180, 255, 0.35);
+}
+
+.explorer-wallet-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.explorer-wallet-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.explorer-economy-foot {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
