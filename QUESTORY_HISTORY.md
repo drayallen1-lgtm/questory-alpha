@@ -138,6 +138,14 @@ World bosses awaken with community progress bars, live map atmosphere, global al
 
 ---
 
+### Living Earth (Phase 11)
+
+Zooming out to continent/world level morphs the map into a rotating globe. Discovery tiers color continents. World bosses emit purple beacons. A discovery stream shows live global activity. Zooming back in returns seamlessly to QuestoryMap — no loading screens.
+
+**Why it mattered:** Earth became Questory's overworld — exploration feels planetary, not cartographic.
+
+---
+
 ## Timeline Summary
 
 | Era | Milestone | Phase |
@@ -154,7 +162,8 @@ World bosses awaken with community progress bars, live map atmosphere, global al
 | 2.0 | Player progression | 8 |
 | 2.0 | Crafting & inventory | 9 |
 | 2.0 | Legendary hunts & world events | 10 |
-| Next | Living Earth globe | 11 |
+| 2.0 | Living Earth global exploration platform | 11 |
+| Next | Creator economy | 12 |
 
 ---
 

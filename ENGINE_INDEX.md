@@ -183,6 +183,17 @@ Each entry lists:
 
 ---
 
+### livingEarthEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Globe presentation snapshot — discovery colors, world HUD, stream pulses, boss beacons |
+| **Primary exports** | `getLivingEarthSnapshot`, `isEarthMode`, `markEarthCeremonySeen`, `getRegionFlyTarget`, `FOG_VISUAL_COLORS` |
+| **Dependencies** | `worldDiscoveryEngine`, `livingWorldEngine`, `socialWorldEngine`, `questoryIdentityEngine`, `legendaryHuntEngine`, `seasonEngine` |
+| **Consumers** | `LivingEarthUI.jsx`, `QuestoryMap.jsx` |
+
+---
+
 ### livingWorldEngine.js
 
 | | |
@@ -190,7 +201,7 @@ Each entry lists:
 | **Purpose** | Map heat, explorer simulation, timeline pulses, heat zones |
 | **Primary exports** | `getLivingWorldSnapshot`, `HEAT_LEVELS`, `LIVING_WORLD_LIMITS` |
 | **Dependencies** | `livingWorldEventsEngine`, `mapDiscovery`, `social.js`, `worldEventEngine` |
-| **Consumers** | `LivingWorldLayer.jsx`, `QuestoryMap.jsx`, `LivingWorldTimeline.jsx` |
+| **Consumers** | `LivingWorldLayer.jsx`, `QuestoryMap.jsx`, `LivingWorldTimeline.jsx`, `livingEarthEngine.js` |
 
 ---
 
@@ -302,7 +313,7 @@ Each entry lists:
 | **Purpose** | Geographic discovery levels, completion tiers, global goals |
 | **Primary exports** | `getDiscoveredWorldSnapshot`, `DISCOVERY_LEVELS`, `COMPLETION_TIERS`, `getFirstDiscoveries` |
 | **Dependencies** | `mapDiscovery`, `seasonEngine`, `expansion.js` |
-| **Consumers** | `DiscoveredWorldPanel.jsx`, `CityDiscoveryRingLayer.jsx`, `codexEngine` |
+| **Consumers** | `DiscoveredWorldPanel.jsx`, `CityDiscoveryRingLayer.jsx`, `codexEngine`, `livingEarthEngine.js` |
 
 ---
 

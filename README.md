@@ -56,7 +56,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full engine map.
 | 8 — Player Progression | ✓ Complete |
 | 9 — Crafting & Inventory | ✓ Complete |
 | 10 — Legendary Hunts Evolution | ✓ Complete |
-| 11 — Living Earth | Upcoming |
+| 11 — Living Earth | ✓ Complete |
 
 Full roadmap: [ROADMAP.md](./ROADMAP.md)
 

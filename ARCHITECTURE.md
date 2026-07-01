@@ -146,7 +146,17 @@ Adventure data is not one monolithic engine. Responsibilities are split:
 
 **Outputs:** `getDiscoveredWorldSnapshot`, completion percentages by level
 
-**Consumers:** `DiscoveredWorldPanel`, `CityDiscoveryRingLayer`, `codexEngine`
+**Consumers:** `DiscoveredWorldPanel`, `CityDiscoveryRingLayer`, `codexEngine`, `livingEarthEngine`
+
+### livingEarthEngine.js (Phase 11)
+
+**Purpose:** Presentation layer — translates world discovery, living world, social, identity, and legendary hunt data into a global Earth visualization snapshot. Does not duplicate discovery logic.
+
+**Inputs:** `worldDiscoveryEngine`, `livingWorldEngine`, `socialWorldEngine`, `questoryIdentityEngine`, `legendaryHuntEngine`, map zoom
+
+**Outputs:** `getLivingEarthSnapshot`, globe markers, discovery stream, boss beacons, world HUD, ceremonies
+
+**Consumers:** `LivingEarthUI.jsx`, `QuestoryMap.jsx` (MapScreen overlay at zoom ≤ 2)
 
 ---
 

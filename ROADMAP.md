@@ -9,9 +9,8 @@
 ## Table of Contents
 
 1. [Completed Phases](#completed-phases)
-2. [Upcoming Phases](#upcoming-phases)
-3. [Future Phases](#future-phases)
-4. [Roadmap Rules](#roadmap-rules)
+2. [Future Phases](#future-phases)
+3. [Roadmap Rules](#roadmap-rules)
 
 ---
 
@@ -97,15 +96,11 @@ World boss spawn engine, six legendary bosses, community progress, multi-stage h
 
 ---
 
-## Upcoming Phases
+### Phase 11 — Living Earth ✓ Complete
 
-### Phase 11 — Living Earth
+Globe presentation layer at continent/world zoom. Rotating Earth with day/night, clouds, discovery-colored continents, world HUD, discovery stream pulses, boss beacons, creator world markers, global goals panel, seasonal atmosphere, and smooth fly-to back into QuestoryMap.
 
-The Earth itself becomes the game overworld. Zoom from city to globe. Continents glow by discovery. Cities pulse. World bosses appear globally. Community goals update live.
-
-**Status:** Upcoming
-
-**Depends on:** Phase 6 (discovered world), Phase 10 (legendary hunts)
+**Why it mattered:** Questory stopped feeling like a flat map — Earth became the overworld for global exploration.
 
 ---
 
@@ -153,4 +148,4 @@ Multi-city rollout, national passport expansion, regional world bosses, geograph
 
 ---
 
-*Last updated: Phase 10 complete. Next milestone: Phase 11 — Living Earth.*
+*Last updated: Phase 11 complete — Living Earth global exploration platform. Next milestone: Phase 12 — Creator Economy.*
