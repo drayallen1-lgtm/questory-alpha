@@ -17,6 +17,7 @@ import {
   WORLD_BOSS_SCAFFOLD,
 } from './seasonEngine';
 import { safeGetTime } from './dateUtils';
+import { resolveWorldBossFromLegendaryEngine } from './legendaryHuntEngine';
 
 export const IDENTITY_LIMITS = {
   MAX_FEED: 8,
@@ -106,34 +107,7 @@ export function getSeasonProgress(state = null, now = Date.now()) {
 }
 
 export function resolveWorldBoss(adventures = [], options = {}) {
-  const { now = Date.now() } = options;
-  const linked = adventures.filter((a) => BOSS_LINKED_IDS.includes(a.id));
-  const centers = linked.map((a) => getAdventureMapCenter(a)).filter(Boolean);
-
-  let latitude = 37.3392;
-  let longitude = -95.261;
-  if (centers.length) {
-    latitude = centers.reduce((s, c) => s + c.latitude, 0) / centers.length;
-    longitude = centers.reduce((s, c) => s + c.longitude, 0) / centers.length;
-  }
-
-  const hoursLeft = hoursRemaining(WORLD_BOSS_SCAFFOLD.endsInHours || 72);
-  const communityProgress = Math.min(
-    100,
-    34 + linked.filter((a) => isAdventureClaimed(options.state, a.id)).length * 12
-  );
-
-  return {
-    ...WORLD_BOSS_SCAFFOLD,
-    status: hoursLeft > 0 ? 'active' : 'ended',
-    linkedAdventureIds: linked.map((a) => a.id),
-    linkedCount: linked.length,
-    latitude,
-    longitude,
-    hoursRemaining: hoursLeft,
-    communityProgress,
-    participantsEstimate: 127 + linked.length * 8,
-  };
+  return resolveWorldBossFromLegendaryEngine(options.state, adventures, options);
 }
 
 export function getCommunityCityEvents(state, adventures = []) {
