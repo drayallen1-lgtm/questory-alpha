@@ -1,0 +1,389 @@
+/* Discovery Bloom — map micro-interactions (polish sweep) */
+
+/* --- Cluster open sequence --- */
+.questory-cluster.cluster-clicked {
+  animation: discovery-cluster-brighten 80ms ease-out forwards;
+}
+
+.questory-cluster.cluster-opening {
+  animation: discovery-cluster-scale-up 80ms ease-out forwards;
+}
+
+.questory-cluster.cluster-collapsing,
+.questory-cluster.questory-cluster-fading.cluster-collapsing {
+  animation: discovery-cluster-collapse 100ms ease-in forwards;
+  pointer-events: none;
+}
+
+@keyframes discovery-cluster-brighten {
+  from { filter: brightness(1); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45); }
+  to { filter: brightness(1.35); box-shadow: 0 0 28px rgba(94, 234, 212, 0.65); }
+}
+
+@keyframes discovery-cluster-scale-up {
+  from { transform: scale(1); }
+  to { transform: scale(1.12); }
+}
+
+@keyframes discovery-cluster-collapse {
+  from { transform: scale(1.12); opacity: 1; }
+  to { transform: scale(0.55); opacity: 0.15; }
+}
+
+/* --- Ambient glow --- */
+.discovery-bloom-ambient {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200px;
+  height: 200px;
+  margin: -100px 0 0 -100px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, var(--bloom-ambient-color, rgba(94, 234, 212, 0.12)) 0%, transparent 70%);
+  animation: discovery-ambient-breathe 3.2s ease-in-out infinite;
+  z-index: -1;
+}
+
+.discovery-bloom-ambient.category-aura {
+  width: 240px;
+  height: 240px;
+  margin: -120px 0 0 -120px;
+}
+
+@keyframes discovery-ambient-breathe {
+  0%, 100% { opacity: 0.55; transform: scale(0.95); }
+  50% { opacity: 0.9; transform: scale(1.05); }
+}
+
+/* --- Blossom container enter --- */
+.living-cluster-blossom.blossom-entering {
+  animation: discovery-blossom-root-in 220ms ease-out forwards;
+}
+
+@keyframes discovery-blossom-root-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* --- Category burst --- */
+.living-cluster-blossom > .blossom-category.blossom-category-burst {
+  animation: discovery-category-burst 420ms cubic-bezier(0.34, 1.45, 0.64, 1) forwards;
+  animation-delay: var(--blossom-delay, 0ms);
+}
+
+.blossom-category.blossom-category-hover:not(.blossom-category-dimmed) {
+  transform: translate(-50%, -50%) scale(1.06);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--blossom-color, #14b8a6) 55%, transparent);
+}
+
+.blossom-category.blossom-category-dimmed {
+  opacity: 0.25 !important;
+  transform: translate(-50%, -50%) scale(0.92);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.blossom-category.blossom-category-selected-pulse {
+  animation: discovery-category-pulse 280ms ease-out forwards;
+}
+
+@keyframes discovery-category-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(0, 0) scale(0.4);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) translate(var(--blossom-x, 0), var(--blossom-y, 0)) scale(1);
+  }
+}
+
+@keyframes discovery-category-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.4); transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.blossom-category-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  background: rgba(8, 14, 24, 0.95);
+  border: 1px solid rgba(94, 234, 212, 0.3);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* --- Adventure pin bloom --- */
+.living-cluster-blossom > .blossom-pin.blossom-pin-bloom {
+  animation: discovery-pin-bloom 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    discovery-pin-land-pulse 1.8s ease-in-out infinite;
+  animation-delay: var(--blossom-delay, 0ms), calc(var(--blossom-delay, 0ms) + 380ms);
+}
+
+@keyframes discovery-pin-bloom {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(0, 0) scale(0.35) rotate(-18deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) translate(var(--blossom-x, 0), var(--blossom-y, 0)) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes discovery-pin-land-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px var(--pin-glow, rgba(94, 234, 212, 0.45))); }
+  50% { filter: drop-shadow(0 0 12px var(--pin-glow, rgba(94, 234, 212, 0.7))); }
+}
+
+.blossom-pin.blossom-dimmed,
+.blossom-overflow.blossom-dimmed {
+  opacity: 0.3 !important;
+}
+
+.living-cluster-blossom > .blossom-pin.blossom-hover:not(.blossom-dimmed) {
+  transform: translate(-50%, -50%) scale(1.12);
+  filter: drop-shadow(0 0 12px var(--pin-glow, rgba(94, 234, 212, 0.7)));
+}
+
+.living-cluster-blossom > .blossom-overflow:hover:not(.blossom-dimmed) {
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.blossom-pin.blossom-selected {
+  transform: translate(-50%, -50%) scale(1.25);
+  animation: discovery-pin-selected-glow 1s ease-in-out infinite;
+  filter: drop-shadow(0 0 22px var(--pin-glow, rgba(94, 234, 212, 0.95)));
+}
+
+.blossom-pin.blossom-selected .selected-pin-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  animation: discovery-pin-ring-spin 600ms ease-out 1;
+  pointer-events: none;
+}
+
+.blossom-pin.blossom-selected .selected-pin-ripple {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--pin-glow, rgba(94, 234, 212, 0.6));
+  animation: discovery-pin-ripple 480ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes discovery-pin-selected-glow {
+  0%, 100% { transform: translate(-50%, -50%) scale(1.2); }
+  50% { transform: translate(-50%, -50%) scale(1.28); }
+}
+
+@keyframes discovery-pin-ring-spin {
+  from { transform: rotate(0deg) scale(0.8); opacity: 0.9; }
+  to { transform: rotate(360deg) scale(1.15); opacity: 0; }
+}
+
+@keyframes discovery-pin-ripple {
+  from { transform: scale(0.6); opacity: 0.85; }
+  to { transform: scale(1.8); opacity: 0; }
+}
+
+/* Category ambience on pins */
+.blossom-pin.pin-base-horror { --pin-ambience: rgba(139, 92, 246, 0.25); }
+.blossom-pin.pin-base-treasure { --pin-ambience: rgba(251, 191, 36, 0.22); }
+.blossom-pin.pin-base-event,
+.blossom-pin.pin-has-event { animation-name: discovery-pin-bloom, discovery-event-breathe; }
+.blossom-pin.pin-base-treasure::after,
+.blossom-pin.pin-base-horror::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--pin-ambience, transparent) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes discovery-event-breathe {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+.blossom-overflow.blossom-overflow-pulse {
+  animation: discovery-overflow-pulse 2.6s ease-in-out infinite;
+}
+
+.blossom-overflow.blossom-overflow-pulse:hover:not(.blossom-dimmed) {
+  animation: discovery-overflow-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes discovery-overflow-pulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(94, 234, 212, 0.2); }
+  50% { box-shadow: 0 0 28px rgba(94, 234, 212, 0.45); }
+}
+
+@keyframes discovery-overflow-shimmer {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
+}
+
+.blossom-pin.blossom-hover:not(.blossom-dimmed) {
+  transform: translate(-50%, -50%) scale(1.12);
+  filter: drop-shadow(0 0 14px var(--pin-glow, rgba(94, 234, 212, 0.75)));
+}
+
+.map-pin-card.map-card-enter {
+  animation: map-card-from-pin 360ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+.map-pin-card-hero {
+  overflow: hidden;
+}
+
+@keyframes map-card-from-pin {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(28px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.map-pin-card.map-card-enter .map-pin-card-hero-watermark {
+  animation: discovery-watermark-fade 400ms ease-out forwards;
+}
+
+.map-pin-card-hero-watermark {
+  position: absolute;
+  right: -8px;
+  bottom: -12px;
+  font-size: 5.5rem;
+  line-height: 1;
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes discovery-watermark-fade {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 0.12; transform: scale(1); }
+}
+
+.map-pin-card-close:hover {
+  box-shadow: 0 0 12px rgba(94, 234, 212, 0.35);
+  background: rgba(94, 234, 212, 0.08);
+}
+
+.map-pin-card-reward {
+  position: relative;
+  overflow: hidden;
+}
+
+.map-pin-card-reward::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(251, 191, 36, 0.35) 50%, transparent 60%);
+  animation: discovery-reward-shine 3s ease-in-out infinite;
+}
+
+@keyframes discovery-reward-shine {
+  0%, 100% { transform: translateX(-120%); }
+  50% { transform: translateX(120%); }
+}
+
+.badge.map-badge-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.badge.map-badge-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: discovery-badge-shimmer 2.4s ease-in-out infinite;
+}
+
+@keyframes discovery-badge-shimmer {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+
+.map-pin-card-cta-primary:hover {
+  background-image: linear-gradient(
+    105deg,
+    var(--accent, #14b8a6) 0%,
+    #fbbf24 45%,
+    var(--accent, #14b8a6) 90%
+  );
+  background-size: 200% 100%;
+  animation: discovery-cta-gold-sweep 0.8s ease forwards;
+}
+
+.map-pin-card-cta-secondary:hover {
+  box-shadow: 0 0 16px rgba(96, 165, 250, 0.35);
+  border-color: rgba(96, 165, 250, 0.45);
+}
+
+@keyframes discovery-cta-gold-sweep {
+  from { background-position: 100% 0; }
+  to { background-position: 0% 0; }
+}
+
+/* --- Reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .questory-cluster.cluster-clicked,
+  .questory-cluster.cluster-opening,
+  .questory-cluster.cluster-collapsing,
+  .living-cluster-blossom.blossom-entering,
+  .blossom-category-burst,
+  .blossom-pin-bloom,
+  .blossom-overflow-pulse,
+  .discovery-bloom-ambient,
+  .map-pin-card.map-card-enter,
+  .map-pin-card-reward::after,
+  .badge.map-badge-shimmer::after,
+  .selected-pin-ring,
+  .selected-pin-ripple {
+    animation: none !important;
+    transition: opacity 200ms ease, transform 200ms ease;
+  }
+
+  .blossom-category-burst,
+  .blossom-pin-bloom {
+    opacity: 1;
+    transform: translate(-50%, -50%) translate(var(--blossom-x, 0), var(--blossom-y, 0)) scale(1);
+  }
+
+  .map-pin-card.map-card-enter {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .map-pin-card.map-card-enter {
+    animation-name: map-card-from-pin-mobile;
+  }
+
+  @keyframes map-card-from-pin-mobile {
+    0% { opacity: 0; transform: translateY(24px) scale(0.97); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .map-pin-card.map-card-enter {
+      transform: translateY(0);
+    }
+  }
+}

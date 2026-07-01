@@ -161,6 +161,7 @@ import {
   VerifiedSponsorBadge,
 } from './EconomyUI';
 import './style.css';
+import './discoveryBloom.css';
 import { getInitialState, persistState } from './persistence';
 import {
   draftSyncBadgeLabel,

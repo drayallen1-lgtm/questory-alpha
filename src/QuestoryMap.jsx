@@ -43,6 +43,7 @@ import { createMapCameraController } from './mapCamera';
 import { ClusterAdventurePicker, MapFilterBar, MapPinCard } from './MapPinCard';
 import { LivingClusterBlossomOverlay } from './LivingClusterBlossom';
 import { BLOSSOM_MAX_PINS, groupMarkersByCategory, livingClusterPhase } from './mapClusterBlossom';
+import { DISCOVERY_BLOOM_TIMING, playMapUiCue } from './mapUiCues';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -433,10 +434,29 @@ export function QuestoryMap({
     [markerLookup]
   );
 
+  const runClusterOpenAnimation = useCallback((clusterId) => {
+    const entry = markersOnScreenRef.current[`cluster-${clusterId}`];
+    const el = entry?.getElement?.();
+    if (!el) return;
+    el.classList.remove('cluster-collapsing', 'cluster-opening', 'questory-cluster-fading');
+    el.classList.add('cluster-clicked');
+    window.setTimeout(() => {
+      el.classList.remove('cluster-clicked');
+      el.classList.add('cluster-opening');
+    }, DISCOVERY_BLOOM_TIMING.CLUSTER_SCALE_UP);
+    window.setTimeout(() => {
+      el.classList.remove('cluster-opening');
+      el.classList.add('cluster-collapsing', 'questory-cluster-fading');
+    }, DISCOVERY_BLOOM_TIMING.CLUSTER_COLLAPSE);
+  }, []);
+
   const handleClusterClick = useCallback((clusterId, coords) => {
     const map = mapRef.current;
     const source = map?.getSource(ADVENTURE_SOURCE);
     if (!map || !source) return;
+
+    const animStart = Date.now();
+    runClusterOpenAnimation(clusterId);
 
     source.getClusterLeaves(clusterId, 100, 0, (err, leaves) => {
       if (err || !leaves?.length) return;
@@ -457,21 +477,28 @@ export function QuestoryMap({
       const categories = groupMarkersByCategory(leafMarkers, mapStateRef.current);
       const phase = categories.length === 1 ? 'adventure' : 'category';
 
-      if (isDev) {
-        console.debug('[QuestoryMap]', {
-          livingClusterClicked: { clusterId, count: meta.count, phase },
-        });
-      }
-
-      onClusterDiscoverRef.current?.({
+      const payload = {
         clusterId,
         coords,
         markers: leafMarkers,
         meta,
         categories,
-      });
+      };
+
+      const elapsed = Date.now() - animStart;
+      const delay = Math.max(0, DISCOVERY_BLOOM_TIMING.BLOSSOM_ENTER - elapsed);
+      window.setTimeout(() => {
+        if (isDev) {
+          console.debug('[QuestoryMap]', {
+            livingClusterClicked: { clusterId, count: meta.count, phase },
+            discoveryBloomClusterOpen: { clusterId, count: meta.count, phase },
+          });
+        }
+        playMapUiCue('clusterOpen');
+        onClusterDiscoverRef.current?.(payload);
+      }, delay);
     });
-  }, []);
+  }, [runClusterOpenAnimation]);
 
   handleClusterClickRef.current = handleClusterClick;
 
@@ -953,6 +980,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const [activeFilter, setActiveFilter] = useState(MAP_FILTERS.ALL);
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [livingCluster, setLivingCluster] = useState(null);
+  const [cardEntering, setCardEntering] = useState(false);
   const [focusedAdventure, setFocusedAdventure] = useState(null);
   const [findMeSignal, setFindMeSignal] = useState(0);
   const [visiblePinCount, setVisiblePinCount] = useState(null);
@@ -1064,11 +1092,15 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
 
   function handleLivingClusterCollapse() {
     if (isDev) {
-      console.debug('[QuestoryMap]', { mapBackgroundCollapsed: true });
+      console.debug('[QuestoryMap]', {
+        mapBackgroundCollapsed: true,
+        discoveryBloomCollapsed: true,
+      });
     }
     setLivingCluster(null);
     setSelectedMarker(null);
     setHoveredPinId(null);
+    setCardEntering(false);
   }
 
   function handleClusterDiscover(payload) {
@@ -1126,33 +1158,74 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   }
 
   function handleBlossomCategorySelect(categoryId) {
-    setLivingCluster((lc) => {
-      if (!lc) return lc;
-      const cat = lc.categories.find((c) => c.id === categoryId);
-      if (!cat) return lc;
+    if (!livingCluster) return;
+    const cat = livingCluster.categories.find((c) => c.id === categoryId);
+    if (!cat) return;
+
+    playMapUiCue('categorySelect');
+    if (isDev) {
+      console.debug('[QuestoryMap]', {
+        discoveryBloomCategorySelect: { categoryId, count: cat.markers.length },
+      });
+    }
+
+    setLivingCluster((lc) => (lc ? { ...lc, categoryTransition: categoryId } : lc));
+
+    window.setTimeout(() => {
+      setLivingCluster((lc) => {
+        if (!lc) return lc;
+        const selected = lc.categories.find((c) => c.id === categoryId);
+        if (!selected) return lc;
+        if (isDev) {
+          console.debug('[QuestoryMap]', {
+            adventureBlossomOpened: { categoryId, count: selected.markers.length },
+          });
+        }
+        return {
+          ...lc,
+          phase: 'adventure',
+          categoryId,
+          activeMarkers: selected.markers,
+          selectedId: null,
+          categoryTransition: null,
+          pinSelecting: false,
+        };
+      });
+    }, DISCOVERY_BLOOM_TIMING.CATEGORY_SELECT_MS);
+  }
+
+  function openCardFromBlossomPin(marker) {
+    if (!livingCluster) return;
+    const clusterId = livingCluster.clusterId;
+    setLivingCluster((lc) =>
+      lc ? { ...lc, selectedId: marker.id, pinSelecting: true } : lc
+    );
+    window.setTimeout(() => {
+      playMapUiCue('cardOpen');
       if (isDev) {
         console.debug('[QuestoryMap]', {
-          adventureBlossomOpened: { categoryId, count: cat.markers.length },
+          discoveryBloomCardOpen: { adventureId: marker.id, title: marker.title },
         });
       }
-      return {
-        ...lc,
-        phase: 'adventure',
-        categoryId,
-        activeMarkers: cat.markers,
-        selectedId: null,
-      };
-    });
+      setCardEntering(true);
+      handleAdventureClick(marker.adventure, {
+        ...marker,
+        fromCluster: true,
+        clusterId,
+      });
+      window.setTimeout(() => setCardEntering(false), 420);
+    }, DISCOVERY_BLOOM_TIMING.CARD_OPEN);
   }
 
   function handleBlossomPinSelect(marker) {
     if (!livingCluster) return;
-    setLivingCluster((lc) => (lc ? { ...lc, selectedId: marker.id } : lc));
-    handleAdventureClick(marker.adventure, {
-      ...marker,
-      fromCluster: true,
-      clusterId: livingCluster.clusterId,
-    });
+    playMapUiCue('adventureSelect');
+    if (isDev) {
+      console.debug('[QuestoryMap]', {
+        discoveryBloomAdventureSelect: { adventureId: marker.id, title: marker.title },
+      });
+    }
+    openCardFromBlossomPin(marker);
   }
 
   function handleBlossomOverflow() {
@@ -1165,20 +1238,38 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
 
   function handleOverflowAdventureSelect(marker) {
     if (!livingCluster) return;
+    const clusterId = livingCluster.clusterId;
     setLivingCluster((lc) =>
       lc
         ? {
             ...lc,
             overflowOpen: false,
             selectedId: marker.id,
+            pinSelecting: true,
           }
         : lc
     );
-    handleAdventureClick(marker.adventure, {
-      ...marker,
-      fromCluster: true,
-      clusterId: livingCluster.clusterId,
-    });
+    playMapUiCue('adventureSelect');
+    if (isDev) {
+      console.debug('[QuestoryMap]', {
+        discoveryBloomAdventureSelect: { adventureId: marker.id, title: marker.title, fromOverflow: true },
+      });
+    }
+    window.setTimeout(() => {
+      playMapUiCue('cardOpen');
+      if (isDev) {
+        console.debug('[QuestoryMap]', {
+          discoveryBloomCardOpen: { adventureId: marker.id, title: marker.title },
+        });
+      }
+      setCardEntering(true);
+      handleAdventureClick(marker.adventure, {
+        ...marker,
+        fromCluster: true,
+        clusterId,
+      });
+      window.setTimeout(() => setCardEntering(false), 420);
+    }, DISCOVERY_BLOOM_TIMING.CARD_OPEN);
   }
 
   function handleMapBackgroundClick() {
@@ -1370,6 +1461,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
             access={selectedAccess}
             visual={pinVisual}
             distanceM={selectedMarker?.distanceM}
+            entering={cardEntering}
             onClose={handleCardClose}
             onPlay={handleMapCardPlay}
             onPreview={handleMapCardPreview}

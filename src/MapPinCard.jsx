@@ -36,6 +36,7 @@ export function MapPinCard({
   access,
   visual,
   distanceM,
+  entering = false,
   onClose,
   onPlay,
   onPreview,
@@ -52,6 +53,10 @@ export function MapPinCard({
   const heroImage = resolveHeroImage(adventure, visual);
   const difficulty = difficultyLabel(adventure?.difficulty);
   const duration = estimateDuration(adventure);
+
+  const hasFeatured = visual?.overlays?.some((o) => o.id === 'featured');
+  const hasEvent = visual?.overlays?.some((o) => o.id === 'event');
+  const hasLegendary = visual?.overlays?.some((o) => o.id === 'legendary');
 
   function stopCardEvent(e) {
     e.stopPropagation();
@@ -88,7 +93,13 @@ export function MapPinCard({
 
   return (
     <div
-      className="map-pin-card questory-map-card"
+      className={[
+        'map-pin-card',
+        'questory-map-card',
+        entering ? 'map-card-enter map-card-from-pin' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       role="dialog"
       aria-label={adventure.title}
       onClick={stopCardEvent}
@@ -108,6 +119,9 @@ export function MapPinCard({
           className="map-pin-card-hero"
           style={{ '--pin-hero-color': pinColor || '#14b8a6' }}
         >
+          <span className="map-pin-card-hero-watermark" aria-hidden="true">
+            {pinIcon}
+          </span>
           {heroImage ? (
             <img src={heroImage} alt="" className="map-pin-card-hero-img" />
           ) : (
@@ -139,12 +153,19 @@ export function MapPinCard({
               </>
             )}
           </span>
-          {visual?.heatLevel === 'hot' && <span className="badge map-heat-badge">🔥 Hot</span>}
-          {visual?.overlays?.some((o) => o.id === 'featured') && (
-            <span className="badge cluster-picker-featured">⭐ Featured</span>
+          {visual?.heatLevel === 'hot' && (
+            <span className="badge map-heat-badge map-badge-shimmer">🔥 Hot</span>
           )}
-          {visual?.overlays?.some((o) => o.id === 'event') && (
-            <span className="badge cluster-picker-event">📅 Event</span>
+          {hasFeatured && (
+            <span className="badge cluster-picker-featured map-badge-shimmer">⭐ Featured</span>
+          )}
+          {hasEvent && (
+            <span className="badge cluster-picker-event map-badge-shimmer">📅 Event</span>
+          )}
+          {hasLegendary && (
+            <span className="badge map-badge-shimmer" style={{ borderColor: 'rgba(167, 139, 250, 0.5)' }}>
+              ✨ Legendary
+            </span>
           )}
         </div>
 
@@ -155,7 +176,9 @@ export function MapPinCard({
 
         <div className="chips map-pin-card-chips">
           <span>{adventure.clues?.length || 0} clues</span>
-          {adventure.prize && <span className="map-pin-card-reward">{adventure.prize}</span>}
+          {adventure.prize && (
+            <span className="map-pin-card-reward">{adventure.prize}</span>
+          )}
           <span>{adventure.location}</span>
         </div>
       </div>

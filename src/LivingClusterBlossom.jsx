@@ -6,8 +6,9 @@ import {
   computeCategoryBlossomLayout,
   difficultyLabel,
 } from './mapClusterBlossom';
+import { DISCOVERY_BLOOM_TIMING } from './mapUiCues';
 
-function BlossomTooltip({ marker, mapState, accessOptions }) {
+function BlossomTooltip({ marker, mapState }) {
   const visual = resolvePinVisual(marker.adventure, mapState);
   const dist = marker.distanceM != null ? formatPinDistanceImperial(marker.distanceM) : null;
   const diff = difficultyLabel(marker.adventure?.difficulty);
@@ -28,18 +29,29 @@ function BlossomTooltip({ marker, mapState, accessOptions }) {
   );
 }
 
+function blossomSlotStyle(slot, staggerMs) {
+  return {
+    '--blossom-x': `${slot.x}px`,
+    '--blossom-y': `${slot.y}px`,
+    '--blossom-delay': `${(slot.index ?? 0) * staggerMs}ms`,
+    left: slot.x,
+    top: slot.y,
+  };
+}
+
 function BlossomAdventurePin({
   marker,
   mapState,
-  accessOptions,
   slot,
   dimmed,
   selected,
+  pinSelecting,
   onSelect,
   onHoverChange,
 }) {
   const visual = resolvePinVisual(marker.adventure, mapState);
   const [hovered, setHovered] = useState(false);
+  const overlayIds = visual?.overlayIds || [];
 
   return (
     <button
@@ -47,33 +59,32 @@ function BlossomAdventurePin({
       className={[
         'blossom-pin',
         'questory-pin',
-        'blossom-animate-in',
-        'blossom-open-pulse',
+        'blossom-pin-bloom',
         `pin-base-${visual.base.id}`,
         `pin-access-${marker.pinAccess || 'playable'}`,
+        overlayIds.includes('event') ? 'pin-has-event' : '',
         dimmed ? 'blossom-dimmed' : '',
-        selected ? 'blossom-selected pin-solo-active blossom-selected-pulse' : '',
+        selected ? 'blossom-selected pin-solo-active' : '',
         hovered && !dimmed ? 'blossom-hover' : '',
       ]
         .filter(Boolean)
         .join(' ')}
       style={{
+        ...blossomSlotStyle(slot, DISCOVERY_BLOOM_TIMING.ADVENTURE_STAGGER_MS),
         '--pin-color': visual.base.color,
         '--pin-glow': visual.base.glow,
-        '--blossom-delay': `${slot.index * 32}ms`,
-        left: slot.x,
-        top: slot.y,
       }}
       aria-label={marker.title || marker.adventure?.title || 'Adventure'}
       onClick={(e) => {
         e.stopPropagation();
         e.preventDefault();
-        if (isDev) {
-          console.debug('[QuestoryMap]', {
-            adventureBlossomPinClicked: { adventureId: marker.id, title: marker.title },
-          });
-        }
         onSelect?.(marker);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect?.(marker);
+        }
       }}
       onMouseEnter={() => {
         setHovered(true);
@@ -84,24 +95,32 @@ function BlossomAdventurePin({
         onHoverChange?.(null);
       }}
     >
+      {selected && pinSelecting && <span className="selected-pin-ripple" aria-hidden="true" />}
+      {selected && <span className="selected-pin-ring" aria-hidden="true" />}
       <span className="questory-pin-icon">{visual.icon}</span>
-      {hovered && !dimmed && (
-        <BlossomTooltip marker={marker} mapState={mapState} accessOptions={accessOptions} />
-      )}
+      {hovered && !dimmed && <BlossomTooltip marker={marker} mapState={mapState} />}
     </button>
   );
 }
 
-function BlossomCategoryPin({ category, slot, onSelect }) {
+function BlossomCategoryPin({ category, slot, dimmed, selected, onSelect }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <button
       type="button"
-      className="blossom-category blossom-animate-in"
+      className={[
+        'blossom-category',
+        'blossom-category-burst',
+        dimmed ? 'blossom-category-dimmed' : '',
+        selected ? 'blossom-category-selected-pulse' : '',
+        hovered && !dimmed ? 'blossom-category-hover' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       style={{
-        '--blossom-delay': `${slot.index * 32}ms`,
+        ...blossomSlotStyle(slot, DISCOVERY_BLOOM_TIMING.CATEGORY_STAGGER_MS),
         '--blossom-color': category.color || '#14b8a6',
-        left: slot.x,
-        top: slot.y,
       }}
       aria-label={`${category.label}, ${category.markers.length} adventures`}
       onClick={(e) => {
@@ -109,11 +128,24 @@ function BlossomCategoryPin({ category, slot, onSelect }) {
         e.preventDefault();
         onSelect?.(category.id);
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect?.(category.id);
+        }
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <span className="blossom-category-icon">{category.icon}</span>
       <span className="blossom-category-label">
         {category.label} ({category.markers.length})
       </span>
+      {hovered && !dimmed && (
+        <span className="blossom-category-tooltip" role="tooltip">
+          {category.label} · {category.markers.length} adventures
+        </span>
+      )}
     </button>
   );
 }
@@ -122,26 +154,36 @@ function BlossomOverflowPin({ count, slot, dimmed, onSelect }) {
   return (
     <button
       type="button"
-      className={['blossom-overflow', 'blossom-animate-in', dimmed ? 'blossom-dimmed' : '']
+      className={[
+        'blossom-overflow',
+        'blossom-pin-bloom',
+        'blossom-overflow-pulse',
+        dimmed ? 'blossom-dimmed' : '',
+      ]
         .filter(Boolean)
         .join(' ')}
-      style={{
-        '--blossom-delay': '0ms',
-        left: slot.x,
-        top: slot.y,
-      }}
+      style={blossomSlotStyle(slot, 0)}
       aria-label={`${count} more adventures`}
       onClick={(e) => {
         e.stopPropagation();
         e.preventDefault();
-        if (isDev) {
-          console.debug('[QuestoryMap]', { overflowPickerOpened: { count } });
-        }
         onSelect?.();
       }}
     >
       <span className="blossom-overflow-label">+{count} More</span>
     </button>
+  );
+}
+
+function BloomAmbient({ livingCluster, category }) {
+  const color = category?.color || livingCluster?.meta?.dominant?.color || 'rgba(94, 234, 212, 0.14)';
+  const isCategory = livingCluster?.phase === 'category' || livingCluster?.categoryTransition;
+  return (
+    <div
+      className={`discovery-bloom-ambient${isCategory ? ' category-aura' : ''}`}
+      style={{ '--bloom-ambient-color': color }}
+      aria-hidden="true"
+    />
   );
 }
 
@@ -152,13 +194,19 @@ export function LivingClusterBlossomOverlay({
   map,
   livingCluster,
   mapState,
-  accessOptions,
   onCategorySelect,
   onPinSelect,
   onOverflow,
   onHoverChange,
 }) {
   const [center, setCenter] = useState(null);
+  const [entering, setEntering] = useState(true);
+
+  useEffect(() => {
+    setEntering(true);
+    const t = window.setTimeout(() => setEntering(false), DISCOVERY_BLOOM_TIMING.BLOSSOM_ENTER + 80);
+    return () => window.clearTimeout(t);
+  }, [livingCluster?.clusterId, livingCluster?.phase, livingCluster?.categoryId]);
 
   useEffect(() => {
     if (!map || !livingCluster?.coords || livingCluster.overflowOpen) {
@@ -197,7 +245,9 @@ export function LivingClusterBlossomOverlay({
 
   const layout = useMemo(() => {
     if (!livingCluster || livingCluster.overflowOpen) return null;
-    if (livingCluster.phase === 'category') {
+    const showCategory =
+      livingCluster.phase === 'category' || Boolean(livingCluster.categoryTransition);
+    if (showCategory) {
       return {
         kind: 'category',
         ...computeCategoryBlossomLayout(livingCluster.categories || []),
@@ -211,33 +261,45 @@ export function LivingClusterBlossomOverlay({
 
   if (!center || !layout || !livingCluster || livingCluster.overflowOpen) return null;
 
-  const edgeGuard = center.x <= 10 || center.x >= center.mapWidth - 10;
-  if (edgeGuard && isDev) {
-    console.debug('[QuestoryMap]', {
-      leftEdgeMarkerGuardTriggered: {
-        reason: 'blossom center near edge',
-        x: center.x,
-        mapWidth: center.mapWidth,
-      },
-    });
-  }
+  const activeCategory = livingCluster.categories?.find(
+    (c) => c.id === (livingCluster.categoryTransition || livingCluster.categoryId)
+  );
 
-  if (livingCluster.phase === 'category') {
+  const blossomClass = [
+    'living-cluster-blossom',
+    entering ? 'blossom-entering' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const rootStyle = {
+    left: center.x,
+    top: center.y,
+    transform: 'translate(-50%, -50%)',
+  };
+
+  if (layout.kind === 'category' || livingCluster.phase === 'category' || livingCluster.categoryTransition) {
+    const transitionId = livingCluster.categoryTransition;
     return (
       <div
-        className="living-cluster-blossom"
-        style={{ left: center.x, top: center.y, transform: 'translate(-50%, -50%)' }}
+        className={blossomClass}
+        style={rootStyle}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
+        <BloomAmbient livingCluster={livingCluster} category={activeCategory} />
         {(livingCluster.categories || []).map((category, index) => {
           const slot = layout.slots[index];
           if (!slot) return null;
+          const dimmed = Boolean(transitionId && transitionId !== category.id);
+          const selected = transitionId === category.id;
           return (
             <BlossomCategoryPin
               key={category.id}
               category={category}
               slot={{ ...slot, index }}
+              dimmed={dimmed}
+              selected={selected}
               onSelect={onCategorySelect}
             />
           );
@@ -248,30 +310,30 @@ export function LivingClusterBlossomOverlay({
 
   const markers = livingCluster.activeMarkers || [];
   const selectedId = livingCluster.selectedId;
+  const pinSelecting = Boolean(livingCluster.pinSelecting);
   const selectedMarker = selectedId ? markers.find((m) => m.id === selectedId) : null;
   const selectedInRing = Boolean(
     selectedMarker &&
-      layout.slots.some(
-        (slot) => slot.kind === 'item' && markers[slot.index]?.id === selectedId
-      )
+      layout.slots.some((slot) => slot.kind === 'item' && markers[slot.index]?.id === selectedId)
   );
   const selectedFromOverflow = Boolean(selectedMarker && !selectedInRing);
 
   return (
     <div
-      className="living-cluster-blossom"
-      style={{ left: center.x, top: center.y, transform: 'translate(-50%, -50%)' }}
+      className={blossomClass}
+      style={rootStyle}
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      {layout.slots.map((slot) => {
+      <BloomAmbient livingCluster={livingCluster} category={activeCategory} />
+      {layout.slots.map((slot, slotIndex) => {
         if (slot.kind === 'overflow') {
           if (selectedFromOverflow) return null;
           return (
             <BlossomOverflowPin
               key="overflow"
               count={layout.overflowCount}
-              slot={slot}
+              slot={{ ...slot, index: slotIndex }}
               dimmed={Boolean(selectedId)}
               onSelect={onOverflow}
             />
@@ -288,10 +350,10 @@ export function LivingClusterBlossomOverlay({
             key={marker.id}
             marker={marker}
             mapState={mapState}
-            accessOptions={accessOptions}
-            slot={slot}
+            slot={{ ...slot, index: slot.index }}
             dimmed={dimmed}
             selected={selected}
+            pinSelecting={pinSelecting && selected}
             onSelect={onPinSelect}
             onHoverChange={onHoverChange}
           />
@@ -303,10 +365,10 @@ export function LivingClusterBlossomOverlay({
           key={`selected-${selectedMarker.id}`}
           marker={selectedMarker}
           mapState={mapState}
-          accessOptions={accessOptions}
           slot={{ x: 0, y: 0, index: 0, kind: 'item' }}
           dimmed={false}
           selected
+          pinSelecting={pinSelecting}
           onSelect={onPinSelect}
           onHoverChange={onHoverChange}
         />

@@ -1088,7 +1088,7 @@ small.progress-label {
   bottom: 12px;
   z-index: 30;
   width: min(420px, calc(100% - 24px));
-  max-height: min(440px, 42vh);
+  max-height: min(420px, 36vh);
   transform: translateX(-50%);
   pointer-events: auto;
   padding: 0;
@@ -1230,7 +1230,7 @@ small.progress-label {
     right: 0;
     bottom: 0;
     width: auto;
-    max-height: min(52vh, 480px);
+    max-height: min(55vh, 480px);
     border-radius: 16px 16px 0 0;
     transform: none;
     animation: map-card-rise-mobile 0.22s ease-out;
