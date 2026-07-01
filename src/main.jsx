@@ -169,6 +169,7 @@ import './questoryIdentity.css';
 import './worldDiscovery.css';
 import './codex.css';
 import './progression.css';
+import './crafting.css';
 import { getInitialState, persistState } from './persistence';
 import {
   draftSyncBadgeLabel,

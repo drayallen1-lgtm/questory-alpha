@@ -79,6 +79,7 @@ import {
   PlayerProgressionHomeCard,
   PlayerProgressionPanel,
 } from './PlayerProgressionUI';
+import { CraftingPanel } from './CraftingUI';
 
 export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
   const greeting = getTimeGreeting();
@@ -357,6 +358,9 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
         <button type="button" className={tab === 'progression' ? 'active' : ''} onClick={() => setTab('progression')}>
           Progress
         </button>
+        <button type="button" className={tab === 'crafting' ? 'active' : ''} onClick={() => setTab('crafting')}>
+          Craft
+        </button>
         <button type="button" className={tab === 'rewards' ? 'active' : ''} onClick={() => setTab('rewards')}>
           Rewards
         </button>
@@ -365,7 +369,7 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
         </button>
       </div>
 
-      {tab !== 'economy' && tab !== 'progression' && (
+      {tab !== 'economy' && tab !== 'progression' && tab !== 'crafting' && (
         <div className="card balance">
           <h3>{state.coins} Coins</h3>
           <p>{state.entries} Community Pot Entries</p>
@@ -495,6 +499,10 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
 
       {tab === 'progression' && (
         <PlayerProgressionPanel state={state} adventures={adventures} />
+      )}
+
+      {tab === 'crafting' && (
+        <CraftingPanel state={state} adventures={adventures} setState={setState} />
       )}
     </>
   );

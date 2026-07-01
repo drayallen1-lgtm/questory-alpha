@@ -50,7 +50,7 @@ export function ExplorerEconomyPanel({ state, adventures }) {
       {snapshot.craftingMaterials.length > 0 && (
         <div className="card">
           <h4>Crafting materials</h4>
-          <p className="admin-meta">Combine materials in Phase 9 crafting to craft permanent upgrades.</p>
+          <p className="admin-meta">Combine materials in the Craft tab to craft permanent upgrades.</p>
           <div className="explorer-material-grid">
             {snapshot.craftingMaterials.map((mat) => (
               <div key={mat.id} className={`explorer-material-chip rarity-${mat.rarity}`}>
