@@ -72,6 +72,8 @@ import { DiscoveryHud } from './DiscoveryHud';
 import { CityDiscoveryRingLayer } from './CityDiscoveryRingLayer';
 import { DiscoveredWorldPanel, DiscoveryCeremonyToast } from './DiscoveredWorldPanel';
 import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
+import { getLivingEarthSnapshot } from './livingEarthEngine';
+import { LivingEarthOverlay } from './LivingEarthUI';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -324,6 +326,7 @@ export function QuestoryMap({
   questoryIdentity = null,
   worldDiscovery = null,
   onMapZoomChange,
+  onMapFlyReady,
   isAdmin = false,
   userId = null,
 }) {
@@ -978,6 +981,24 @@ export function QuestoryMap({
   }, [findMeSignal, mini]);
 
   useEffect(() => {
+    if (mini || !mapReady || !onMapFlyReady) return undefined;
+    onMapFlyReady({
+      flyTo: ({ latitude, longitude, zoom = 10 }) => {
+        const map = mapRef.current;
+        if (!map || latitude == null || longitude == null) return;
+        requestCameraMoveRef.current?.('earthFly', (m) => {
+          flyMapTo(m, {
+            center: [longitude, latitude],
+            zoom,
+            duration: 1400,
+          });
+        });
+      },
+    });
+    return () => onMapFlyReady(null);
+  }, [mapReady, mini, onMapFlyReady]);
+
+  useEffect(() => {
     if (mini || !mapRef.current) return;
     syncHtmlMarkers();
   }, [selectedAdventureId, livingCluster, syncHtmlMarkers, mini]);
@@ -1082,6 +1103,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const [mapZoom, setMapZoom] = useState(11);
   const [ceremonyDismissed, setCeremonyDismissed] = useState(false);
   const milestonesSeenRef = useRef([]);
+  const earthFlyRef = useRef(null);
   const [focusedAdventure, setFocusedAdventure] = useState(null);
   const [findMeSignal, setFindMeSignal] = useState(0);
   const [visiblePinCount, setVisiblePinCount] = useState(null);
@@ -1190,6 +1212,24 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       }),
     [mapZoom, state, adventures, livingWorld.exploration, worldNow]
   );
+
+  const livingEarthSnapshot = useMemo(
+    () =>
+      getLivingEarthSnapshot({
+        zoom: mapZoom,
+        state,
+        adventures,
+        fog: livingWorld.exploration,
+        now: worldNow,
+        previousMilestones: milestonesSeenRef.current,
+        worldDiscovery: worldDiscoverySnapshot,
+      }),
+    [mapZoom, state, adventures, livingWorld.exploration, worldNow, worldDiscoverySnapshot]
+  );
+
+  const handleEarthFlyTo = useCallback((target) => {
+    earthFlyRef.current?.flyTo?.(target);
+  }, []);
 
   useEffect(() => {
     if (worldDiscoverySnapshot.milestones?.length) {
@@ -1710,13 +1750,15 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       />
 
       <div
-        className={`map-stage map-stage-has-discovery-hud${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}`}
+        className={`map-stage map-stage-has-discovery-hud${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${livingEarthSnapshot.earthMode ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
       >
         <LegendaryHuntMapHud snapshot={legendaryHuntSnapshot} />
-        <DiscoveryHud
-          snapshot={worldDiscoverySnapshot}
-          compact={Boolean(livingCluster || selectedAdventure)}
-        />
+        {!livingEarthSnapshot.fullEarth && (
+          <DiscoveryHud
+            snapshot={worldDiscoverySnapshot}
+            compact={Boolean(livingCluster || selectedAdventure)}
+          />
+        )}
         {!ceremonyDismissed && worldDiscoverySnapshot.ceremony && (
           <DiscoveryCeremonyToast
             ceremony={worldDiscoverySnapshot.ceremony}
@@ -1745,6 +1787,9 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           questoryIdentity={questoryIdentitySnapshot}
           worldDiscovery={worldDiscoverySnapshot}
           onMapZoomChange={setMapZoom}
+          onMapFlyReady={(api) => {
+            earthFlyRef.current = api;
+          }}
           isAdmin={isAdmin}
           userId={userId}
           showUserLocation
@@ -1757,6 +1802,13 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           onVisiblePinCountChange={setVisiblePinCount}
           onPinHoverChange={setHoveredPinId}
           onSpatialStatsChange={setSpatialStats}
+        />
+
+        <LivingEarthOverlay
+          snapshot={livingEarthSnapshot}
+          onFlyTo={handleEarthFlyTo}
+          setState={setState}
+          showDiscoveryPanel={!livingCluster && !selectedAdventure}
         />
 
         {showPinDebugLine && (

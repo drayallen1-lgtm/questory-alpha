@@ -171,6 +171,7 @@ import './codex.css';
 import './progression.css';
 import './crafting.css';
 import './legendaryHunt.css';
+import './livingEarth.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';
