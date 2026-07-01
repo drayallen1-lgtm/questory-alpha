@@ -68,15 +68,6 @@ const DISCOVERY_STREAM_SEED = [
   { id: 'stream-london', label: 'London', text: '+8 explorers joined', latitude: 51.5, longitude: -0.1 },
 ];
 
-function hashSeed(str) {
-  let h = 0;
-  for (let i = 0; i < str.length; i += 1) {
-    h = (h << 5) - h + str.charCodeAt(i);
-    h |= 0;
-  }
-  return Math.abs(h);
-}
-
 export function normalizeLivingEarth(raw = {}) {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_LIVING_EARTH };
   return {
@@ -98,7 +89,7 @@ export function fogLayerToVisual(fogLayer, completionTier) {
   return FOG_VISUAL_COLORS[fogLayer] || FOG_VISUAL_COLORS[FOG_LAYERS.UNKNOWN];
 }
 
-function latLngToGlobePosition(latitude, longitude) {
+export function latLngToGlobePosition(latitude, longitude) {
   const lat = Math.max(-85, Math.min(85, latitude));
   const lng = longitude;
   const x = 50 + (lng / 180) * 46;

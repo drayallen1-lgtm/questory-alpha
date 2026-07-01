@@ -1,0 +1,660 @@
+/* Phase 11 — Living Earth presentation layer */
+
+.living-earth-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 14;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+.living-earth-overlay-full {
+  background: radial-gradient(ellipse at 50% 30%, rgba(8, 20, 40, 0.72), rgba(2, 6, 14, 0.92));
+}
+
+.living-earth-overlay .living-earth-globe-wrap,
+.living-earth-overlay .living-earth-discovery-panel,
+.living-earth-overlay .living-earth-world-hud,
+.living-earth-overlay .living-earth-ceremony,
+.living-earth-overlay button {
+  pointer-events: auto;
+}
+
+.living-earth-world-hud {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 18;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: min(92%, 400px);
+  max-width: 440px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(6, 10, 18, 0.9);
+  border: 1px solid rgba(94, 234, 212, 0.35);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+}
+
+.living-earth-world-hud-globe {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.living-earth-world-hud-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.living-earth-world-hud-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.living-earth-world-hud-head strong {
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  color: #f8fafc;
+}
+
+.living-earth-world-hud-pct {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #5eead4;
+  font-variant-numeric: tabular-nums;
+}
+
+.living-earth-world-hud-sub {
+  margin: 2px 0 4px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.living-earth-world-hud-bar {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.living-earth-world-hud-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.72rem;
+  color: #cbd5e1;
+}
+
+.living-earth-globe-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s ease;
+}
+
+.living-earth-globe {
+  position: relative;
+  width: min(72vw, 420px);
+  height: min(72vw, 420px);
+  animation: living-earth-spin 120s linear infinite;
+}
+
+.living-earth-globe-static {
+  animation: none;
+}
+
+@keyframes living-earth-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.living-earth-globe-sphere {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #1e3a5f 0%, #0f172a 45%, #020617 100%);
+  box-shadow:
+    inset -24px -18px 48px rgba(0, 0, 0, 0.55),
+    inset 12px 8px 24px rgba(94, 234, 212, 0.08),
+    0 0 60px rgba(59, 130, 246, 0.15);
+  overflow: hidden;
+}
+
+.living-earth-globe-terminator {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(105deg, transparent 42%, rgba(0, 0, 0, 0.65) 58%, rgba(0, 0, 0, 0.85) 100%);
+  pointer-events: none;
+}
+
+.living-earth-globe-night-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 70% 55%, rgba(250, 204, 21, 0.12) 0%, transparent 35%);
+  pointer-events: none;
+}
+
+.living-earth-globe-clouds {
+  position: absolute;
+  inset: -4%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.14) 0%, transparent 18%),
+    radial-gradient(circle at 60% 40%, rgba(255, 255, 255, 0.1) 0%, transparent 22%),
+    radial-gradient(circle at 40% 70%, rgba(255, 255, 255, 0.08) 0%, transparent 20%);
+  animation: living-earth-cloud-drift 90s linear infinite;
+  pointer-events: none;
+}
+
+.living-earth-globe-clouds-static {
+  animation: none;
+}
+
+@keyframes living-earth-cloud-drift {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.living-earth-globe-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #f8fafc;
+  font-size: 0.62rem;
+  text-align: center;
+  z-index: 2;
+}
+
+.living-earth-globe-marker-dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: 0 auto 2px;
+  border-radius: 50%;
+  background: var(--marker-color, #3b82f6);
+  box-shadow: 0 0 8px var(--marker-color, #3b82f6);
+}
+
+.living-earth-globe-marker-pulse .living-earth-globe-marker-dot {
+  animation: living-earth-marker-pulse 2.4s ease-in-out infinite;
+}
+
+.living-earth-globe-marker-shimmer .living-earth-globe-marker-dot {
+  animation: living-earth-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes living-earth-marker-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+}
+
+@keyframes living-earth-shimmer {
+  0%,
+  100% {
+    box-shadow: 0 0 6px #f8fafc;
+  }
+  50% {
+    box-shadow: 0 0 14px #fde68a;
+  }
+}
+
+.living-earth-globe-marker-label {
+  display: block;
+  max-width: 64px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.living-earth-boss-beacon {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid rgba(168, 85, 247, 0.9);
+  background: rgba(88, 28, 135, 0.75);
+  color: #f5d0fe;
+  font-size: 1rem;
+  cursor: pointer;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.living-earth-boss-beacon small {
+  font-size: 0.5rem;
+}
+
+.living-earth-boss-beacon-pulse {
+  animation: living-earth-beacon-pulse 2s ease-in-out infinite;
+}
+
+@keyframes living-earth-beacon-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(168, 85, 247, 0);
+  }
+}
+
+.living-earth-creator-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.living-earth-stream-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.living-earth-stream-pulse {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 0.65rem;
+  color: #e2e8f0;
+  white-space: nowrap;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+.living-earth-stream-pulse-animate {
+  animation: living-earth-stream-fade 8s ease-out infinite;
+}
+
+.living-earth-stream-pulse-ring {
+  display: block;
+  width: 8px;
+  height: 8px;
+  margin: 0 auto 2px;
+  border-radius: 50%;
+  background: #5eead4;
+  box-shadow: 0 0 10px #5eead4;
+}
+
+@keyframes living-earth-stream-fade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  85% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(0.9);
+  }
+}
+
+.living-earth-discovery-panel {
+  position: absolute;
+  top: 88px;
+  right: 12px;
+  width: min(92%, 280px);
+  max-height: calc(100% - 100px);
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(6, 10, 18, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  backdrop-filter: blur(10px);
+  z-index: 16;
+}
+
+.living-earth-discovery-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.living-earth-discovery-panel-head h4 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.living-earth-discovery-panel-head span {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.living-earth-section {
+  margin-bottom: 12px;
+}
+
+.living-earth-section h5 {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.living-earth-continent-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.living-earth-continent-card,
+.living-earth-country-card,
+.living-earth-boss-row,
+.living-earth-creator-row {
+  width: 100%;
+  text-align: left;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.living-earth-continent-card-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.living-earth-continent-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.living-earth-fog-chip {
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  color: #0f172a;
+}
+
+.living-earth-country-list {
+  display: grid;
+  gap: 4px;
+}
+
+.living-earth-country-card {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.living-earth-goal-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.72rem;
+  margin-bottom: 6px;
+}
+
+.living-earth-goal-bar {
+  grid-column: 2 / 4;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+  overflow: hidden;
+}
+
+.living-earth-goal-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #14b8a6, #5eead4);
+  border-radius: inherit;
+}
+
+.living-earth-boss-row,
+.living-earth-creator-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+}
+
+.living-earth-boss-row small,
+.living-earth-creator-row small {
+  color: #94a3b8;
+  font-size: 0.65rem;
+}
+
+.living-earth-heat-zone {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.45) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.living-earth-heat-zone-hot {
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.5) 0%, transparent 70%);
+}
+
+.living-earth-heat-zone-legendary {
+  background: radial-gradient(circle, rgba(250, 204, 21, 0.55) 0%, transparent 70%);
+}
+
+.living-earth-weather {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.living-earth-weather-rain,
+.living-earth-weather-storm,
+.living-earth-weather-aurora,
+.living-earth-weather-fog {
+  position: absolute;
+  inset: 0;
+  opacity: 0.25;
+}
+
+.living-earth-weather-rain {
+  background: repeating-linear-gradient(
+    115deg,
+    transparent,
+    transparent 8px,
+    rgba(148, 163, 184, 0.08) 8px,
+    rgba(148, 163, 184, 0.08) 9px
+  );
+  animation: living-earth-rain 12s linear infinite;
+}
+
+.living-earth-weather-storm {
+  background: radial-gradient(circle at 30% 20%, rgba(100, 116, 139, 0.2) 0%, transparent 40%);
+  animation: living-earth-storm 18s ease-in-out infinite;
+}
+
+.living-earth-weather-aurora {
+  top: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(52, 211, 153, 0.15), transparent);
+  animation: living-earth-aurora 24s ease-in-out infinite;
+}
+
+.living-earth-weather-fog {
+  background: radial-gradient(circle at 50% 80%, rgba(148, 163, 184, 0.12) 0%, transparent 55%);
+}
+
+.living-earth-weather-static .living-earth-weather-rain,
+.living-earth-weather-static .living-earth-weather-storm,
+.living-earth-weather-static .living-earth-weather-aurora {
+  animation: none;
+}
+
+@keyframes living-earth-rain {
+  from {
+    transform: translateY(-10%);
+  }
+  to {
+    transform: translateY(10%);
+  }
+}
+
+@keyframes living-earth-storm {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes living-earth-aurora {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: translateX(-2%);
+  }
+  50% {
+    opacity: 0.4;
+    transform: translateX(2%);
+  }
+}
+
+.living-earth-timeline-row {
+  display: flex;
+  gap: 6px;
+  font-size: 0.68rem;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+
+.living-earth-ceremony {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(6, 10, 18, 0.95);
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  max-width: min(92%, 420px);
+}
+
+.living-earth-ceremony-icon {
+  font-size: 1.5rem;
+}
+
+.living-earth-ceremony p {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+}
+
+.living-earth-reduced-motion .living-earth-globe-marker-shimmer .living-earth-globe-marker-dot {
+  animation: none;
+}
+
+.living-earth-reduced-motion .living-earth-boss-beacon-pulse {
+  animation: none;
+}
+
+/* Season atmosphere (visual only) */
+.earth-season-winter .living-earth-globe-sphere {
+  filter: hue-rotate(-10deg) brightness(0.95);
+}
+
+.earth-season-summer .living-earth-globe-sphere {
+  filter: saturate(1.15) hue-rotate(8deg);
+}
+
+.earth-season-halloween .living-earth-globe-wrap {
+  filter: hue-rotate(260deg) saturate(0.9);
+}
+
+.earth-season-founder .living-earth-world-hud {
+  border-color: rgba(250, 204, 21, 0.45);
+}
+
+.map-stage-earth-mode .mapboxgl-canvas {
+  opacity: 0.15;
+  transition: opacity 0.6s ease;
+}
+
+.map-stage-earth-mode-full .mapboxgl-canvas {
+  opacity: 0.05;
+}
+
+@media (max-width: 720px) {
+  .living-earth-discovery-panel {
+    top: auto;
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    width: auto;
+    max-height: 38%;
+  }
+
+  .living-earth-globe {
+    width: min(85vw, 320px);
+    height: min(85vw, 320px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .living-earth-globe,
+  .living-earth-globe-clouds,
+  .living-earth-stream-pulse-animate,
+  .living-earth-globe-marker-pulse,
+  .living-earth-boss-beacon-pulse {
+    animation: none !important;
+  }
+}
