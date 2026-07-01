@@ -189,6 +189,16 @@
   border-color: rgba(249, 115, 22, 0.7);
 }
 
+.map-discovery-pulse-legendary .map-discovery-pulse-ring {
+  border-color: rgba(167, 139, 250, 0.75);
+  box-shadow: 0 0 20px rgba(167, 139, 250, 0.45);
+}
+
+.map-discovery-pulse-legendary .map-discovery-pulse-label {
+  color: #e9d5ff;
+  border-color: rgba(167, 139, 250, 0.4);
+}
+
 /* Timeline panel */
 .living-world-timeline {
   margin-top: 10px;

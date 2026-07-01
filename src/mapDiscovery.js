@@ -337,7 +337,7 @@ export function resolvePinCategory(adventure, state = null) {
 export function resolvePinVisual(adventure, state = null) {
   const base = resolvePinBaseType(adventure);
   const overlays = resolvePinOverlays(adventure, state);
-  const heat = Number(adventure?.heatScore || adventure?.playersCompleted || 0);
+  const heat = Number(adventure?.heatScore) || Number(adventure?.playersCompleted || 0) * 4;
   const heatLevel = heat >= 50 ? 'hot' : heat >= 20 ? 'warm' : 'cool';
   const animations = [
     ...new Set(overlays.map((o) => o.animation).filter(Boolean)),
@@ -538,6 +538,52 @@ export function circlePolygon(lat, lng, radiusM, points = 64) {
   return { type: 'Polygon', coordinates: [coords] };
 }
 
+export const MAP_FOG_DECAY_DAYS = 5;
+export const MAP_TRAIL_FADE_HOURS = 48;
+
+export function computeFogReturnOpacity(revealedAt, now = Date.now()) {
+  if (!revealedAt) return 0;
+  const ageDays = (now - new Date(revealedAt).getTime()) / 86400000;
+  if (ageDays < 1) return 0;
+  if (ageDays >= MAP_FOG_DECAY_DAYS) return 0.88;
+  const t = (ageDays - 1) / (MAP_FOG_DECAY_DAYS - 1);
+  return t * 0.88;
+}
+
+export function computeTrailOpacity(revealedAt, now = Date.now()) {
+  if (!revealedAt) return 0;
+  const ageHours = (now - new Date(revealedAt).getTime()) / 3600000;
+  if (ageHours >= MAP_TRAIL_FADE_HOURS) return 0;
+  return Math.max(0, 1 - ageHours / MAP_TRAIL_FADE_HOURS);
+}
+
+export function applyFogDecay(exploration, now = Date.now()) {
+  const revealed = normalizeMapExploration(exploration).revealed.map((r) => ({
+    ...r,
+    fogOpacity: computeFogReturnOpacity(r.revealedAt, now),
+    clearOpacity: Math.max(0.12, 1 - computeFogReturnOpacity(r.revealedAt, now)),
+  }));
+  return { revealed };
+}
+
+export function buildDiscoveryTrail(exploration, now = Date.now()) {
+  const revealed = normalizeMapExploration(exploration).revealed;
+  return revealed
+    .map((r, i) => ({
+      id: `trail-${r.key || i}`,
+      latitude: r.latitude,
+      longitude: r.longitude,
+      adventureId: r.adventureId,
+      opacity: computeTrailOpacity(r.revealedAt, now),
+      ageHours: r.revealedAt
+        ? (now - new Date(r.revealedAt).getTime()) / 3600000
+        : MAP_TRAIL_FADE_HOURS,
+    }))
+    .filter((p) => p.opacity > 0.04)
+    .sort((a, b) => b.opacity - a.opacity)
+    .slice(0, 12);
+}
+
 export function getDefaultMapExploration() {
   return { revealed: [] };
 }
@@ -576,15 +622,19 @@ export function recordMapReveal(state, adventure) {
   };
 }
 
-export function revealedAreasGeoJSON(exploration) {
-  const revealed = normalizeMapExploration(exploration).revealed;
+export function revealedAreasGeoJSON(exploration, now = Date.now()) {
+  const { revealed } = applyFogDecay(exploration, now);
   return {
     type: 'FeatureCollection',
     features: revealed.map((r, i) => ({
       type: 'Feature',
       id: i,
       geometry: circlePolygon(r.latitude, r.longitude, r.radiusM || 400),
-      properties: { adventureId: r.adventureId },
+      properties: {
+        adventureId: r.adventureId,
+        clearOpacity: r.clearOpacity ?? 1,
+        fogOpacity: r.fogOpacity ?? 0,
+      },
     })),
   };
 }

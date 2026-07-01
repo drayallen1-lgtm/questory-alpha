@@ -1,0 +1,195 @@
+/* Phase 3 — Living World Events (ambient activity, trails, notifications) */
+
+.living-world-activity-feed {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 16;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(92%, 420px);
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(8, 12, 20, 0.82);
+  border: 1px solid rgba(94, 234, 212, 0.22);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.living-world-activity-feed.is-entering {
+  animation: living-activity-enter 0.42s ease;
+}
+
+.living-world-activity-feed.is-exiting {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-6px);
+}
+
+@keyframes living-activity-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.living-world-activity-icon {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.living-world-activity-text {
+  font-size: 0.78rem;
+  color: #e2e8f0;
+  line-height: 1.35;
+}
+
+.living-world-activity-legendary {
+  border-color: rgba(167, 139, 250, 0.45);
+  box-shadow: 0 0 24px rgba(167, 139, 250, 0.2);
+}
+
+.living-world-activity-heat {
+  border-color: rgba(251, 146, 60, 0.35);
+}
+
+.living-world-activity-night {
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+.living-world-notifications {
+  position: absolute;
+  top: 58px;
+  right: 12px;
+  z-index: 16;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 280px;
+  pointer-events: auto;
+}
+
+.living-world-notification {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  animation: living-notification-in 0.45s ease;
+}
+
+@keyframes living-notification-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.living-world-notification-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.living-world-notification-body strong {
+  display: block;
+  font-size: 0.78rem;
+  color: #f8fafc;
+  margin-bottom: 2px;
+}
+
+.living-world-notification-body p {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.living-world-notification-dismiss {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.discovery-trail-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.discovery-trail-point {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  transform: scale(var(--trail-scale, 1));
+}
+
+.discovery-trail-footprint {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50% 50% 50% 20%;
+  background: radial-gradient(circle at 35% 35%, rgba(94, 234, 212, 0.55), rgba(94, 234, 212, 0.05));
+  box-shadow: 0 0 12px rgba(94, 234, 212, 0.25);
+  animation: discovery-trail-fade 4s ease-in-out infinite alternate;
+}
+
+@keyframes discovery-trail-fade {
+  from { transform: rotate(-12deg) scale(0.9); }
+  to { transform: rotate(8deg) scale(1.05); }
+}
+
+.map-stage-night .questory-map-wrap {
+  filter: saturate(0.88) brightness(0.92);
+}
+
+.living-world-night .living-world-fog-vignette {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(2, 6, 23, 0) 0%,
+    rgba(2, 6, 23, 0.35) 55%,
+    rgba(2, 6, 23, 0.55) 100%
+  );
+}
+
+.living-world-fog-returning .living-world-fog-vignette {
+  opacity: calc(0.75 + var(--fog-decay, 0) * 0.25);
+}
+
+.living-world-atmosphere-night {
+  background: radial-gradient(ellipse at 50% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 55%);
+}
+
+.living-world-atmosphere-legendary {
+  background: radial-gradient(ellipse at 50% 85%, rgba(167, 139, 250, 0.14) 0%, transparent 50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .living-world-activity-feed.is-entering,
+  .living-world-notification,
+  .discovery-trail-footprint {
+    animation: none !important;
+  }
+}

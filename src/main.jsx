@@ -163,6 +163,7 @@ import {
 import './style.css';
 import './discoveryBloom.css';
 import './livingWorld.css';
+import './livingWorldEvents.css';
 import { getInitialState, persistState } from './persistence';
 import {
   draftSyncBadgeLabel,

@@ -82,6 +82,8 @@ export function LivingWorldLayer({
   heatZones = [],
   atmosphereClass = '',
   revealedCount = 0,
+  fogDecayLevel = 0,
+  nightMode = false,
   showFog = true,
 }) {
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -101,11 +103,16 @@ export function LivingWorldLayer({
       className={[
         'living-world-layer',
         atmosphereClass,
+        nightMode ? 'living-world-night' : '',
+        fogDecayLevel > 0.2 ? 'living-world-fog-returning' : '',
         showFog ? 'living-world-fog-on' : '',
         revealedCount > 0 ? 'living-world-has-revealed' : '',
       ]
         .filter(Boolean)
         .join(' ')}
+      style={{
+        '--fog-decay': fogDecayLevel,
+      }}
       aria-hidden="true"
     >
       {showFog && <div className="living-world-fog-vignette" />}

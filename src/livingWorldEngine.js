@@ -6,6 +6,11 @@ import { getAdventureMapCenter } from './mapUtils';
 import { hasLiveWorldEvent } from './mapDiscovery';
 import { computeAdventureHeat, getHeatCategory } from './social';
 import { safeGetWorldEventContext } from './worldEventEngine';
+import {
+  computeVisitHeatScore,
+  getLivingWorldEventsSnapshot,
+  getVisitHeatLevel,
+} from './livingWorldEventsEngine';
 
 export const LIVING_WORLD_LIMITS = {
   MAX_EXPLORER_DOTS: 12,
@@ -46,17 +51,24 @@ function seededRandom(seed) {
 /** @returns {'cold'|'warm'|'hot'|'legendary'} */
 export function computeHeatLevel(adventure, context = {}) {
   if (!adventure) return HEAT_LEVELS.COLD;
+  const visitScore = computeVisitHeatScore(adventure, context.state);
   const score =
+    visitScore ||
     Number(adventure.heatScore) ||
     (context.state ? computeAdventureHeat(adventure, context.state) : 0);
   const category = adventure.heatCategory || getHeatCategory(score);
+  const visitLevel = getVisitHeatLevel(adventure, context.state);
   const nearby = context.nearbyExplorers ?? 0;
   const hasEvent = hasLiveWorldEvent(adventure, context.state);
   const featured = Boolean(adventure.isLegendaryHunt || adventure.isFounderHunt || adventure.heatCategory === 'legendary');
 
-  if (featured || category === 'legendary' || score >= 80) return HEAT_LEVELS.LEGENDARY;
-  if (hasEvent || score >= 50 || nearby >= 5) return HEAT_LEVELS.HOT;
-  if (score >= 25 || nearby >= 2 || adventure.playersCompleted > 10) return HEAT_LEVELS.WARM;
+  if (featured || category === 'legendary' || visitLevel === HEAT_LEVELS.LEGENDARY || score >= 80) {
+    return HEAT_LEVELS.LEGENDARY;
+  }
+  if (hasEvent || visitLevel === HEAT_LEVELS.HOT || score >= 50 || nearby >= 5) return HEAT_LEVELS.HOT;
+  if (visitLevel === HEAT_LEVELS.WARM || score >= 25 || nearby >= 2 || adventure.playersCompleted > 10) {
+    return HEAT_LEVELS.WARM;
+  }
   return HEAT_LEVELS.COLD;
 }
 
@@ -241,7 +253,7 @@ export function buildTimelineEntries(adventures = [], options = {}) {
 }
 
 export function buildDiscoveryPulses(adventures = [], options = {}) {
-  const { trigger = null, heatZones = [] } = options;
+  const { trigger = null, heatZones = [], legendaryDrop = null } = options;
   const pulses = [];
 
   if (trigger) {
@@ -252,6 +264,17 @@ export function buildDiscoveryPulses(adventures = [], options = {}) {
       label: trigger.label,
       kind: trigger.kind || 'discovered',
       createdAt: Date.now(),
+    });
+  }
+
+  if (legendaryDrop?.latitude != null) {
+    pulses.push({
+      id: `legendary-pulse-${legendaryDrop.adventureId}`,
+      latitude: legendaryDrop.latitude,
+      longitude: legendaryDrop.longitude,
+      label: 'Legendary Drop',
+      kind: 'legendary',
+      createdAt: Date.now() - 2000,
     });
   }
 
@@ -290,8 +313,15 @@ export function formatHeatTooltip(zone) {
 }
 
 export function getLivingWorldSnapshot(adventures = [], options = {}) {
-  const { state = null, adventureMarkers = [], userLocation = null, pulseTrigger = null } = options;
+  const {
+    state = null,
+    adventureMarkers = [],
+    userLocation = null,
+    pulseTrigger = null,
+    now = Date.now(),
+  } = options;
   const eventContext = safeGetWorldEventContext(state, adventures);
+  const events = getLivingWorldEventsSnapshot(adventures, { state, now, eventContext });
   const presence = buildLivingPresence(adventures, state);
   const explorerDots = presence.explorerDots;
   const heatZones = buildHeatZones(adventureMarkers, {
@@ -301,9 +331,19 @@ export function getLivingWorldSnapshot(adventures = [], options = {}) {
     explorerDots,
   });
   const timeline = buildTimelineEntries(adventures, { state, eventContext });
-  const pulses = buildDiscoveryPulses(adventures, { trigger: pulseTrigger, heatZones });
-  const revealedCount = state?.mapExploration?.revealed?.length ?? 0;
-  const atmosphereClass = getWorldAtmosphereClass(eventContext);
+  const pulses = buildDiscoveryPulses(adventures, {
+    trigger: pulseTrigger,
+    heatZones,
+    legendaryDrop: events.legendaryDrop,
+  });
+  const revealedCount = events.exploration?.revealed?.length ?? 0;
+  const atmosphereClass = [
+    getWorldAtmosphereClass(eventContext),
+    events.nightMode ? 'living-world-atmosphere-night' : '',
+    events.legendaryDrop ? 'living-world-atmosphere-legendary' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return {
     presence,
@@ -314,5 +354,6 @@ export function getLivingWorldSnapshot(adventures = [], options = {}) {
     eventContext,
     revealedCount,
     atmosphereClass,
+    ...events,
   };
 }

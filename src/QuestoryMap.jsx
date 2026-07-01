@@ -44,11 +44,18 @@ import { ClusterAdventurePicker, MapFilterBar, MapPinCard } from './MapPinCard';
 import { LivingClusterBlossomOverlay } from './LivingClusterBlossom';
 import { LivingWorldLayer } from './LivingWorldLayer';
 import { MapDiscoveryPulse } from './MapDiscoveryPulse';
+import { DiscoveryTrailLayer } from './DiscoveryTrailLayer';
+import {
+  LivingWorldActivityFeed,
+  LivingWorldNotifications,
+} from './LivingWorldActivityFeed';
 import { BLOSSOM_MAX_PINS, groupMarkersByCategory, livingClusterPhase } from './mapClusterBlossom';
 import { DISCOVERY_BLOOM_TIMING, playMapUiCue } from './mapUiCues';
 import { LivingWorldTimeline } from './LivingWorldTimeline';
 import { formatHeatTooltip, getLivingWorldSnapshot } from './livingWorldEngine';
+import { getLivingWorldEventsSnapshot } from './livingWorldEventsEngine';
 import { triggerDiscoveryPulse } from './MapDiscoveryPulse';
+import { buildSocialDiscoveryFeed, getTeamTerritories } from './socialWorldEngine';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -282,6 +289,7 @@ export function QuestoryMap({
   showUserLocation = false,
   userLocation = null,
   mapExploration = null,
+  mapWorldNow = Date.now(),
   selectedAdventureId = null,
   mapState = null,
   onFindMe,
@@ -772,7 +780,7 @@ export function QuestoryMap({
 
       map.addSource(MAP_SOURCE_IDS.REVEALED, {
         type: 'geojson',
-        data: revealedAreasGeoJSON(mapExploration),
+        data: revealedAreasGeoJSON(mapExploration, mapWorldNow),
       });
       map.addLayer({
         id: 'revealed-fill',
@@ -780,7 +788,7 @@ export function QuestoryMap({
         source: MAP_SOURCE_IDS.REVEALED,
         paint: {
           'fill-color': '#22c55e',
-          'fill-opacity': 0.08,
+          'fill-opacity': ['coalesce', ['get', 'clearOpacity'], 0.08],
         },
       });
       map.addLayer({
@@ -789,7 +797,7 @@ export function QuestoryMap({
         source: MAP_SOURCE_IDS.REVEALED,
         paint: {
           'line-color': '#5eead4',
-          'line-opacity': 0.35,
+          'line-opacity': ['*', ['coalesce', ['get', 'clearOpacity'], 0.35], 0.85],
           'line-width': 1,
         },
       });
@@ -885,8 +893,8 @@ export function QuestoryMap({
     const map = mapRef.current;
     if (!map || !mapReadyRef.current || mini) return;
     const src = map.getSource(MAP_SOURCE_IDS.REVEALED);
-    if (src) src.setData(revealedAreasGeoJSON(mapExploration));
-  }, [mapExploration, mini]);
+    if (src) src.setData(revealedAreasGeoJSON(mapExploration, mapWorldNow));
+  }, [mapExploration, mapWorldNow, mini]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -991,7 +999,10 @@ export function QuestoryMap({
             heatZones={livingWorld.heatZones}
             atmosphereClass={livingWorld.atmosphereClass}
             revealedCount={livingWorld.revealedCount}
+            fogDecayLevel={livingWorld.fogDecayLevel}
+            nightMode={livingWorld.nightMode}
           />
+          <DiscoveryTrailLayer map={mapRef.current} trail={livingWorld.discoveryTrail} />
           <MapDiscoveryPulse map={mapRef.current} pulses={livingWorld.pulses} />
         </>
       )}
@@ -1022,6 +1033,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const [livingCluster, setLivingCluster] = useState(null);
   const [cardEntering, setCardEntering] = useState(false);
   const [pulseTrigger, setPulseTrigger] = useState(null);
+  const [worldNow, setWorldNow] = useState(() => Date.now());
   const [focusedAdventure, setFocusedAdventure] = useState(null);
   const [findMeSignal, setFindMeSignal] = useState(0);
   const [visiblePinCount, setVisiblePinCount] = useState(null);
@@ -1030,6 +1042,11 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const { location } = usePlayerLocation();
   const visibility = state?.social?.visibility || VISIBILITY_MODES.TEAM;
   const follows = state?.economy?.follows || [];
+
+  useEffect(() => {
+    const tick = window.setInterval(() => setWorldNow(Date.now()), 30000);
+    return () => window.clearInterval(tick);
+  }, []);
 
   const accessOptions = {
     userLatitude: location?.latitude,
@@ -1050,21 +1067,49 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     [adventures, activeFilter, state, location, follows]
   );
 
-  const adventureMarkers = buildAdventureMarkers(filteredAdventures, accessOptions);
+  const visibleAdventures = useMemo(() => {
+    const events = getLivingWorldEventsSnapshot(filteredAdventures, { state, now: worldNow });
+    const visible = new Set(events.visibleAdventureIds);
+    return filteredAdventures.filter((a) => visible.has(a.id));
+  }, [filteredAdventures, state, worldNow]);
+
+  const adventureMarkers = buildAdventureMarkers(visibleAdventures, accessOptions);
   const clueMarkers = focusedAdventure ? buildClueMarkers(focusedAdventure) : [];
 
   const livingWorld = useMemo(
     () =>
-      getLivingWorldSnapshot(filteredAdventures, {
+      getLivingWorldSnapshot(visibleAdventures, {
         state,
         adventureMarkers,
         userLocation: location,
         pulseTrigger,
+        now: worldNow,
       }),
-    [filteredAdventures, state, adventureMarkers, location, pulseTrigger]
+    [visibleAdventures, state, adventureMarkers, location, pulseTrigger, worldNow]
   );
 
   const livePresence = livingWorld.presence;
+
+  const socialFeed = useMemo(
+    () =>
+      buildSocialDiscoveryFeed(visibleAdventures, {
+        timeline: livingWorld.timeline,
+        territories: getTeamTerritories(),
+      }),
+    [visibleAdventures, livingWorld.timeline]
+  );
+
+  const timelineEntries = useMemo(() => {
+    const merged = [...livingWorld.timeline];
+    socialFeed.forEach((item) => {
+      if (!merged.some((e) => e.id === item.id)) {
+        merged.push({ ...item, kind: item.kind || 'social' });
+      }
+    });
+    return merged
+      .sort((a, b) => (a.minutesAgo ?? 99) - (b.minutesAgo ?? 99))
+      .slice(0, 12);
+  }, [livingWorld.timeline, socialFeed]);
 
   const pinStats = useMemo(
     () => computeMapPinStats(adventures, adventureMarkers, accessOptions),
@@ -1471,11 +1516,17 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         />
       )}
 
-      <LivingWorldTimeline entries={livingWorld.timeline} />
+      <LivingWorldTimeline entries={timelineEntries} />
 
       <div
-        className={`map-stage${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}`}
+        className={`map-stage${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}`}
       >
+        <LivingWorldActivityFeed
+          banners={livingWorld.ambientBanners}
+          paused={Boolean(livingCluster || selectedAdventure)}
+        />
+        <LivingWorldNotifications notifications={livingWorld.notifications} />
+
         <QuestoryMap
           adventureMarkers={focusedAdventure ? [] : adventureMarkers}
           clueMarkers={clueMarkers}
@@ -1492,7 +1543,8 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           userId={userId}
           showUserLocation
           userLocation={location}
-          mapExploration={state?.mapExploration}
+          mapExploration={livingWorld.exploration}
+          mapWorldNow={worldNow}
           mapState={state}
           selectedAdventureId={selectedAdventure?.id}
           findMeSignal={findMeSignal}
