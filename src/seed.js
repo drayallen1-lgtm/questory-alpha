@@ -52,6 +52,7 @@ import { DEFAULT_PLAYER_PROGRESSION, normalizePlayerProgression } from './player
 import { DEFAULT_CRAFTING, normalizeCrafting } from './craftingEngine';
 import { DEFAULT_LEGENDARY_HUNT, normalizeLegendaryHunt } from './legendaryHuntEngine';
 import { DEFAULT_LIVING_EARTH, normalizeLivingEarth } from './livingEarthEngine';
+import { DEFAULT_CREATOR_ECONOMY, normalizeCreatorEconomy } from './creatorEconomyEngine';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -95,6 +96,7 @@ export const defaultState = {
   crafting: { ...DEFAULT_CRAFTING },
   legendaryHunt: { ...DEFAULT_LEGENDARY_HUNT },
   livingEarth: { ...DEFAULT_LIVING_EARTH },
+  creatorEconomy: { ...DEFAULT_CREATOR_ECONOMY },
   vaultTab: 'passport',
   adventures: ensureDemoAdventure([
     {
@@ -782,6 +784,7 @@ export function loadState() {
       crafting: normalizeCrafting(saved.crafting),
       legendaryHunt: normalizeLegendaryHunt(saved.legendaryHunt),
       livingEarth: normalizeLivingEarth(saved.livingEarth),
+      creatorEconomy: normalizeCreatorEconomy(saved.creatorEconomy),
       vaultTab: saved.vaultTab || 'passport',
       growthTab: saved.growthTab || 'referrals',
       pendingInviteAdventureId: saved.pendingInviteAdventureId || null,
