@@ -115,12 +115,38 @@ export const SECRET_COLLECTIONS = [
 
 export const SEED_NPCS = [
   {
-    id: 'conductor-ghost',
-    name: 'The Conductor',
-    role: 'Story Guide',
-    avatar: '🎩',
-    adventureIds: ['union-depot-ghost'],
-    voiceNoteUrl: '',
+    id: 'groundskeeper',
+    name: 'The Groundskeeper',
+    role: 'Depot Keeper',
+    avatar: '🪦',
+    adventureIds: ['union-depot-ghost', 'neosho-legend'],
+    personality: 'ominous, watchful, protective',
+    memoryKeys: ['depot-lantern', 'black-lantern-whisper'],
+    dialogues: [
+      {
+        id: 'intro',
+        text: 'The depot grounds hold more than rust and rails. Listen before you step on the platform.',
+        mood: 'warning',
+        choices: [
+          { id: 'trust', label: 'I will listen.', effects: { trust: 8, memoryKey: 'trusted_npc' } },
+          { id: 'rush', label: 'I know the way.', effects: { trust: -4, fear: 5 } },
+        ],
+      },
+      {
+        id: 'branch',
+        text: 'The Black Lantern flickers when fog thickens. Choose your path wisely.',
+        mood: 'mysterious',
+      },
+    ],
+  },
+  {
+    id: 'iron-conductor',
+    name: 'The Iron Conductor',
+    role: 'Rail Phantom',
+    avatar: '🚂',
+    adventureIds: ['union-depot-ghost', 'iron-horse'],
+    personality: 'mysterious, formal, unyielding',
+    memoryKeys: ['iron-horse', 'platform_shadows'],
     dialogues: [
       {
         id: 'intro',
@@ -131,7 +157,119 @@ export const SEED_NPCS = [
         id: 'branch',
         text: 'Brave the platform shadows, or search the archives. Your path chooses your ending.',
         mood: 'warning',
+        choices: [
+          { id: 'shadows', label: 'Brave the shadows', effects: { trust: 5, memoryKey: 'platform_shadows' } },
+          { id: 'archives', label: 'Search the archives', effects: { trust: 6, respect: 4 } },
+        ],
       },
+    ],
+  },
+  {
+    id: 'pastor-grace',
+    name: 'Pastor Grace',
+    role: 'Chapel Guide',
+    avatar: '✝️',
+    adventureIds: ['parsons-gold-rush'],
+    personality: 'warm, compassionate, steadfast',
+    memoryKeys: ['chapel_cornerstone'],
+    dialogues: [
+      {
+        id: 'intro',
+        text: 'The final marker bears a single word from Pastor Grace. Find the cornerstone.',
+        mood: 'friendly',
+      },
+    ],
+  },
+  {
+    id: 'marcus',
+    name: 'Marcus',
+    role: 'Family Trail Guide',
+    avatar: '👨‍👧',
+    adventureIds: ['iron-horse'],
+    personality: 'warm, playful, loyal',
+    memoryKeys: ['family_trail', 'iron-horse'],
+    dialogues: [
+      {
+        id: 'intro',
+        text: 'I hid something where the iron horse last stopped. Work together — family finds faster.',
+        mood: 'friendly',
+      },
+    ],
+  },
+  {
+    id: 'parsons-historian',
+    name: 'Parsons Historian',
+    role: 'City Lorekeeper',
+    avatar: '🏛',
+    adventureIds: ['parsons-gold-rush'],
+    personality: 'scholarly, curious, precise',
+    memoryKeys: ['parsons-gold-rush', 'ledger_secret'],
+    dialogues: [
+      {
+        id: 'intro',
+        text: 'Parsons holds more secrets than the ledger reveals. Return each season — the world changes.',
+        mood: 'guide',
+      },
+    ],
+  },
+  {
+    id: 'horror-crest-guide',
+    name: 'Horror Crest Guide',
+    role: 'Crest Storykeeper',
+    avatar: '👻',
+    adventureIds: ['neosho-legend'],
+    personality: 'whisper, unsettling, knowing',
+    memoryKeys: ['horror_crest', 'midnight_lantern'],
+    dialogues: [
+      {
+        id: 'intro',
+        text: 'The Crest remembers those who walk at midnight. Do you hear the whispers?',
+        mood: 'mysterious',
+      },
+    ],
+  },
+  {
+    id: 'market-trader',
+    name: 'Market Trader',
+    role: 'Downtown Merchant',
+    avatar: '🏪',
+    adventureIds: ['parsons-gold-rush'],
+    personality: 'skeptical, shrewd, observant',
+    memoryKeys: ['market_sale'],
+    dialogues: [
+      {
+        id: 'intro',
+        text: 'Coins talk louder than ghosts downtown. Bring me something worth trading.',
+        mood: 'skeptical',
+      },
+    ],
+  },
+  {
+    id: 'chapel-keeper',
+    name: 'Chapel Keeper',
+    role: 'Sanctuary Warden',
+    avatar: '🕯️',
+    adventureIds: ['parsons-gold-rush', 'neosho-legend'],
+    personality: 'mysterious, devoted, secretive',
+    memoryKeys: ['sanctuary_boss', 'chapel_key'],
+    dialogues: [
+      {
+        id: 'intro',
+        text: 'The sanctuary holds clues the river would rather forget. Trust is earned here.',
+        mood: 'warning',
+      },
+    ],
+  },
+  // Legacy aliases — map to profiles above via aiNpcEngine NPC_ID_ALIASES
+  {
+    id: 'conductor-ghost',
+    name: 'The Conductor',
+    role: 'Story Guide',
+    avatar: '🎩',
+    adventureIds: ['union-depot-ghost'],
+    dialogues: [
+      { id: 'intro', text: 'The rails remember every soul who passed through.', mood: 'mysterious' },
+      { id: 'branch', text: 'Brave the platform shadows, or search the archives.', mood: 'warning' },
     ],
   },
   {
@@ -140,13 +278,8 @@ export const SEED_NPCS = [
     role: 'Family Guide',
     avatar: '👴',
     adventureIds: ['iron-horse'],
-    voiceNoteUrl: '',
     dialogues: [
-      {
-        id: 'intro',
-        text: 'I hid something where the iron horse last stopped. Work together — family finds faster.',
-        mood: 'warm',
-      },
+      { id: 'intro', text: 'I hid something where the iron horse last stopped.', mood: 'warm' },
     ],
   },
   {
@@ -156,11 +289,7 @@ export const SEED_NPCS = [
     avatar: '🏛',
     adventureIds: ['parsons-gold-rush'],
     dialogues: [
-      {
-        id: 'intro',
-        text: 'Parsons holds more secrets than the ledger reveals. Return each season — the world changes.',
-        mood: 'scholarly',
-      },
+      { id: 'intro', text: 'Parsons holds more secrets than the ledger reveals.', mood: 'scholarly' },
     ],
   },
 ];
