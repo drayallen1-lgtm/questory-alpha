@@ -1,0 +1,175 @@
+/* Phase 13 — Global Marketplace */
+
+.marketplace-screen .section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.marketplace-coins {
+  font-weight: 800;
+  color: #fbbf24;
+  font-size: 1rem;
+}
+
+.marketplace-tabs {
+  margin-bottom: 12px;
+}
+
+.marketplace-msg {
+  margin-bottom: 8px;
+}
+
+.marketplace-listings-grid {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.marketplace-listing-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.marketplace-listing-icon {
+  font-size: 1.5rem;
+}
+
+.marketplace-listing-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.marketplace-listing-body strong {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.marketplace-listing-body small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.marketplace-listing-price {
+  display: block;
+  font-weight: 700;
+  color: #fbbf24;
+  font-size: 0.82rem;
+}
+
+.marketplace-listing-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.marketplace-listing-actions button {
+  font-size: 0.68rem !important;
+  padding: 4px 8px !important;
+}
+
+.marketplace-auction-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.marketplace-trade-row,
+.marketplace-wish-row,
+.marketplace-my-listing,
+.marketplace-hist-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.marketplace-list-form select,
+.marketplace-list-form input {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.marketplace-inventory-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.marketplace-inv-chip {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.marketplace-inv-chip.rarity-legendary {
+  border-color: rgba(250, 204, 21, 0.45);
+}
+
+.marketplace-inv-chip.rarity-epic {
+  border-color: rgba(168, 85, 247, 0.35);
+}
+
+.marketplace-passport-panel button {
+  margin-bottom: 12px;
+}
+
+.marketplace-hof p {
+  margin: 4px 0;
+  font-size: 0.85rem;
+}
+
+.map-market-venue {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 9;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  background: rgba(6, 10, 18, 0.88);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  color: #fde68a;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.marketplace-map-hud {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 11;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.marketplace-map-venue-btn {
+  pointer-events: auto;
+  font-size: 0.68rem !important;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  background: rgba(6, 10, 18, 0.88) !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+}
+
+@media (max-width: 720px) {
+  .marketplace-listing-card {
+    flex-wrap: wrap;
+  }
+
+  .marketplace-listing-actions {
+    flex-direction: row;
+    width: 100%;
+  }
+}

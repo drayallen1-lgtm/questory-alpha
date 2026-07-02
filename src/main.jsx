@@ -162,6 +162,7 @@ import {
   VerifiedSponsorBadge,
 } from './EconomyUI';
 import { CreatorDashboard } from './CreatorEconomyUI';
+import { MarketplaceScreen } from './MarketplaceUI';
 import './style.css';
 import './discoveryBloom.css';
 import './livingWorld.css';
@@ -175,6 +176,7 @@ import './crafting.css';
 import './legendaryHunt.css';
 import './livingEarth.css';
 import './creatorEconomy.css';
+import './marketplace.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';
@@ -907,6 +909,14 @@ function QuestoryApp() {
             adventures={state.adventures}
             nav={nav}
             creatorId={state.selectedCreatorId || 'parsons-heritage'}
+          />
+        )}
+        {state.screen === 'marketplace' && (
+          <MarketplaceScreen
+            state={state}
+            setState={setState}
+            adventures={state.adventures}
+            nav={nav}
           />
         )}
         {state.screen === 'social' && (
@@ -3846,6 +3856,7 @@ function BottomNav({ screen, nav, adminPreview, isSponsor }) {
     if (screen === id) return true;
     if (screen === 'leaderboard') return id === 'home';
     if (screen === 'creator') return id === 'feed';
+    if (screen === 'marketplace') return id === 'vault';
     if (screen === 'social') return id === 'social';
     if (screen === 'platform') return id === 'home';
     if (screen === 'world' || screen === 'growth') return id === 'home';
