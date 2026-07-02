@@ -54,6 +54,8 @@ import { DEFAULT_LEGENDARY_HUNT, normalizeLegendaryHunt } from './legendaryHuntE
 import { DEFAULT_LIVING_EARTH, normalizeLivingEarth } from './livingEarthEngine';
 import { DEFAULT_CREATOR_ECONOMY, normalizeCreatorEconomy } from './creatorEconomyEngine';
 import { DEFAULT_MARKETPLACE, normalizeMarketplace } from './marketplaceEngine';
+import { DEFAULT_AI_NPC, normalizeAiNpc } from './aiNpcEngine';
+import { DEFAULT_DYNAMIC_STORY, normalizeDynamicStory } from './dynamicStoryEngine';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -99,6 +101,8 @@ export const defaultState = {
   livingEarth: { ...DEFAULT_LIVING_EARTH },
   creatorEconomy: { ...DEFAULT_CREATOR_ECONOMY },
   marketplace: { ...DEFAULT_MARKETPLACE },
+  aiNpc: { ...DEFAULT_AI_NPC },
+  dynamicStory: { ...DEFAULT_DYNAMIC_STORY },
   vaultTab: 'passport',
   adventures: ensureDemoAdventure([
     {
@@ -788,6 +792,8 @@ export function loadState() {
       livingEarth: normalizeLivingEarth(saved.livingEarth),
       creatorEconomy: normalizeCreatorEconomy(saved.creatorEconomy),
       marketplace: normalizeMarketplace(saved.marketplace),
+      aiNpc: normalizeAiNpc(saved.aiNpc),
+      dynamicStory: normalizeDynamicStory(saved.dynamicStory),
       vaultTab: saved.vaultTab || 'passport',
       growthTab: saved.growthTab || 'referrals',
       pendingInviteAdventureId: saved.pendingInviteAdventureId || null,
