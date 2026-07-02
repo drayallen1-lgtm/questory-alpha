@@ -85,6 +85,7 @@ import {
 } from './PlayerProgressionUI';
 import { CraftingPanel } from './CraftingUI';
 import { isDev } from './config/env';
+import { CreatorPassportPanel } from './CreatorEconomyUI';
 
 export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
   const greeting = getTimeGreeting();
@@ -390,12 +391,15 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
         <button type="button" className={tab === 'rewards' ? 'active' : ''} onClick={() => selectTab('rewards')}>
           Rewards
         </button>
+        <button type="button" className={tab === 'creators' ? 'active' : ''} onClick={() => selectTab('creators')}>
+          Creators
+        </button>
         <button type="button" className={tab === 'badges' ? 'active' : ''} onClick={() => selectTab('badges')}>
           Badges
         </button>
       </div>
 
-      {tab !== 'economy' && tab !== 'progression' && tab !== 'crafting' && (
+      {tab !== 'economy' && tab !== 'progression' && tab !== 'crafting' && tab !== 'creators' && (
         <div className="card balance">
           <h3>{state.coins} Coins</h3>
           <p>{state.entries} Community Pot Entries</p>
@@ -529,6 +533,10 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
 
       {tab === 'crafting' && (
         <CraftingPanel state={state} adventures={adventures} setState={setState} />
+      )}
+
+      {tab === 'creators' && (
+        <CreatorPassportPanel state={state} setState={setState} adventures={adventures} nav={nav} />
       )}
     </>
   );

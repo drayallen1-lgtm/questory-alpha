@@ -111,6 +111,7 @@ import {
   getCreatorForAdventure,
   COIN_SPEND,
 } from './economy';
+import { recordPremiumPurchaseForCreator } from './creatorEconomyEngine';
 import {
   addPhotoMemory,
   computeAdventureHeat,
@@ -1724,8 +1725,13 @@ function AdventurePlay({
 
   function handlePremiumUnlock() {
     const result = purchasePremiumUnlock(state, adventure);
-    if (result.ok) setState(result.state);
-    else alert(formatUserErrorMessage(result));
+    if (result.ok) {
+      let next = result.state;
+      if (result.creatorShare) {
+        next = recordPremiumPurchaseForCreator(next, adventure, result.creatorShare);
+      }
+      setState(next);
+    } else alert(formatUserErrorMessage(result));
   }
 
   if (premiumLocked) {

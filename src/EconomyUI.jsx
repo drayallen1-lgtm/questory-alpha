@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { formatUserErrorMessage } from './claimSystem';
 import {
   BarChart3,
@@ -16,6 +16,14 @@ import {
   Wallet,
 } from 'lucide-react';
 import {
+  followCreator,
+  getCreatorEconomySnapshot,
+  recordCreatorVisit,
+  subscribeCreator,
+  toggleFavoriteCreator,
+} from './creatorEconomyEngine';
+import { CreatorProfilePanel } from './CreatorEconomyUI';
+import {
   COIN_SPEND,
   CREATOR_PROFILES,
   FREE_ACTIVE_ADVENTURE_LIMIT,
@@ -29,8 +37,8 @@ import {
   groupVaultRewards,
   isPremiumAdventure,
   isSponsorVerified,
+  purchasePremiumUnlock,
   redeemCouponByQr,
-  toggleFollowCreator,
 } from './economy';
 import { SponsorMarketplacePanel, CreatorStorefrontTab } from './ExpansionUI';
 import { SponsorRewardInventoryPanel } from './RewardInventoryUI';
@@ -184,68 +192,28 @@ export function SponsorDashboard({ state, adventures, auth, setState, nav }) {
 }
 
 export function CreatorProfileScreen({ creatorId, state, setState, nav, adventures }) {
-  const creator = CREATOR_PROFILES[creatorId] || Object.values(CREATOR_PROFILES)[0];
-  const following = (state.economy?.follows || []).includes(creator.id);
-  const creatorAdventures = adventures.filter(
-    (a) => a.creatorProfileId === creator.id || getCreatorForAdventure(a).id === creator.id
-  );
+  useEffect(() => {
+    if (!creatorId) return;
+    setState((s) => {
+      const last = s.creatorEconomy?.lastVisitByCreator?.[creatorId];
+      if (last && Date.now() - new Date(last).getTime() < 30000) return s;
+      return recordCreatorVisit(s, creatorId);
+    });
+  }, [creatorId, setState]);
 
   return (
     <>
       <button type="button" className="ghost back" onClick={() => nav('feed')}>
         ← Explore Feed
       </button>
-      <div className="card creator-hero">
-        {creator.verified && (
-          <span className="verified-sponsor-badge">
-            <ShieldCheck size={14} /> Verified Creator
-          </span>
-        )}
-        <h2>{creator.name}</h2>
-        <p>{creator.bio}</p>
-        <div className="creator-stats">
-          <span>
-            <Star size={14} /> {creator.rating} ({creator.reviewCount} reviews)
-          </span>
-          <span>{creator.adventuresCreated} Adventures</span>
-          <span>{creator.completions.toLocaleString()} Completions</span>
-          <span>{creator.followers + (following ? 1 : 0)} Followers</span>
-        </div>
-        <button
-          type="button"
-          onClick={() => setState((s) => toggleFollowCreator(s, creator.id))}
-        >
-          <UserPlus size={16} /> {following ? 'Following' : 'Follow Creator'}
-        </button>
-      </div>
-
-      {creator.sponsorPartners?.length > 0 && (
-        <div className="card">
-          <h3>Sponsor Partners</h3>
-          <div className="chips">
-            {creator.sponsorPartners.map((p) => (
-              <span key={p}>{p}</span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <CreatorStorefrontTab state={state} setState={setState} creatorId={creator.id} />
-
-      <div className="card">
-        <h3>Adventures</h3>
-        {creatorAdventures.map((a) => (
-          <button
-            key={a.id}
-            type="button"
-            className="ghost creator-adventure-link"
-            onClick={() => nav('detail', a.id)}
-          >
-            {a.title}
-            {isPremiumAdventure(a) && ' · Premium'}
-          </button>
-        ))}
-      </div>
+      <CreatorProfilePanel
+        creatorId={creatorId}
+        state={state}
+        setState={setState}
+        adventures={adventures}
+        nav={nav}
+      />
+      <CreatorStorefrontTab state={state} setState={setState} creatorId={creatorId} />
     </>
   );
 }

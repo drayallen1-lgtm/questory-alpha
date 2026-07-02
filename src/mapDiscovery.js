@@ -6,6 +6,7 @@ import { isDev } from './config/env';
 import { haversineDistanceMeters } from './geolocation';
 import { getAdventureMapCenter } from './mapUtils';
 import { safeGetWorldEventContext } from './worldEventEngine';
+import { resolveCreatorPinOverlays } from './creatorEconomyEngine';
 import { safeGetTime } from './dateUtils';
 import { getFogRevealRadiusMultiplier } from './craftingEngine';
 
@@ -296,6 +297,13 @@ export function resolvePinOverlays(adventure, state = null) {
   if (heat >= 50 && !seen.has('hot')) {
     add('hot');
   }
+
+  resolveCreatorPinOverlays(adventure, state).forEach((overlay) => {
+    if (!seen.has(overlay.id)) {
+      seen.add(overlay.id);
+      overlays.push(overlay);
+    }
+  });
 
   return overlays.sort((a, b) => (a.priority ?? 9) - (b.priority ?? 9));
 }
