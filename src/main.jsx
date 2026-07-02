@@ -160,6 +160,7 @@ import {
   CreationFeeBanner,
   VerifiedSponsorBadge,
 } from './EconomyUI';
+import { CreatorDashboard } from './CreatorEconomyUI';
 import './style.css';
 import './discoveryBloom.css';
 import './livingWorld.css';
@@ -172,6 +173,7 @@ import './progression.css';
 import './crafting.css';
 import './legendaryHunt.css';
 import './livingEarth.css';
+import './creatorEconomy.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';
@@ -895,6 +897,15 @@ function QuestoryApp() {
             setState={setState}
             nav={nav}
             adventures={state.adventures}
+          />
+        )}
+        {state.screen === 'creator-dashboard' && (
+          <CreatorDashboard
+            state={state}
+            setState={setState}
+            adventures={state.adventures}
+            nav={nav}
+            creatorId={state.selectedCreatorId || 'parsons-heritage'}
           />
         )}
         {state.screen === 'social' && (
