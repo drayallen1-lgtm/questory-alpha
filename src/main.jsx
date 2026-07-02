@@ -291,6 +291,7 @@ import {
   WorldHealthDashboard,
   EndingRevealBanner,
 } from './WorldEngineUI';
+import { commitBranchPath } from './branchingEngine';
 import {
   shouldShowWelcome,
   shouldShowJourney,
@@ -1839,7 +1840,10 @@ function AdventurePlay({
               clue={clue}
               progress={progress}
               adventure={adventure}
-              onSelect={(pathId) => setState((s) => commitBranchPath(s, adventure, pathId, clueIndex))}
+              onSelect={(pathId) => {
+                if (!pathId) return;
+                setState((s) => commitBranchPath(s, adventure, pathId, clueIndex));
+              }}
             />
             <CluePlayContent
               clue={clue}

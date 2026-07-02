@@ -4,6 +4,7 @@
  */
 import { normalizeArScene, emptyArScene } from './arEngine';
 import { getAdventureProgress } from './seed';
+import { isDev } from './config/env';
 import {
   normalizeWorld,
   normalizeWorldConfig,
@@ -127,7 +128,14 @@ export function getAdventureArFinaleForProgress(adventure, progress) {
 }
 
 export function commitBranchPath(state, adventure, pathId, clueIndex) {
-  if (!adventure?.id) return state;
+  if (!state || !adventure?.id) {
+    if (isDev) console.warn('commitBranchPath: missing state or adventure');
+    return state;
+  }
+  if (!pathId) {
+    if (isDev) console.warn('commitBranchPath: no pathId selected');
+    return state;
+  }
 
   let next = baseSelectBranchPath(state, adventure.id, pathId, clueIndex);
   const progress = getAdventureProgress(next, adventure.id);
