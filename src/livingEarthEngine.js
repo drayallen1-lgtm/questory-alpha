@@ -27,6 +27,7 @@ export const LIVING_EARTH_LIMITS = {
 };
 
 export const EARTH_MODE_MAX_ZOOM = 2;
+export const EARTH_MODE_EXIT_ZOOM = 2.5;
 export const FULL_EARTH_MAX_ZOOM = 1;
 
 export const FOG_VISUAL_COLORS = {
@@ -78,6 +79,10 @@ export function normalizeLivingEarth(raw = {}) {
 
 export function isEarthMode(zoom = 11) {
   return (Number(zoom) || 11) <= EARTH_MODE_MAX_ZOOM;
+}
+
+export function isEarthOverlayVisible(zoom = 11) {
+  return (Number(zoom) || 11) <= EARTH_MODE_EXIT_ZOOM;
 }
 
 export function isFullEarthView(zoom = 11) {
@@ -253,7 +258,8 @@ export function getLivingEarthSnapshot(options = {}) {
   } = options;
 
   const level = zoomToDiscoveryLevel(zoom);
-  const earthMode = isEarthMode(zoom);
+  const overlayVisible = isEarthOverlayVisible(zoom);
+  const earthMode = overlayVisible;
   const fullEarth = isFullEarthView(zoom);
   const stored = normalizeLivingEarth(state?.livingEarth);
 
@@ -294,6 +300,7 @@ export function getLivingEarthSnapshot(options = {}) {
 
   return {
     earthMode,
+    overlayVisible,
     fullEarth,
     level,
     zoom,

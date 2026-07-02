@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatDiscoveryPercent } from './worldDiscoveryEngine';
 import { markEarthCeremonySeen, latLngToGlobePosition } from './livingEarthEngine';
 
@@ -14,7 +14,7 @@ function useReducedMotion() {
   return reduced;
 }
 
-export function LivingEarthWorldHud({ hud }) {
+export function LivingEarthWorldHud({ hud, onReturnToMap }) {
   const [displayPct, setDisplayPct] = useState(0);
 
   useEffect(() => {
@@ -52,6 +52,20 @@ export function LivingEarthWorldHud({ hud }) {
           <span>{hud.discoveries?.toLocaleString()} Discoveries</span>
           <span>{hud.explorers?.toLocaleString()} Explorers</span>
         </div>
+        {onReturnToMap && (
+          <div className="living-earth-world-hud-actions">
+            <button type="button" className="ghost living-earth-return-btn" onClick={onReturnToMap}>
+              Return to Map
+            </button>
+            <button
+              type="button"
+              className="ghost living-earth-return-btn living-earth-return-btn-secondary"
+              onClick={() => onReturnToMap({ zoom: 12 })}
+            >
+              Zoom to City
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -261,7 +275,7 @@ function CountryCard({ country, onFlyTo }) {
   );
 }
 
-export function LivingEarthDiscoveryPanel({ snapshot, onFlyTo }) {
+export function LivingEarthDiscoveryPanel({ snapshot, onFlyTo, collapsed = false, onToggleCollapsed }) {
   const {
     continents,
     countries,
@@ -273,12 +287,22 @@ export function LivingEarthDiscoveryPanel({ snapshot, onFlyTo }) {
   } = snapshot;
 
   return (
-    <aside className="living-earth-discovery-panel" aria-label="Earth discovery overlay">
+    <aside
+      className={`living-earth-discovery-panel${collapsed ? ' living-earth-discovery-panel-collapsed' : ''}`}
+      aria-label="Earth discovery overlay"
+    >
       <header className="living-earth-discovery-panel-head">
         <h4>Living Earth</h4>
         <span>{liveExplorerCount?.toLocaleString()} explorers live</span>
+        {onToggleCollapsed && (
+          <button type="button" className="ghost living-earth-panel-toggle" onClick={onToggleCollapsed}>
+            {collapsed ? 'Show' : 'Hide'}
+          </button>
+        )}
       </header>
 
+      {!collapsed && (
+        <>
       <section className="living-earth-section">
         <h5>Continents</h5>
         <div className="living-earth-continent-grid">
@@ -372,6 +396,8 @@ export function LivingEarthDiscoveryPanel({ snapshot, onFlyTo }) {
           ))}
         </section>
       )}
+        </>
+      )}
     </aside>
   );
 }
@@ -403,33 +429,44 @@ export function LivingEarthCeremonyToast({ ceremony, onDismiss, onSeen }) {
 export function LivingEarthOverlay({
   snapshot,
   onFlyTo,
+  onReturnToMap,
   setState,
   showDiscoveryPanel = true,
 }) {
   const reducedMotion = useReducedMotion();
   const [ceremonyDismissed, setCeremonyDismissed] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
 
   const activeCeremony = useMemo(() => {
     if (ceremonyDismissed || !snapshot?.ceremonies?.length) return null;
     return snapshot.ceremonies[0];
   }, [ceremonyDismissed, snapshot?.ceremonies]);
 
-  if (!snapshot?.earthMode) return null;
+  if (!snapshot?.overlayVisible && !snapshot?.earthMode) return null;
 
   const handleCeremonySeen = (id) => {
     if (!setState) return;
     setState((s) => markEarthCeremonySeen(s, id));
   };
 
+  const showHud = snapshot.overlayVisible || snapshot.earthMode;
+
   return (
     <div
       className={`living-earth-overlay${snapshot.fullEarth ? ' living-earth-overlay-full' : ''}${reducedMotion ? ' living-earth-reduced-motion' : ''}`}
       aria-label="Living Earth view"
     >
-      {snapshot.fullEarth && <LivingEarthWorldHud hud={snapshot.worldHud} />}
+      {showHud && (
+        <LivingEarthWorldHud hud={snapshot.worldHud} onReturnToMap={onReturnToMap} />
+      )}
       <LivingEarthGlobe snapshot={snapshot} onFlyTo={onFlyTo} reducedMotion={reducedMotion} />
-      {showDiscoveryPanel && snapshot.fullEarth && (
-        <LivingEarthDiscoveryPanel snapshot={snapshot} onFlyTo={onFlyTo} />
+      {showDiscoveryPanel && showHud && (
+        <LivingEarthDiscoveryPanel
+          snapshot={snapshot}
+          onFlyTo={onFlyTo}
+          collapsed={panelCollapsed}
+          onToggleCollapsed={() => setPanelCollapsed((v) => !v)}
+        />
       )}
       {!ceremonyDismissed && activeCeremony && (
         <LivingEarthCeremonyToast

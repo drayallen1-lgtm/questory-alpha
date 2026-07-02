@@ -72,7 +72,7 @@ import { DiscoveryHud } from './DiscoveryHud';
 import { CityDiscoveryRingLayer } from './CityDiscoveryRingLayer';
 import { DiscoveredWorldPanel, DiscoveryCeremonyToast } from './DiscoveredWorldPanel';
 import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
-import { getLivingEarthSnapshot } from './livingEarthEngine';
+import { getLivingEarthSnapshot, EARTH_MODE_EXIT_ZOOM } from './livingEarthEngine';
 import { LivingEarthOverlay } from './LivingEarthUI';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
@@ -1104,6 +1104,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const [ceremonyDismissed, setCeremonyDismissed] = useState(false);
   const milestonesSeenRef = useRef([]);
   const earthFlyRef = useRef(null);
+  const prevMapZoomRef = useRef(mapZoom);
   const [focusedAdventure, setFocusedAdventure] = useState(null);
   const [findMeSignal, setFindMeSignal] = useState(0);
   const [visiblePinCount, setVisiblePinCount] = useState(null);
@@ -1230,6 +1231,27 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
   const handleEarthFlyTo = useCallback((target) => {
     earthFlyRef.current?.flyTo?.(target);
   }, []);
+
+  const handleReturnToMap = useCallback(
+    ({ zoom = 13 } = {}) => {
+      const latitude = location?.latitude ?? 37.3392;
+      const longitude = location?.longitude ?? -95.261;
+      earthFlyRef.current?.flyTo?.({ latitude, longitude, zoom });
+    },
+    [location]
+  );
+
+  useEffect(() => {
+    const prev = prevMapZoomRef.current;
+    if (prev <= EARTH_MODE_EXIT_ZOOM && mapZoom > EARTH_MODE_EXIT_ZOOM) {
+      if (isDev) {
+        console.log('livingEarthExitByZoom', { zoom: mapZoom, previousZoom: prev });
+      }
+    }
+    prevMapZoomRef.current = mapZoom;
+  }, [mapZoom]);
+
+  const earthOverlayVisible = livingEarthSnapshot.overlayVisible ?? livingEarthSnapshot.earthMode;
 
   useEffect(() => {
     if (worldDiscoverySnapshot.milestones?.length) {
@@ -1712,7 +1734,10 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           <button
             type="button"
             className="ghost map-find-me-btn"
-            onClick={() => setFindMeSignal((n) => n + 1)}
+            onClick={() => {
+              handleReturnToMap({ zoom: 14 });
+              setFindMeSignal((n) => n + 1);
+            }}
           >
             <LocateFixed size={16} /> Find Me
           </button>
@@ -1750,10 +1775,10 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       />
 
       <div
-        className={`map-stage map-stage-has-discovery-hud${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${livingEarthSnapshot.earthMode ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
+        className={`map-stage map-stage-has-discovery-hud${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
       >
-        <LegendaryHuntMapHud snapshot={legendaryHuntSnapshot} />
-        {!livingEarthSnapshot.fullEarth && (
+        {!earthOverlayVisible && <LegendaryHuntMapHud snapshot={legendaryHuntSnapshot} />}
+        {!earthOverlayVisible && (
           <DiscoveryHud
             snapshot={worldDiscoverySnapshot}
             compact={Boolean(livingCluster || selectedAdventure)}
@@ -1765,10 +1790,12 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
             onDismiss={() => setCeremonyDismissed(true)}
           />
         )}
-        <LivingWorldActivityFeed
-          banners={activityBanners}
-          paused={Boolean(livingCluster || selectedAdventure)}
-        />
+        {!earthOverlayVisible && (
+          <LivingWorldActivityFeed
+            banners={activityBanners}
+            paused={Boolean(livingCluster || selectedAdventure)}
+          />
+        )}
         <LivingWorldNotifications notifications={mapNotifications} />
 
         <QuestoryMap
@@ -1807,6 +1834,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         <LivingEarthOverlay
           snapshot={livingEarthSnapshot}
           onFlyTo={handleEarthFlyTo}
+          onReturnToMap={handleReturnToMap}
           setState={setState}
           showDiscoveryPanel={!livingCluster && !selectedAdventure}
         />

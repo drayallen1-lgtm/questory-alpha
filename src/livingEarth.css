@@ -3,40 +3,60 @@
 .living-earth-overlay {
   position: absolute;
   inset: 0;
-  z-index: 14;
+  z-index: 8;
   pointer-events: none;
   transition: opacity 0.6s ease;
 }
 
 .living-earth-overlay-full {
-  background: radial-gradient(ellipse at 50% 30%, rgba(8, 20, 40, 0.72), rgba(2, 6, 14, 0.92));
+  background: radial-gradient(ellipse at 50% 30%, rgba(8, 20, 40, 0.45), rgba(2, 6, 14, 0.55));
 }
 
-.living-earth-overlay .living-earth-globe-wrap,
-.living-earth-overlay .living-earth-discovery-panel,
-.living-earth-overlay .living-earth-world-hud,
-.living-earth-overlay .living-earth-ceremony,
-.living-earth-overlay button {
+.living-earth-globe-wrap,
+.living-earth-globe,
+.living-earth-globe-sphere,
+.living-earth-globe-terminator,
+.living-earth-globe-night-glow,
+.living-earth-globe-clouds,
+.living-earth-stream-layer,
+.living-earth-weather,
+.living-earth-heat-zone {
+  pointer-events: none;
+}
+
+.living-earth-globe-marker,
+.living-earth-boss-beacon,
+.living-earth-creator-marker,
+.living-earth-world-hud,
+.living-earth-discovery-panel,
+.living-earth-ceremony,
+.living-earth-world-hud-actions button,
+.living-earth-panel-toggle,
+.living-earth-continent-card,
+.living-earth-country-card,
+.living-earth-boss-row,
+.living-earth-creator-row {
   pointer-events: auto;
 }
 
 .living-earth-world-hud {
   position: absolute;
-  top: 12px;
+  top: 8px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 18;
+  z-index: 11;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  min-width: min(92%, 400px);
-  max-width: 440px;
-  padding: 12px 16px;
-  border-radius: 14px;
-  background: rgba(6, 10, 18, 0.9);
-  border: 1px solid rgba(94, 234, 212, 0.35);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(12px);
+  gap: 8px;
+  min-width: min(88%, 340px);
+  max-width: 360px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(6, 10, 18, 0.82);
+  border: 1px solid rgba(94, 234, 212, 0.28);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
 }
 
 .living-earth-world-hud-globe {
@@ -86,9 +106,27 @@
 .living-earth-world-hud-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  font-size: 0.72rem;
+  gap: 8px;
+  font-size: 0.68rem;
   color: #cbd5e1;
+}
+
+.living-earth-world-hud-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.living-earth-return-btn {
+  font-size: 0.68rem !important;
+  padding: 4px 8px !important;
+  border: 1px solid rgba(94, 234, 212, 0.35) !important;
+  border-radius: 999px !important;
+}
+
+.living-earth-return-btn-secondary {
+  border-color: rgba(148, 163, 184, 0.35) !important;
 }
 
 .living-earth-globe-wrap {
@@ -102,8 +140,8 @@
 
 .living-earth-globe {
   position: relative;
-  width: min(72vw, 420px);
-  height: min(72vw, 420px);
+  width: min(58vw, 340px);
+  height: min(58vw, 340px);
   animation: living-earth-spin 120s linear infinite;
 }
 
@@ -334,17 +372,33 @@
 
 .living-earth-discovery-panel {
   position: absolute;
-  top: 88px;
-  right: 12px;
-  width: min(92%, 280px);
-  max-height: calc(100% - 100px);
+  top: auto;
+  bottom: 12px;
+  left: 12px;
+  right: auto;
+  width: min(92%, 260px);
+  max-height: calc(100% - 88px);
   overflow-y: auto;
-  padding: 12px;
-  border-radius: 14px;
-  background: rgba(6, 10, 18, 0.88);
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(6, 10, 18, 0.82);
   border: 1px solid rgba(148, 163, 184, 0.2);
   backdrop-filter: blur(10px);
-  z-index: 16;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.living-earth-discovery-panel-collapsed {
+  max-height: none;
+  overflow: hidden;
+  width: auto;
+  min-width: 180px;
+}
+
+.living-earth-panel-toggle {
+  font-size: 0.65rem !important;
+  padding: 2px 6px !important;
+  margin-left: 6px;
 }
 
 .living-earth-discovery-panel-head {
@@ -574,10 +628,10 @@
 
 .living-earth-ceremony {
   position: absolute;
-  bottom: 16px;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 20;
+  z-index: 12;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -625,27 +679,56 @@
 }
 
 .map-stage-earth-mode .mapboxgl-canvas {
-  opacity: 0.15;
+  opacity: 0.35;
   transition: opacity 0.6s ease;
 }
 
 .map-stage-earth-mode-full .mapboxgl-canvas {
-  opacity: 0.05;
+  opacity: 0.22;
+}
+
+.map-stage-earth-mode .mapboxgl-ctrl-top-right {
+  z-index: 20;
+}
+
+.map-stage-earth-mode .living-world-activity-feed {
+  top: auto;
+  bottom: 72px;
+  max-width: min(88%, 320px);
+  opacity: 0.85;
+}
+
+.map-stage-earth-mode .legendary-map-hud {
+  top: auto;
+  bottom: 120px;
+  transform: translateX(-50%);
+}
+
+.map-stage-earth-mode.map-stage-has-discovery-hud .discovery-hud {
+  top: 8px;
+  max-width: min(88%, 320px);
+  min-width: auto;
+  padding: 8px 12px;
+  z-index: 11;
 }
 
 @media (max-width: 720px) {
   .living-earth-discovery-panel {
-    top: auto;
-    right: 8px;
     bottom: 8px;
     left: 8px;
+    right: 8px;
     width: auto;
-    max-height: 38%;
+    max-height: 32%;
   }
 
   .living-earth-globe {
-    width: min(85vw, 320px);
-    height: min(85vw, 320px);
+    width: min(72vw, 280px);
+    height: min(72vw, 280px);
+  }
+
+  .living-earth-world-hud {
+    min-width: min(94%, 300px);
+    max-width: 94%;
   }
 }
 

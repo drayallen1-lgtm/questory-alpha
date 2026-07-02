@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Award,
   ChevronRight,
@@ -84,6 +84,7 @@ import {
   PlayerProgressionPanel,
 } from './PlayerProgressionUI';
 import { CraftingPanel } from './CraftingUI';
+import { isDev } from './config/env';
 
 export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
   const greeting = getTimeGreeting();
@@ -335,13 +336,27 @@ function SponsorBlockCompact({ adventure }) {
 }
 
 export function QuestoryPassport({ state, adventures, onRedeem, setState, nav }) {
-  const [tab, setTab] = useState(state.vaultTab || 'passport');
+  const [tab, setTab] = useState(() => state.vaultTab || 'passport');
 
   useEffect(() => {
-    if (state.vaultTab && state.vaultTab !== tab) {
+    if (state.vaultTab) {
       setTab(state.vaultTab);
     }
-  }, [state.vaultTab, tab]);
+  }, [state.vaultTab]);
+
+  const selectTab = useCallback(
+    (nextTab) => {
+      if (isDev) {
+        console.log('passportTabChanged', { tab: nextTab });
+      }
+      setTab(nextTab);
+      if (setState) {
+        setState((s) => ({ ...s, vaultTab: nextTab }));
+      }
+    },
+    [setState]
+  );
+
   const passport = getPassportData(state, adventures);
   const collections = getAllCollectionProgress(state, adventures);
   const featuredCollections = getFeaturedCollectionProgress(state, adventures);
@@ -357,25 +372,25 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
       </div>
 
       <div className="vault-tabs-scroll vault-tabs-codex">
-        <button type="button" className={tab === 'passport' ? 'active' : ''} onClick={() => setTab('passport')}>
+        <button type="button" className={tab === 'passport' ? 'active' : ''} onClick={() => selectTab('passport')}>
           Passport
         </button>
-        <button type="button" className={tab === 'codex' ? 'active' : ''} onClick={() => setTab('codex')}>
+        <button type="button" className={tab === 'codex' ? 'active' : ''} onClick={() => selectTab('codex')}>
           Codex
         </button>
-        <button type="button" className={tab === 'economy' ? 'active' : ''} onClick={() => setTab('economy')}>
+        <button type="button" className={tab === 'economy' ? 'active' : ''} onClick={() => selectTab('economy')}>
           Economy
         </button>
-        <button type="button" className={tab === 'progression' ? 'active' : ''} onClick={() => setTab('progression')}>
+        <button type="button" className={tab === 'progression' ? 'active' : ''} onClick={() => selectTab('progression')}>
           Progress
         </button>
-        <button type="button" className={tab === 'crafting' ? 'active' : ''} onClick={() => setTab('crafting')}>
+        <button type="button" className={tab === 'crafting' ? 'active' : ''} onClick={() => selectTab('crafting')}>
           Craft
         </button>
-        <button type="button" className={tab === 'rewards' ? 'active' : ''} onClick={() => setTab('rewards')}>
+        <button type="button" className={tab === 'rewards' ? 'active' : ''} onClick={() => selectTab('rewards')}>
           Rewards
         </button>
-        <button type="button" className={tab === 'badges' ? 'active' : ''} onClick={() => setTab('badges')}>
+        <button type="button" className={tab === 'badges' ? 'active' : ''} onClick={() => selectTab('badges')}>
           Badges
         </button>
       </div>
