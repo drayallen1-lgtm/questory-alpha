@@ -1,0 +1,134 @@
+/* Questory 2.0 — Phase 14: AI NPC UI */
+
+.ai-npc-card .ai-npc-trust-meter {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  margin: 0.35rem 0 0.5rem;
+  overflow: hidden;
+}
+
+.ai-npc-card .ai-npc-trust-meter i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #6ee7b7, #3b82f6);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.ai-npc-relationship-badge {
+  font-size: 0.68rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  margin-left: 0.25rem;
+}
+
+.ai-npc-relationship-badge.tier-legendary {
+  background: rgba(251, 191, 36, 0.25);
+  color: #fcd34d;
+}
+
+.ai-npc-relationship-badge.tier-ally {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+.ai-npc-relationship-badge.tier-wary {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.ai-npc-memory-panel {
+  margin: 0.35rem 0;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 0.78rem;
+}
+
+.ai-npc-memory-panel.compact .ai-npc-memory-flags {
+  margin: 0.2rem 0 0;
+  padding-left: 1rem;
+}
+
+.ai-npc-memory-label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.ai-npc-quest-offer {
+  margin-top: 0.6rem;
+  padding: 0.55rem 0.65rem;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.ai-npc-quest-rewards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  margin: 0.25rem 0;
+}
+
+.ai-npc-story-arc-panel {
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border-left: 3px solid rgba(167, 139, 250, 0.6);
+  font-size: 0.82rem;
+}
+
+.ai-npc-arc-status {
+  margin-left: 0.35rem;
+  font-size: 0.7rem;
+  opacity: 0.75;
+}
+
+.ai-npc-arc-bar {
+  margin-top: 0.35rem;
+}
+
+.ai-npc-prompt-preview {
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+}
+
+.ai-npc-prompt-preview pre {
+  max-height: 120px;
+  overflow: auto;
+  font-size: 0.65rem;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+
+.ai-npc-passport-panel h4 {
+  margin: 0 0 0.5rem;
+}
+
+.ai-npc-passport-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.5rem;
+}
+
+.ai-npc-passport-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.82rem;
+}
+
+.ai-npc-passport-chip span:first-child {
+  font-size: 1.25rem;
+}
+
+.ai-npc-passport-empty {
+  font-size: 0.88rem;
+  opacity: 0.85;
+}

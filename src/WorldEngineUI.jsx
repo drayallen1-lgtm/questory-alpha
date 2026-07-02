@@ -53,9 +53,9 @@ import {
   previewPathOutcome,
 } from './branchingEngine';
 import {
-  recordNpcChoice,
   resolveLivingNpcPresentation,
 } from './livingNpcEngine';
+import { EnhancedLivingNpcCard } from './AiNpcUI';
 import { CollectionLoreHub } from './CollectionLoreUI';
 import { LiveEventDashboard } from './WorldEventUI';
 import { safeGetWorldEventContext } from './worldEventEngine';
@@ -552,12 +552,13 @@ export function NpcPlayCard({ adventure, state, setState, clueIndex, progress, e
 
   if (directorCtx?.presentation) {
     return (
-      <LivingNpcCard
+      <EnhancedLivingNpcCard
         presentation={directorCtx.presentation}
         adventure={adventure}
         progress={progress}
         state={state}
         setState={setState}
+        adventures={state?.adventures || []}
         eventContext={resolvedEventContext}
       />
     );
@@ -575,12 +576,13 @@ export function NpcPlayCard({ adventure, state, setState, clueIndex, progress, e
     });
     if (fallback) {
       return (
-        <LivingNpcCard
+        <EnhancedLivingNpcCard
           presentation={fallback}
           adventure={adventure}
           progress={progress}
           state={state}
           setState={setState}
+          adventures={state?.adventures || []}
         />
       );
     }
@@ -604,74 +606,14 @@ export function NpcPlayCard({ adventure, state, setState, clueIndex, progress, e
   });
 
   return (
-    <LivingNpcCard
+    <EnhancedLivingNpcCard
       presentation={presentation}
       adventure={adventure}
       progress={progress}
       state={state}
       setState={setState}
+      adventures={state?.adventures || []}
     />
-  );
-}
-
-function LivingNpcCard({ presentation, adventure, state, setState, progress }) {
-  if (!presentation) return null;
-
-  const {
-    npc,
-    dialogueId,
-    text,
-    mood,
-    moodLabel,
-    greeting,
-    memoryLine,
-    trustLabel,
-    choices,
-    seen,
-  } = presentation;
-
-  function handleChoice(choice) {
-    setState((s) => recordNpcChoice(s, npc.id, dialogueId, choice, adventure?.id, progress));
-  }
-
-  function handleContinue() {
-    setState((s) => markNpcDialogueSeen(s, npc.id, dialogueId, adventure?.id));
-  }
-
-  return (
-    <div className={`card npc-play-card living-npc-card mood-${mood}`}>
-      <span className="npc-avatar">{npc.avatar}</span>
-      <div className="living-npc-body">
-        <div className="living-npc-head">
-          <b>{npc.name}</b>
-          {npc.role && <small className="npc-role">{npc.role}</small>}
-          <span className={`npc-mood-badge mood-${mood}`}>{moodLabel}</span>
-          <span className="npc-trust-badge">{trustLabel}</span>
-        </div>
-        {greeting && <p className="npc-return-greeting">{greeting}</p>}
-        {memoryLine && <p className="npc-memory-callback">{memoryLine}</p>}
-        <blockquote className="npc-dialogue-line">"{text}"</blockquote>
-        {choices?.length > 0 && (
-          <div className="npc-choice-list">
-            {choices.map((choice) => (
-              <button
-                key={choice.id}
-                type="button"
-                className="npc-choice-btn"
-                onClick={() => handleChoice(choice)}
-              >
-                {choice.label}
-              </button>
-            ))}
-          </div>
-        )}
-        {!seen && !choices?.length && (
-          <button type="button" className="ghost" onClick={handleContinue}>
-            Continue
-          </button>
-        )}
-      </div>
-    </div>
   );
 }
 

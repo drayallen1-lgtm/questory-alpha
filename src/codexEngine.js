@@ -7,6 +7,8 @@ import { getAdventureProgress } from './seed';
 import { getAllCollectionProgress, BADGE_DEFS } from './engagement';
 import { getAllCollectionStories, LORE_TYPE_META } from './loreCollectionsEngine';
 import { HIDDEN_DISCOVERIES, SEED_NPCS, SECRET_COLLECTIONS } from './worldEngine';
+import { getNpcMemoryRecord, getNpcRelationshipLabel, getAiNpcProfile } from './aiNpcEngine';
+import { getStoryArcProgress } from './dynamicStoryEngine';
 import { AR_SCENE_TYPE_LABELS } from './arEngine';
 import { CREATOR_WORLDS, getCurrentSeason } from './seasonEngine';
 import { getFirstDiscoveries, DISCOVERY_BADGES } from './worldDiscoveryEngine';
@@ -123,19 +125,35 @@ function buildLoreEntries(state, adventures) {
 
 function buildNpcEntries(state) {
   const progress = state?.world?.npcProgress || {};
-  return SEED_NPCS.map((npc) => {
+  return SEED_NPCS.filter((npc) => !['conductor-ghost', 'grandpa-joe', 'heritage-curator'].includes(npc.id)).map((npc) => {
     const record = progress[npc.id] || {};
-    const met = (record.visitCount || 0) > 0 || (record.seenDialogues?.length || 0) > 0;
+    const memory = getNpcMemoryRecord(state, npc.id);
+    const met = (record.visitCount || 0) > 0 || (record.seenDialogues?.length || 0) > 0 || Boolean(memory.lastSeen);
+    const profile = getAiNpcProfile(npc.id);
+    const storyArcs = (profile?.storyArcIds || [])
+      .map((arcId) => getStoryArcProgress(state, arcId))
+      .filter(Boolean);
+    const activeArc = storyArcs.find((a) => a.status === 'In Progress' || a.status === 'Available');
+
     return entryBase(npc.id, CODEX_CATEGORIES.NPCS, {
       title: npc.name,
       subtitle: npc.role,
       icon: npc.avatar || '👤',
       unlocked: met,
-      rarity: (record.trust || 0) >= 75 ? 'rare' : 'common',
-      trust: record.trust ?? 50,
+      rarity: (memory.trust || record.trust || 0) >= 75 ? 'rare' : 'common',
+      trust: memory.trust ?? record.trust ?? 50,
+      relationship: getNpcRelationshipLabel(memory),
       dialoguesSeen: record.seenDialogues?.length || 0,
       dialoguesTotal: npc.dialogues?.length || 0,
-      body: met ? npc.dialogues?.[0]?.text : 'Meet this guide on the trail.',
+      memoryFlags: memory.memoryFlags || [],
+      keyMemories: (memory.memoryFlags || []).slice(-5),
+      secretsRevealed: (memory.memoryFlags || []).filter((f) => f.includes('secret')),
+      questsCompleted: memory.completedQuests || [],
+      storyArcChapter: activeArc?.chapter?.title || null,
+      storyArcStatus: activeArc?.status || null,
+      body: met
+        ? `${getNpcRelationshipLabel(memory)} — ${memory.memoryFlags?.length ? `Remembers ${memory.memoryFlags.length} moments.` : npc.dialogues?.[0]?.text}`
+        : 'Meet this guide on the trail.',
     });
   });
 }

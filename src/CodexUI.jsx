@@ -73,6 +73,30 @@ function CodexEntryDetail({ entry, onClose }) {
         </div>
       </div>
       {entry.body && <p className="codex-detail-body">{entry.body}</p>}
+      {entry.relationship && (
+        <p className="codex-detail-chip">Relationship: {entry.relationship}</p>
+      )}
+      {entry.trust != null && (
+        <p className="codex-detail-meta">Trust level: {entry.trust}</p>
+      )}
+      {entry.keyMemories?.length > 0 && (
+        <div className="codex-npc-memories">
+          <small>Key memories</small>
+          <ul>
+            {entry.keyMemories.map((m) => (
+              <li key={m}>{m.replace(/_/g, ' ')}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {entry.storyArcChapter && (
+        <p className="codex-detail-meta">
+          Story arc: {entry.storyArcChapter} ({entry.storyArcStatus})
+        </p>
+      )}
+      {entry.questsCompleted?.length > 0 && (
+        <p className="codex-detail-meta">Quests completed: {entry.questsCompleted.length}</p>
+      )}
       {entry.typeLabel && (
         <span className="codex-detail-chip">{entry.typeLabel}</span>
       )}

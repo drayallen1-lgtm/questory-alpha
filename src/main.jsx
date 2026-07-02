@@ -177,6 +177,7 @@ import './legendaryHunt.css';
 import './livingEarth.css';
 import './creatorEconomy.css';
 import './marketplace.css';
+import './aiNpc.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';
