@@ -194,6 +194,17 @@ Each entry lists:
 
 ---
 
+### marketplaceEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Listings, trades, auctions, inventory, dynamic pricing, market activity |
+| **Primary exports** | `getMarketplaceSnapshot`, `createListing`, `purchaseListing`, `makeOffer`, `acceptOffer`, `placeAuctionBid`, `giftItem`, `MARKET_VENUES` |
+| **Dependencies** | `explorerEconomyEngine`, `craftingEngine`, `creatorEconomyEngine`, `seasonEngine` |
+| **Consumers** | `MarketplaceUI.jsx`, `QuestoryMap.jsx`, `livingEarthEngine.js`, `SocialUI.jsx`, `SweepUI.jsx` |
+
+---
+
 ### livingEarthEngine.js
 
 | | |

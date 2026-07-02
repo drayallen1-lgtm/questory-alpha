@@ -36,7 +36,7 @@ React panels + Map layers
 claimFlow.js (victory orchestrator)
 ```
 
-**Platform pillars:** Living World · Social Discovery · Questory Identity · Codex · Economy · Progression · Crafting · Living Earth · Creator Economy
+**Platform pillars:** Living World · Social Discovery · Questory Identity · Codex · Economy · Progression · Crafting · Living Earth · Creator Economy · Marketplace
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full engine map.
 
@@ -58,6 +58,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full engine map.
 | 10 — Legendary Hunts Evolution | ✓ Complete |
 | 11 — Living Earth | ✓ Complete |
 | 12 — Creator Economy | ✓ Complete |
+| 13 — Global Marketplace | ✓ Complete |
 
 Full roadmap: [ROADMAP.md](./ROADMAP.md)
 

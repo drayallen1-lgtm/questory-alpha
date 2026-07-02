@@ -154,6 +154,14 @@ Creators earn followers, subscriptions, and simulated revenue. Premium adventure
 
 ---
 
+### Global Marketplace (Phase 13)
+
+Players buy, sell, trade, and auction items across a dynamic marketplace. Inventory unifies relics, materials, boss loot, and creator collectibles. Auctions, wishlists, trade reputation, and hall of fame rankings make the exploration economy tangible.
+
+**Why it mattered:** Questory became a full exploration economy — wealth and collection now live inside the world.
+
+---
+
 ## Timeline Summary
 
 | Era | Milestone | Phase |
@@ -172,7 +180,8 @@ Creators earn followers, subscriptions, and simulated revenue. Premium adventure
 | 2.0 | Legendary hunts & world events | 10 |
 | 2.0 | Living Earth global exploration platform | 11 |
 | 2.0 | Creator economy & dashboards | 12 |
-| Next | Global marketplace & trading network | 13 |
+| 2.0 | Global marketplace & trading network | 13 |
+| Next | AI Living NPCs & dynamic story engine | 14 |
 
 ---
 

@@ -112,19 +112,19 @@ Creator economy engine, profiles, followers, subscriptions, premium adventure ti
 
 ---
 
-## Future Phases
+### Phase 13 — Global Marketplace & Trading Network ✓ Complete
 
-### Phase 13 — Global Marketplace & Trading Network
+Marketplace engine with dynamic pricing, unified inventory, listings, offers, trades, auctions, wishlists, creator store, hall of fame, map venue HUD, Passport Market tab, and Living World / Earth / Social market activity feeds.
 
-Trading artifacts, creator collectibles, limited relics, season cosmetics, sponsor rewards, guild exchanges. Player-to-player economy and trading network.
-
-**Status:** Future
+**Why it mattered:** Questory gained an exploration economy backbone — players can buy, sell, trade, and auction inside the world.
 
 ---
 
-### Phase 14 — Guild Expansion
+## Future Phases
 
-Deep guild systems — shared goals, guild crafting, territory wars, guild seasons, cross-city alliances.
+### Phase 14 — AI Living NPCs & Dynamic Story Engine
+
+Living NPCs with memory, trust, branching dialogue, and dynamic story arcs that respond to player choices and world state.
 
 **Status:** Future
 
@@ -148,4 +148,4 @@ Multi-city rollout, national passport expansion, regional world bosses, geograph
 
 ---
 
-*Last updated: Phase 12 complete. Next milestone: Phase 13 — Global Marketplace & Trading Network.*
+*Last updated: Phase 13 complete. Next milestone: Phase 14 — AI Living NPCs & Dynamic Story Engine.*
