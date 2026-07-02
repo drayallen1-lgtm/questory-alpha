@@ -168,6 +168,16 @@ Adventure data is not one monolithic engine. Responsibilities are split:
 
 **Consumers:** `CreatorEconomyUI.jsx`, `CreatorDashboard`, `QuestoryPassport`, `QuestoryMap`, `claimFlow.js`, `mapDiscovery.js`
 
+### marketplaceEngine.js (Phase 13)
+
+**Purpose:** Global marketplace — inventory, listings, trades, auctions, dynamic pricing, wishlists, market activity feeds.
+
+**Inputs:** `explorerEconomyEngine`, `craftingEngine`, `creatorEconomyEngine`, `seasonEngine`, state.marketplace
+
+**Outputs:** `getMarketplaceSnapshot`, `createListing`, `purchaseListing`, `makeOffer`, `placeAuctionBid`, `giftItem`, `recordMarketSale`
+
+**Consumers:** `MarketplaceUI.jsx`, `QuestoryMap.jsx`, `livingEarthEngine.js`, `SocialUI.jsx`, `SweepUI.jsx`
+
 ---
 
 ## Living World
