@@ -178,6 +178,26 @@ Adventure data is not one monolithic engine. Responsibilities are split:
 
 **Consumers:** `MarketplaceUI.jsx`, `QuestoryMap.jsx`, `livingEarthEngine.js`, `SocialUI.jsx`, `SweepUI.jsx`
 
+### aiNpcEngine.js (Phase 14)
+
+**Purpose:** AI-ready NPC memory, relationships, deterministic dynamic dialogue, quest hooks, prompt payloads.
+
+**Inputs:** `livingNpcEngine`, `playerProgressionEngine`, `legendaryHuntEngine`, `marketplaceEngine`, `creatorEconomyEngine`, `codexEngine`, state.aiNpc
+
+**Outputs:** `getAiNpcSnapshot`, `recordNpcEncounter`, `recordNpcChoice`, `generateNpcDialogue`, `generateNpcQuestHook`, `buildNpcPromptPayload`
+
+**Consumers:** `AiNpcUI.jsx`, `WorldEngineUI.jsx`, `codexEngine.js`, `claimFlow.js`, `QuestoryMap.jsx`, `livingEarthEngine.js`
+
+### dynamicStoryEngine.js (Phase 14)
+
+**Purpose:** Story arcs, beats, boss/creator world reactions, player-specific story callbacks.
+
+**Inputs:** `aiNpcEngine`, `legendaryHuntEngine`, `playerProgressionEngine`, state.dynamicStory
+
+**Outputs:** `getDynamicStorySnapshot`, `advanceStoryArc`, `recordStoryBeat`, `resolveStoryBeatForAdventure`, `generateStorySummary`
+
+**Consumers:** `AiNpcUI.jsx`, `codexEngine.js`, `claimFlow.js`, `QuestoryMap.jsx`
+
 ---
 
 ## Living World

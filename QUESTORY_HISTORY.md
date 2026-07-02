@@ -162,6 +162,14 @@ Players buy, sell, trade, and auction items across a dynamic marketplace. Invent
 
 ---
 
+### AI Living NPCs & Dynamic Story (Phase 14)
+
+NPCs gained long-term memory, relationship labels (Stranger → Legendary Bond), deterministic dynamic dialogue reacting to reputation/boss/market/season state, lightweight quest hooks, six canonical story arcs, Codex memory archives, and AI-ready prompt payloads — all without external API calls.
+
+**Why it mattered:** Story characters now feel alive across adventures and systems, preparing Questory for future AI dialogue while staying deterministic and safe today.
+
+---
+
 ## Timeline Summary
 
 | Era | Milestone | Phase |
@@ -181,7 +189,8 @@ Players buy, sell, trade, and auction items across a dynamic marketplace. Invent
 | 2.0 | Living Earth global exploration platform | 11 |
 | 2.0 | Creator economy & dashboards | 12 |
 | 2.0 | Global marketplace & trading network | 13 |
-| Next | AI Living NPCs & dynamic story engine | 14 |
+| 2.0 | AI Living NPCs & dynamic story engine | 14 |
+| Next | Dynamic factions, guilds & territory wars | 15 |
 
 ---
 

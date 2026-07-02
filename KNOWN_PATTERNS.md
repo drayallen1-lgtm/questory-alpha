@@ -174,6 +174,8 @@ buildClaimSuccessState()
   → unlockLoreOnVictory           (lore)
   → recordWorldEventVictory       (events)
   → recordLivingNpcVictory        (NPCs)
+  → recordAiNpcVictory            (AI NPC memory)
+  → resolveStoryBeatForAdventure  (dynamic story)
   → applyBranchVictoryEffects     (branching)
   → applyProgressionOnVictory     (progression)
 ```
@@ -197,6 +199,9 @@ buildClaimSuccessState()
 | Complete hunt | `recordSocialMapActivity` | Activity feed entry |
 | Complete hunt | Heat recomputed | Pin heat level changes |
 | Craft artifact | `craftArtifact` | Finder radius widens |
+| Complete hunt | `recordAiNpcVictory` | NPC memory + story arc beat |
+| NPC dialogue choice | `recordNpcChoice` (aiNpc) | Trust/relationship shifts |
+| Boss active | `getAiNpcSnapshot` | NPC dialogue + timeline reactions |
 | Daily login | `applyDailyLogin` | Streak, coins |
 | Join event | `joinCityEvent` | Event badge progress |
 
@@ -204,6 +209,28 @@ buildClaimSuccessState()
 - Map reads from state snapshots — it does not store its own progress
 - Fog, heat, and timeline are derived from `state.mapExploration`, adventures, and events
 - Living world snapshot recomputes on every render cycle via `useMemo`
+
+---
+
+## AI NPC Extension Pattern (Phase 14)
+
+**Purpose:** Extend `livingNpcEngine` without replacing it.
+
+**Rules:**
+- `livingNpcEngine` owns per-adventure dialogue seen/trust basics
+- `aiNpcEngine` owns long-term memory, relationships, dynamic lines, quest hooks
+- `recordNpcChoice` in `aiNpcEngine` delegates to `livingNpcEngine` then enriches `state.aiNpc`
+- UI uses `EnhancedLivingNpcCard` which wraps existing presentation from `resolveLivingNpcPresentation`
+- `buildNpcPromptPayload` prepares future API calls — never call external AI from engines yet
+- Deterministic guardrails: no private player data, no lore contradictions, canonical arc facts preserved
+
+**Read path:**
+
+```
+getAiNpcSnapshot(state, adventures)
+  → generateNpcDialogue / generateNpcQuestHook
+  → AiNpcUI / Codex / Living World timeline
+```
 
 ---
 

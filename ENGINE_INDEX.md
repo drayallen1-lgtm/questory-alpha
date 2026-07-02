@@ -190,7 +190,29 @@ Each entry lists:
 | **Purpose** | NPC memory, trust, return-visitor dialogue, victory records |
 | **Primary exports** | `recordLivingNpcVictory`, `resolveLivingNpcPresentation`, `recordNpcDialogueSeen`, `NPC_MOODS` |
 | **Dependencies** | `worldEngine.js` (SEED_NPCS) |
-| **Consumers** | Play flow NPC cards, `claimFlow.js`, `codexEngine` |
+| **Consumers** | Play flow NPC cards, `claimFlow.js`, `codexEngine`, `aiNpcEngine.js` |
+
+---
+
+### aiNpcEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Long-term NPC memory, relationships, dynamic dialogue, quest hooks, AI prompt payloads |
+| **Primary exports** | `getAiNpcSnapshot`, `recordNpcEncounter`, `recordNpcChoice`, `generateNpcDialogue`, `generateNpcQuestHook`, `buildNpcPromptPayload`, `AI_NPC_PROFILES` |
+| **Dependencies** | `livingNpcEngine`, `playerProgressionEngine`, `legendaryHuntEngine`, `marketplaceEngine`, `creatorEconomyEngine` |
+| **Consumers** | `AiNpcUI.jsx`, `WorldEngineUI.jsx`, `codexEngine`, `claimFlow.js`, `QuestoryMap.jsx` |
+
+---
+
+### dynamicStoryEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Story arcs, beats, chapter progress, adventure-linked story advancement |
+| **Primary exports** | `getDynamicStorySnapshot`, `advanceStoryArc`, `recordStoryBeat`, `resolveStoryBeatForAdventure`, `STORY_ARCS` |
+| **Dependencies** | `aiNpcEngine`, `legendaryHuntEngine`, `playerProgressionEngine` |
+| **Consumers** | `AiNpcUI.jsx`, `codexEngine`, `claimFlow.js`, `QuestoryMap.jsx` |
 
 ---
 

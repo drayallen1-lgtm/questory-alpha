@@ -120,19 +120,19 @@ Marketplace engine with dynamic pricing, unified inventory, listings, offers, tr
 
 ---
 
-## Future Phases
+### Phase 14 — AI Living NPCs & Dynamic Story Engine ✓ Complete
 
-### Phase 14 — AI Living NPCs & Dynamic Story Engine
+AI-ready NPC memory engine with long-term relationships, deterministic dynamic dialogue, quest hooks, story arcs (Black Lantern, Iron Conductor, River Sentinel, Founder Trail, Horror Crest, Parsons Heritage), enhanced NPC play cards, Codex memory entries, and Living World timeline integration.
 
-Living NPCs with memory, trust, branching dialogue, and dynamic story arcs that respond to player choices and world state.
-
-**Status:** Future
+**Why it mattered:** NPCs now feel like living characters who remember the player, react to bosses/market/season events, and advance personal story arcs — without real AI API calls yet.
 
 ---
 
-### Phase 15 — World Expansion
+## Future Phases
 
-Multi-city rollout, national passport expansion, regional world bosses, geographic content scaling.
+### Phase 15 — Dynamic Factions, Guilds & Territory Wars
+
+Faction allegiance, guild territory control, regional conflicts, and map-scale social competition layered on top of exploration.
 
 **Status:** Future
 
@@ -148,4 +148,4 @@ Multi-city rollout, national passport expansion, regional world bosses, geograph
 
 ---
 
-*Last updated: Phase 13 complete. Next milestone: Phase 14 — AI Living NPCs & Dynamic Story Engine.*
+*Last updated: Phase 14 complete. Next milestone: Phase 15 — Dynamic Factions, Guilds & Territory Wars.*
