@@ -19,6 +19,8 @@ import { applyEndingRewards } from './worldEngine';
 import { unlockLoreOnVictory } from './loreCollectionsEngine';
 import { safeGetWorldEventContext, recordWorldEventVictory } from './worldEventEngine';
 import { recordLivingNpcVictory } from './livingNpcEngine';
+import { recordAiNpcVictory } from './aiNpcEngine';
+import { resolveStoryBeatForAdventure } from './dynamicStoryEngine';
 import { applyBranchVictoryEffects } from './branchingEngine';
 import { applyProgressionOnVictory } from './playerProgressionEngine';
 import {
@@ -157,6 +159,8 @@ export function buildClaimSuccessState(
     completion.newlyCompletedCollections || []
   );
   nextState = recordLivingNpcVictory(nextState, freshAdventure);
+  nextState = recordAiNpcVictory(nextState, freshAdventure);
+  nextState = resolveStoryBeatForAdventure(nextState, freshAdventure);
   nextState = applyBranchVictoryEffects(nextState, freshAdventure, p);
   const eventContext = safeGetWorldEventContext(nextState, nextState.adventures || []);
   nextState = recordWorldEventVictory(nextState, freshAdventure, eventContext);

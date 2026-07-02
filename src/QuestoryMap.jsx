@@ -76,6 +76,8 @@ import { getLivingEarthSnapshot, EARTH_MODE_EXIT_ZOOM } from './livingEarthEngin
 import { LivingEarthOverlay } from './LivingEarthUI';
 import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
 import { getMarketplaceSnapshot } from './marketplaceEngine';
+import { getAiNpcSnapshot } from './aiNpcEngine';
+import { getDynamicStorySnapshot } from './dynamicStoryEngine';
 import { MarketplaceMapHud } from './MarketplaceUI';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
@@ -1276,6 +1278,16 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     [state, adventures, worldNow]
   );
 
+  const aiNpcSnapshot = useMemo(
+    () => getAiNpcSnapshot(state, adventures, { now: worldNow }),
+    [state, adventures, worldNow]
+  );
+
+  const dynamicStorySnapshot = useMemo(
+    () => getDynamicStorySnapshot(state, adventures, { now: worldNow }),
+    [state, adventures, worldNow]
+  );
+
   const livePresence = useMemo(
     () => ({
       ...livingWorld.presence,
@@ -1375,6 +1387,28 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         });
       }
     });
+    (aiNpcSnapshot.timelineFeed || []).forEach((item) => {
+      if (!merged.some((e) => e.id === item.id)) {
+        merged.push({
+          ...item,
+          kind: item.kind || 'npc',
+          text: item.text,
+          label: item.text,
+          minutesAgo: item.minutesAgo ?? 2,
+        });
+      }
+    });
+    (dynamicStorySnapshot.timelineFeed || []).forEach((item) => {
+      if (!merged.some((e) => e.id === item.id)) {
+        merged.push({
+          ...item,
+          kind: item.kind || 'story',
+          text: item.text,
+          label: item.text,
+          minutesAgo: item.minutesAgo ?? 4,
+        });
+      }
+    });
     return merged
       .sort((a, b) => (a.minutesAgo ?? 99) - (b.minutesAgo ?? 99))
       .slice(0, 16);
@@ -1386,6 +1420,8 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     legendaryHuntSnapshot.timeline,
     creatorEconomySnapshot.timelineFeed,
     marketplaceSnapshot.activityFeed,
+    aiNpcSnapshot.timelineFeed,
+    dynamicStorySnapshot.timelineFeed,
   ]);
 
   const pinStats = useMemo(
