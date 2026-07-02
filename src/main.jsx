@@ -59,6 +59,7 @@ import {
   formatUserErrorMessage,
   formatSuccessMessage,
 } from './claimSystem';
+import { runClaimTreasure } from './claimFlow';
 import { AdminClaimCode } from './AdminClaimCode';
 import {
   MedallionSignalScreen,
@@ -615,16 +616,42 @@ function QuestoryApp() {
   }
 
   async function claimTreasure(adventure, code, options = {}) {
+    if (!adventure?.id) {
+      return {
+        ok: false,
+        success: false,
+        message: 'Adventure missing. Return to the map and try again.',
+      };
+    }
+
     const accessContext = getAccessContext(adventure, options.previewMode);
-    const result = await runClaimTreasure({
-      state,
-      adventure,
-      code,
-      options: { ...options, accessContext },
-      user,
-      isSupabaseMode,
-      claimLimitedRewardRemote,
-    });
+    let result;
+    try {
+      result = await runClaimTreasure({
+        state,
+        adventure,
+        code: String(code || '').trim(),
+        options: { ...options, accessContext },
+        user,
+        isSupabaseMode,
+        claimLimitedRewardRemote,
+      });
+    } catch (err) {
+      console.error('claimTreasure failed:', err);
+      return {
+        ok: false,
+        success: false,
+        message: 'Claim failed. Check the code and try again.',
+      };
+    }
+
+    if (!result) {
+      return {
+        ok: false,
+        success: false,
+        message: 'Claim failed. Check the code and try again.',
+      };
+    }
 
     if (result.showLogin) setShowLogin(true);
     if (!result.applyToState) return result.response;
