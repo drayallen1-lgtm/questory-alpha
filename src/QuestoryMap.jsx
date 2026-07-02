@@ -74,6 +74,7 @@ import { DiscoveredWorldPanel, DiscoveryCeremonyToast } from './DiscoveredWorldP
 import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 import { getLivingEarthSnapshot, EARTH_MODE_EXIT_ZOOM } from './livingEarthEngine';
 import { LivingEarthOverlay } from './LivingEarthUI';
+import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -1263,6 +1264,11 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     }
   }, [worldDiscoverySnapshot.milestones]);
 
+  const creatorEconomySnapshot = useMemo(
+    () => getCreatorEconomySnapshot(state, adventures, { now: worldNow }),
+    [state, adventures, worldNow]
+  );
+
   const livePresence = useMemo(
     () => ({
       ...livingWorld.presence,
@@ -1340,6 +1346,17 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         merged.push({ ...item, kind: item.kind || 'boss' });
       }
     });
+    (creatorEconomySnapshot.timelineFeed || []).forEach((item) => {
+      if (!merged.some((e) => e.id === item.id)) {
+        merged.push({
+          ...item,
+          kind: item.kind || 'creator',
+          text: item.text,
+          label: item.text,
+          minutesAgo: 2,
+        });
+      }
+    });
     return merged
       .sort((a, b) => (a.minutesAgo ?? 99) - (b.minutesAgo ?? 99))
       .slice(0, 16);
@@ -1349,6 +1366,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     questoryIdentitySnapshot.feed,
     worldDiscoverySnapshot.timelineEntries,
     legendaryHuntSnapshot.timeline,
+    creatorEconomySnapshot.timelineFeed,
   ]);
 
   const pinStats = useMemo(

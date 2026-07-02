@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Camera,
   Clock,
@@ -35,9 +35,14 @@ import {
   getRankedAdventures,
   joinTeam,
 } from './social';
+import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
 
 export function SocialHub({ state, setState, adventures, nav, auth }) {
   const [tab, setTab] = useState('teams');
+  const creatorSnapshot = useMemo(
+    () => getCreatorEconomySnapshot(state, adventures),
+    [state, adventures]
+  );
 
   const tabs = [
     ['teams', 'Teams', Users],
@@ -56,10 +61,29 @@ export function SocialHub({ state, setState, adventures, nav, auth }) {
 
       <div className="card social-feed-preview">
         <h4>Your Feed</h4>
-        {getPersonalizedFeed(state, adventures).slice(0, 4).map((item) => (
+        {getPersonalizedFeed(state, adventures).slice(0, 3).map((item) => (
           <p key={item.id} className="feed-item">
             <Zap size={12} /> {item.text} <small>{item.at}</small>
           </p>
+        ))}
+        {creatorSnapshot.socialFeed.slice(0, 3).map((item) => (
+          <p key={item.id} className="feed-item feed-item-creator">
+            <span>{item.icon}</span> {item.text}
+          </p>
+        ))}
+      </div>
+
+      <div className="card creator-social-rankings">
+        <h4>Trending Creators</h4>
+        {creatorSnapshot.trendingCreators.slice(0, 4).map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            className="ghost creator-passport-trend"
+            onClick={() => nav('creator', null, { creatorId: c.id })}
+          >
+            {c.name} · {c.rank.label}
+          </button>
         ))}
       </div>
 

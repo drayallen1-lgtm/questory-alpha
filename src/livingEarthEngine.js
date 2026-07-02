@@ -15,6 +15,7 @@ import { getLivingWorldSnapshot } from './livingWorldEngine';
 import { getSocialDiscoverySnapshot } from './socialWorldEngine';
 import { getQuestoryIdentitySnapshot } from './questoryIdentityEngine';
 import { getLegendaryHuntSnapshot } from './legendaryHuntEngine';
+import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
 import { getCurrentSeason } from './seasonEngine';
 import { CREATOR_WORLDS } from './seasonEngine';
 import { safeGetTime } from './dateUtils';
@@ -282,6 +283,7 @@ export function getLivingEarthSnapshot(options = {}) {
   const identity = getQuestoryIdentitySnapshot(state, adventures, { now });
   const legendaryHunt = getLegendaryHuntSnapshot(state, adventures, { now });
   const social = getSocialDiscoverySnapshot(state, adventures, { now });
+  const creatorEconomy = getCreatorEconomySnapshot(state, adventures, { now });
 
   const continents = buildContinentMarkers(worldDiscovery, { state, adventures, now });
   const countries = buildCountryMarkers(worldDiscovery);
@@ -316,7 +318,13 @@ export function getLivingEarthSnapshot(options = {}) {
     ceremonies,
     worldDiscovery,
     liveExplorerCount: worldDiscovery.liveExplorerCount || social?.presenceBoost?.activeHunts || 0,
-    timelineEntries: worldDiscovery.timelineEntries || [],
+    timelineEntries: [
+      ...(worldDiscovery.timelineEntries || []),
+      ...(creatorEconomy.timelineFeed || []).map((e) => ({
+        ...e,
+        label: e.text,
+      })),
+    ].slice(0, 8),
     heatZones: livingWorld.heatZones?.slice(0, 4) || [],
     stored,
     flyTargets: {
