@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  acceptOffer,
   acceptTrade,
   addToWishlist,
   buyAuctionNow,
@@ -11,6 +12,7 @@ import {
   makeOffer,
   placeAuctionBid,
   purchaseListing,
+  rejectOffer,
   removeFromWishlist,
 } from './marketplaceEngine';
 
@@ -199,6 +201,7 @@ export function MarketplaceScreen({ state, setState, adventures, nav }) {
         <>
           <div className="card">
             <h4>Direct Trade</h4>
+            <p className="admin-meta">Safe confirmation · future escrow support</p>
             <select value={selectedInstance} onChange={(e) => setSelectedInstance(e.target.value)}>
               <option value="">Select item to offer</option>
               {snapshot.inventory.filter((i) => i.tradable).map((i) => (
@@ -251,6 +254,29 @@ export function MarketplaceScreen({ state, setState, adventures, nav }) {
                   Accept
                 </button>
               )}
+            </div>
+          ))}
+          {snapshot.offers.filter((o) => o.status === 'pending').map((o) => (
+            <div key={o.id} className="card marketplace-trade-row">
+              <span>Offer {o.amountCoins} 🪙 on listing</span>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => {
+                  const r = acceptOffer(state, o.id);
+                  if (r.ok) setState(r.state);
+                  setMsg(r.ok ? 'Offer accepted' : r.message);
+                }}
+              >
+                Accept
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setState((s) => rejectOffer(s, o.id).state)}
+              >
+                Reject
+              </button>
             </div>
           ))}
         </>
