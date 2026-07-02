@@ -158,6 +158,16 @@ Adventure data is not one monolithic engine. Responsibilities are split:
 
 **Consumers:** `LivingEarthUI.jsx`, `QuestoryMap.jsx` (MapScreen overlay at zoom ≤ 2)
 
+### creatorEconomyEngine.js (Phase 12)
+
+**Purpose:** Creator profiles, followers, subscriptions, revenue simulation, analytics, store catalog, verification, reputation, and timeline feed for Living World integration.
+
+**Inputs:** `economy.js`, `seasonEngine`, `questoryIdentityEngine`, adventures, state.creatorEconomy
+
+**Outputs:** `getCreatorEconomySnapshot`, `followCreator`, `subscribeCreator`, `recordCreatorCompletion`, `resolveCreatorPinOverlays`
+
+**Consumers:** `CreatorEconomyUI.jsx`, `CreatorDashboard`, `QuestoryPassport`, `QuestoryMap`, `claimFlow.js`, `mapDiscovery.js`
+
 ---
 
 ## Living World

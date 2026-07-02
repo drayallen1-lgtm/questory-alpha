@@ -146,6 +146,14 @@ Zooming out to continent/world level morphs the map into a rotating globe. Disco
 
 ---
 
+### Creator Economy (Phase 12)
+
+Creators earn followers, subscriptions, and simulated revenue. Premium adventures, a creator store, analytics dashboards, verification tiers, and reputation scores extend the existing economy without replacing it. Creator activity flows into Living World, Earth, and Social timelines.
+
+**Why it mattered:** Questory became a creator platform — players can follow builders like streamers, and creators can grow worlds with data.
+
+---
+
 ## Timeline Summary
 
 | Era | Milestone | Phase |
@@ -163,7 +171,8 @@ Zooming out to continent/world level morphs the map into a rotating globe. Disco
 | 2.0 | Crafting & inventory | 9 |
 | 2.0 | Legendary hunts & world events | 10 |
 | 2.0 | Living Earth global exploration platform | 11 |
-| Next | Creator economy | 12 |
+| 2.0 | Creator economy & dashboards | 12 |
+| Next | Global marketplace & trading network | 13 |
 
 ---
 

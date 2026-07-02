@@ -128,6 +128,17 @@ Each entry lists:
 
 ---
 
+### creatorEconomyEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Creator profiles, followers, revenue, analytics, store, verification, reputation |
+| **Primary exports** | `getCreatorEconomySnapshot`, `followCreator`, `subscribeCreator`, `recordCreatorCompletion`, `STORE_CATALOG`, `EXTENSION_HOOKS` |
+| **Dependencies** | `economy.js`, `seasonEngine`, `questoryIdentityEngine`, `seed.js` |
+| **Consumers** | `CreatorEconomyUI.jsx`, `EconomyUI.jsx`, `SweepUI.jsx`, `QuestoryMap.jsx`, `claimFlow.js`, `mapDiscovery.js`, `livingEarthEngine.js` |
+
+---
+
 ### craftingEngine.js
 
 | | |
@@ -313,7 +324,7 @@ Each entry lists:
 | **Purpose** | Geographic discovery levels, completion tiers, global goals |
 | **Primary exports** | `getDiscoveredWorldSnapshot`, `DISCOVERY_LEVELS`, `COMPLETION_TIERS`, `getFirstDiscoveries` |
 | **Dependencies** | `mapDiscovery`, `seasonEngine`, `expansion.js` |
-| **Consumers** | `DiscoveredWorldPanel.jsx`, `CityDiscoveryRingLayer.jsx`, `codexEngine`, `livingEarthEngine.js` |
+| **Consumers** | `DiscoveredWorldPanel.jsx`, `CityDiscoveryRingLayer.jsx`, `codexEngine`, `livingEarthEngine.js`, `creatorEconomyEngine.js` |
 
 ---
 

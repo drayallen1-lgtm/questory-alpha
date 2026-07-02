@@ -104,19 +104,19 @@ Globe presentation layer at continent/world zoom. Rotating Earth with day/night,
 
 ---
 
-## Future Phases
+### Phase 12 — Creator Economy ✓ Complete
 
-### Phase 12 — Creator Economy
+Creator economy engine, profiles, followers, subscriptions, premium adventure tiers, simulated store, analytics dashboard, verification badges, reputation scoring, map pin overlays, Passport Creators tab, and Living World / Earth / Social timeline integration.
 
-Creator monetization, analytics, world ownership, sponsored campaign tools, creator reputation economy.
-
-**Status:** Future
+**Why it mattered:** Questory became a creator platform — builders can grow audiences, earn simulated revenue, and own worlds.
 
 ---
 
-### Phase 13 — Player Marketplace
+## Future Phases
 
-Trading artifacts, creator collectibles, limited relics, season cosmetics, sponsor rewards, guild exchanges. Player-to-player economy.
+### Phase 13 — Global Marketplace & Trading Network
+
+Trading artifacts, creator collectibles, limited relics, season cosmetics, sponsor rewards, guild exchanges. Player-to-player economy and trading network.
 
 **Status:** Future
 
@@ -148,4 +148,4 @@ Multi-city rollout, national passport expansion, regional world bosses, geograph
 
 ---
 
-*Last updated: Phase 11 complete — Living Earth global exploration platform. Next milestone: Phase 12 — Creator Economy.*
+*Last updated: Phase 12 complete. Next milestone: Phase 13 — Global Marketplace & Trading Network.*
