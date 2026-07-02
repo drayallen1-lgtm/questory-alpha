@@ -273,7 +273,10 @@ export function MarketplaceScreen({ state, setState, adventures, nav }) {
               <button
                 type="button"
                 className="ghost"
-                onClick={() => setState((s) => rejectOffer(s, o.id).state)}
+                onClick={() => {
+                  const r = rejectOffer(state, o.id);
+                  if (r.ok) setState(r.state);
+                }}
               >
                 Reject
               </button>

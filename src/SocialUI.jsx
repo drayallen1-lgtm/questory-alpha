@@ -36,11 +36,16 @@ import {
   joinTeam,
 } from './social';
 import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
+import { getMarketplaceSnapshot } from './marketplaceEngine';
 
 export function SocialHub({ state, setState, adventures, nav, auth }) {
   const [tab, setTab] = useState('teams');
   const creatorSnapshot = useMemo(
     () => getCreatorEconomySnapshot(state, adventures),
+    [state, adventures]
+  );
+  const marketplaceSnapshot = useMemo(
+    () => getMarketplaceSnapshot(state, adventures),
     [state, adventures]
   );
 
@@ -68,6 +73,11 @@ export function SocialHub({ state, setState, adventures, nav, auth }) {
         ))}
         {creatorSnapshot.socialFeed.slice(0, 3).map((item) => (
           <p key={item.id} className="feed-item feed-item-creator">
+            <span>{item.icon}</span> {item.text}
+          </p>
+        ))}
+        {marketplaceSnapshot.activityFeed.slice(0, 3).map((item) => (
+          <p key={item.id} className="feed-item feed-item-market">
             <span>{item.icon}</span> {item.text}
           </p>
         ))}

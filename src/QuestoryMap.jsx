@@ -75,6 +75,8 @@ import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 import { getLivingEarthSnapshot, EARTH_MODE_EXIT_ZOOM } from './livingEarthEngine';
 import { LivingEarthOverlay } from './LivingEarthUI';
 import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
+import { getMarketplaceSnapshot } from './marketplaceEngine';
+import { MarketplaceMapHud } from './MarketplaceUI';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -1269,6 +1271,11 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     [state, adventures, worldNow]
   );
 
+  const marketplaceSnapshot = useMemo(
+    () => getMarketplaceSnapshot(state, adventures, { now: worldNow }),
+    [state, adventures, worldNow]
+  );
+
   const livePresence = useMemo(
     () => ({
       ...livingWorld.presence,
@@ -1357,6 +1364,17 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         });
       }
     });
+    (marketplaceSnapshot.activityFeed || []).forEach((item) => {
+      if (!merged.some((e) => e.id === item.id)) {
+        merged.push({
+          ...item,
+          kind: item.kind || 'market',
+          text: item.text,
+          label: item.text,
+          minutesAgo: 1,
+        });
+      }
+    });
     return merged
       .sort((a, b) => (a.minutesAgo ?? 99) - (b.minutesAgo ?? 99))
       .slice(0, 16);
@@ -1367,6 +1385,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     worldDiscoverySnapshot.timelineEntries,
     legendaryHuntSnapshot.timeline,
     creatorEconomySnapshot.timelineFeed,
+    marketplaceSnapshot.activityFeed,
   ]);
 
   const pinStats = useMemo(
@@ -1856,6 +1875,10 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           setState={setState}
           showDiscoveryPanel={!livingCluster && !selectedAdventure}
         />
+
+        {nav && !earthOverlayVisible && (
+          <MarketplaceMapHud snapshot={marketplaceSnapshot} nav={nav} />
+        )}
 
         {showPinDebugLine && (
           <p className="map-pin-debug-line">

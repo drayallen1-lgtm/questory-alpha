@@ -71,7 +71,7 @@ export const EXTENSION_HOOKS = {
   subscriptions: { enabled: false, label: 'Paid subscriptions' },
   ads: { enabled: false, label: 'Brand ad placements' },
   brandSponsorships: { enabled: true, label: 'Sponsored campaigns (simulated)' },
-  marketplace: { enabled: false, label: 'Global marketplace' },
+  marketplace: { enabled: true, label: 'Global marketplace' },
   nftDisabledCollectibles: { enabled: true, label: 'Digital collectibles (no NFT)' },
   creatorTeams: { enabled: false, label: 'Creator teams' },
   creatorOrganizations: { enabled: false, label: 'Creator organizations' },

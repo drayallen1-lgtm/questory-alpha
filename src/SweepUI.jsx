@@ -86,6 +86,7 @@ import {
 import { CraftingPanel } from './CraftingUI';
 import { isDev } from './config/env';
 import { CreatorPassportPanel } from './CreatorEconomyUI';
+import { MarketplacePassportPanel } from './MarketplaceUI';
 
 export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
   const greeting = getTimeGreeting();
@@ -391,6 +392,9 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
         <button type="button" className={tab === 'rewards' ? 'active' : ''} onClick={() => selectTab('rewards')}>
           Rewards
         </button>
+        <button type="button" className={tab === 'marketplace' ? 'active' : ''} onClick={() => selectTab('marketplace')}>
+          Market
+        </button>
         <button type="button" className={tab === 'creators' ? 'active' : ''} onClick={() => selectTab('creators')}>
           Creators
         </button>
@@ -399,7 +403,7 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
         </button>
       </div>
 
-      {tab !== 'economy' && tab !== 'progression' && tab !== 'crafting' && tab !== 'creators' && (
+      {tab !== 'economy' && tab !== 'progression' && tab !== 'crafting' && tab !== 'creators' && tab !== 'marketplace' && (
         <div className="card balance">
           <h3>{state.coins} Coins</h3>
           <p>{state.entries} Community Pot Entries</p>
@@ -537,6 +541,10 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
 
       {tab === 'creators' && (
         <CreatorPassportPanel state={state} setState={setState} adventures={adventures} nav={nav} />
+      )}
+
+      {tab === 'marketplace' && (
+        <MarketplacePassportPanel state={state} setState={setState} adventures={adventures} nav={nav} />
       )}
     </>
   );

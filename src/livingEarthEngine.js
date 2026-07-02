@@ -16,6 +16,7 @@ import { getSocialDiscoverySnapshot } from './socialWorldEngine';
 import { getQuestoryIdentitySnapshot } from './questoryIdentityEngine';
 import { getLegendaryHuntSnapshot } from './legendaryHuntEngine';
 import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
+import { getMarketplaceSnapshot } from './marketplaceEngine';
 import { getCurrentSeason } from './seasonEngine';
 import { CREATOR_WORLDS } from './seasonEngine';
 import { safeGetTime } from './dateUtils';
@@ -284,6 +285,7 @@ export function getLivingEarthSnapshot(options = {}) {
   const legendaryHunt = getLegendaryHuntSnapshot(state, adventures, { now });
   const social = getSocialDiscoverySnapshot(state, adventures, { now });
   const creatorEconomy = getCreatorEconomySnapshot(state, adventures, { now });
+  const marketplace = getMarketplaceSnapshot(state, adventures, { now });
 
   const continents = buildContinentMarkers(worldDiscovery, { state, adventures, now });
   const countries = buildCountryMarkers(worldDiscovery);
@@ -323,6 +325,11 @@ export function getLivingEarthSnapshot(options = {}) {
       ...(creatorEconomy.timelineFeed || []).map((e) => ({
         ...e,
         label: e.text,
+      })),
+      ...(marketplace.activityFeed || []).map((e) => ({
+        ...e,
+        label: e.text,
+        kind: 'market',
       })),
     ].slice(0, 8),
     heatZones: livingWorld.heatZones?.slice(0, 4) || [],
