@@ -59,7 +59,7 @@ import {
   formatUserErrorMessage,
   formatSuccessMessage,
 } from './claimSystem';
-import { runClaimTreasure } from './claimFlow';
+import { runClaimTreasure, runMedallionCapture } from './claimFlow';
 import { AdminClaimCode } from './AdminClaimCode';
 import {
   MedallionSignalScreen,
@@ -164,6 +164,8 @@ import {
 } from './EconomyUI';
 import { CreatorDashboard } from './CreatorEconomyUI';
 import { MarketplaceScreen } from './MarketplaceUI';
+import { DeveloperDashboard } from './DeveloperDashboard';
+import { isDev } from './config/env';
 import './style.css';
 import './discoveryBloom.css';
 import './livingWorld.css';
@@ -178,6 +180,7 @@ import './legendaryHunt.css';
 import './livingEarth.css';
 import './creatorEconomy.css';
 import './marketplace.css';
+import './developerDashboard.css';
 import './aiNpc.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
@@ -1051,6 +1054,14 @@ function QuestoryApp() {
             />
           )
         )}
+        {state.screen === 'dev-health' && (
+          <DeveloperDashboard
+            state={state}
+            adventures={state.adventures}
+            nav={nav}
+            isAdmin={isAdmin}
+          />
+        )}
         {state.screen === 'admin' && (
           isSupabaseMode && !isAdmin ? (
             <AdminGate onLogin={() => setShowLogin(true)} />
@@ -1061,6 +1072,8 @@ function QuestoryApp() {
               adventures={state.adventures}
               adminTab={state.adminTab}
               nav={nav}
+              isDev={isDev}
+              isAdmin={isAdmin}
               onPublish={publishAdventure}
               onArchive={archiveAdventure}
               onRestore={restoreAdventure}
@@ -3657,6 +3670,8 @@ function AdminReview({
   adventures,
   adminTab,
   nav,
+  isDev = false,
+  isAdmin = false,
   onPublish,
   onArchive,
   onRestore,
@@ -3690,6 +3705,11 @@ function AdminReview({
       <div className="section-head">
         <h2>Admin Review</h2>
         <p>Preview, publish, analytics, and manage adventures</p>
+        {(isDev || isAdmin) && (
+          <button type="button" className="ghost dev-health-link" onClick={() => nav('dev-health')}>
+            Dev Health
+          </button>
+        )}
       </div>
 
       <div className="vault-tabs admin-tabs">

@@ -1,0 +1,106 @@
+/* Questory 2.0 — Phase 14.5: Developer Dashboard */
+
+.dev-dashboard-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dev-dashboard-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dev-summary-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.dev-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+}
+
+.dev-summary-pill.ok {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+}
+
+.dev-inspector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.5rem;
+}
+
+.dev-inspector-item {
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.82rem;
+}
+
+.dev-inspector-item small {
+  display: block;
+  opacity: 0.7;
+  text-transform: capitalize;
+}
+
+.dev-engine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.dev-engine-card.ok {
+  border-left: 3px solid rgba(34, 197, 94, 0.7);
+}
+
+.dev-engine-card.failed {
+  border-left: 3px solid rgba(239, 68, 68, 0.8);
+}
+
+.dev-engine-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.dev-engine-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.dev-engine-error {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #fca5a5;
+}
+
+.dev-engine-sample {
+  margin: 0.35rem 0 0;
+  font-size: 0.68rem;
+  max-height: 80px;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.35rem;
+  border-radius: 6px;
+}
+
+.dev-dashboard-locked {
+  opacity: 0.85;
+}
