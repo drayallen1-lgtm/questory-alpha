@@ -1,18 +1,9 @@
 import { getDraftHealthStats, loadLocalDrafts } from './draftIntegrity';
+import { REASON_MESSAGES, safeMessage, mapReasonToMessage } from './messageUtils.js';
+
+export { REASON_MESSAGES, safeMessage, mapReasonToMessage };
 
 export const DEMO_ADVENTURE_ID = 'demo-missing-birthday-gift';
-
-export const REASON_MESSAGES = {
-  not_authenticated: 'Sign in to claim and save your rewards.',
-  unknown: 'Something went wrong. Please try again.',
-  already_claimed: 'You already claimed this reward.',
-  rewards_paused: 'Rewards are paused for this adventure.',
-  outside_window: 'This reward is not available right now.',
-  depleted: 'This reward has run out.',
-  requires_login: 'Sign in to continue.',
-  invalid_code: 'That code is not valid.',
-  network_error: 'Connection failed. Check your network and try again.',
-};
 
 export const LAUNCH_FUNNEL_STEPS = [
   { id: 'demo', label: 'Demo completed', metric: 'demoCompleted' },
@@ -54,27 +45,6 @@ export function normalizeLaunchFunnel(funnel = {}) {
     },
     errors: Array.isArray(funnel.errors) ? funnel.errors : [],
   };
-}
-
-export function mapReasonToMessage(reason) {
-  if (!reason) return null;
-  return REASON_MESSAGES[reason] || null;
-}
-
-/** Safe display string — never returns "undefined". */
-export function safeMessage(value, fallback = 'Something went wrong.') {
-  if (value == null || value === '' || value === 'undefined') return fallback;
-  if (typeof value === 'string') return value;
-  if (typeof value === 'object') {
-    return (
-      value.message ||
-      mapReasonToMessage(value.reason) ||
-      value.error ||
-      fallback
-    );
-  }
-  const str = String(value);
-  return str === 'undefined' ? fallback : str;
 }
 
 export function recordLaunchError(state, context, error) {

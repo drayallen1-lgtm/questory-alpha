@@ -8,6 +8,7 @@ import { getMyTeam, SEASON_TIERS, getSeasonTier } from './social';
 import { computeCityCompletionPct, computeGuildProgress } from './socialWorldEngine';
 import { getSeasonProgress } from './questoryIdentityEngine';
 import { getCodexSnapshot } from './codexEngine';
+import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
 import { CREATOR_WORLDS } from './seasonEngine';
 import { SEED_NPCS } from './worldEngine';
 
@@ -348,7 +349,7 @@ export function getPlayerProgressionSnapshot(state, adventures = [], options = {
     (m) => !stored.milestonesSeen.includes(m.id)
   );
 
-  return snapshot;
+  return wrapEngineSnapshot(snapshot);
 }
 
 export function applyProgressionOnVictory(state, adventure, context = {}) {

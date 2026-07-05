@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, Suspense, lazy } from 'react';
 import {
   Award,
   ChevronRight,
@@ -76,7 +76,7 @@ import {
   LegendaryHuntHomeCard,
 } from './LegendaryHuntUI';
 import { isAdventureUnlocked } from './worldEngine';
-import { CodexHub } from './CodexUI';
+const CodexHub = lazy(() => import('./CodexUI').then((m) => ({ default: m.CodexHub })));
 import { ExplorerEconomyPanel, ExplorerWalletStrip } from './ExplorerEconomyPanel';
 import {
   ExplorerLevelStrip,
@@ -519,12 +519,14 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
       )}
 
       {tab === 'codex' && (
-        <CodexHub
-          state={state}
-          adventures={adventures}
-          onStateChange={setState}
-          nav={nav}
-        />
+        <Suspense fallback={<div className="card">Loading Codex…</div>}>
+          <CodexHub
+            state={state}
+            adventures={adventures}
+            onStateChange={setState}
+            nav={nav}
+          />
+        </Suspense>
       )}
 
       {tab === 'economy' && (

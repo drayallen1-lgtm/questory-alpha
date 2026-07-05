@@ -2,7 +2,7 @@ import {
   ADVENTURE_STATUS,
   normalizeAdventure,
 } from './seed';
-import { safeMessage } from './stability';
+import { safeMessage } from './messageUtils.js';
 
 export const LOCAL_DRAFTS_KEY = 'questoryAlpha_local_drafts';
 

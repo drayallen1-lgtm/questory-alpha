@@ -2,7 +2,7 @@
  * Default horror timeline choreography (Sweep 10.5).
  * Shared by AI generator, legacy conversion, and bundled packs.
  */
-import { TIMELINE_ACTIONS, normalizeTimeline, getTimelineDuration } from './timelineEngine.js';
+import { TIMELINE_ACTIONS, normalizeTimeline, getTimelineDuration } from './timelineCore.js';
 
 const GHOST_IDS = new Set([
   'ghost-little-girl',

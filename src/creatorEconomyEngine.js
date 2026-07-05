@@ -16,6 +16,7 @@ import { getAdventureProgress, ADVENTURE_STATUS } from './seed';
 import { CREATOR_WORLDS, getCurrentSeason } from './seasonEngine';
 import { HALL_OF_FAME_EXPLORERS } from './questoryIdentityEngine';
 import { safeGetTime } from './dateUtils';
+import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
 
 export const CREATOR_ECONOMY_LIMITS = {
   MAX_TIMELINE: 12,
@@ -65,6 +66,7 @@ export const STORE_CATALOG = [
   { id: 'reward-pack-starter', kind: 'reward_pack', label: 'Explorer Reward Pack', priceCoins: 200, icon: '🎁' },
 ];
 
+/** Intentional Phase 12+ future hooks — exported for Creator Dashboard UI. */
 export const EXTENSION_HOOKS = {
   stripeConnect: { enabled: false, label: 'Stripe Connect payouts' },
   revenueSharing: { enabled: false, label: 'Revenue sharing splits' },
@@ -405,7 +407,7 @@ export function getCreatorEconomySnapshot(state = null, adventures = [], options
   const subscribedCreators = creators.filter((c) => stored.subscriptions.includes(c.id));
   const favoriteWorlds = CREATOR_WORLDS.filter((w) => stored.favorites.includes(w.creatorWorldId));
 
-  return {
+  return wrapEngineSnapshot({
     creators,
     creatorById: Object.fromEntries(creators.map((c) => [c.id, c])),
     following: economy.follows,
@@ -428,7 +430,7 @@ export function getCreatorEconomySnapshot(state = null, adventures = [], options
     studioRank: resolveCreatorRank(stored.studioXp),
     activeCreatorId: options.creatorId || creatorIds[0],
     dashboard: buildDashboardSnapshot(creators[0], stored, adventures),
-  };
+  });
 }
 
 function buildSocialCreatorFeed(creators, economy, stored) {

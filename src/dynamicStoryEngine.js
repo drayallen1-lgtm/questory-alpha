@@ -7,6 +7,7 @@ import { getLegendaryHuntSnapshot, BOSS_STATUS } from './legendaryHuntEngine';
 import { getCodexSnapshot } from './codexEngine';
 import { getPlayerProgressionSnapshot } from './playerProgressionEngine';
 import { safeGetTime } from './dateUtils';
+import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
 
 export const STORY_ARC_STATUS = {
   LOCKED: 'Locked',
@@ -336,7 +337,7 @@ export function getDynamicStorySnapshot(state, adventures = [], options = {}) {
     arcs: getNpcStoryArcs(state, profile.id, adventures, { now }),
   }));
 
-  return {
+  return wrapEngineSnapshot({
     arcs,
     summary,
     stored,
@@ -353,7 +354,7 @@ export function getDynamicStorySnapshot(state, adventures = [], options = {}) {
         minutesAgo: 4,
       }))
       .slice(0, 6),
-  };
+  });
 }
 
 export const DYNAMIC_STORY_ENGINE = {

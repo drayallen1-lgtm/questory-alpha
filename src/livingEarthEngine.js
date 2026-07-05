@@ -13,6 +13,7 @@ import {
 } from './worldDiscoveryEngine';
 import { getLivingWorldSnapshot } from './livingWorldEngine';
 import { getSocialDiscoverySnapshot } from './socialWorldEngine';
+import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
 import { getQuestoryIdentitySnapshot } from './questoryIdentityEngine';
 import { getLegendaryHuntSnapshot } from './legendaryHuntEngine';
 import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
@@ -306,7 +307,7 @@ export function getLivingEarthSnapshot(options = {}) {
     ...bossBeacons.map((b) => ({ ...b, kind: 'boss', text: b.label })),
   ].slice(0, LIVING_EARTH_LIMITS.MAX_PULSES);
 
-  return {
+  return wrapEngineSnapshot({
     earthMode,
     overlayVisible,
     fullEarth,
@@ -354,7 +355,7 @@ export function getLivingEarthSnapshot(options = {}) {
       usa: { latitude: 39.8, longitude: -98.5, zoom: 4 },
       world: { latitude: 20, longitude: 0, zoom: 1 },
     },
-  };
+  });
 }
 
 export function markEarthCeremonySeen(state, ceremonyId) {

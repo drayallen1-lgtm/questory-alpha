@@ -3,6 +3,7 @@
  * Combine explorer economy materials into permanent upgrades.
  */
 import { getExplorerEconomySnapshot } from './explorerEconomyEngine';
+import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
 
 export const DEFAULT_CRAFTING = {
   craftedIds: [],
@@ -164,12 +165,12 @@ export function getCraftingSnapshot(state, adventures = []) {
     .map((id) => CRAFT_RECIPES.find((r) => r.id === id))
     .filter(Boolean);
 
-  return {
+  return wrapEngineSnapshot({
     recipes,
     craftedArtifacts,
     bonuses,
     discoveryRadiusPct: Math.round(bonuses.discoveryRadiusPct * 100),
     fogRevealRadiusPct: Math.round(bonuses.fogRevealRadiusPct * 100),
     stored: crafting,
-  };
+  });
 }

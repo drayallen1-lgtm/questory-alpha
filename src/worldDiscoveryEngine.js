@@ -7,6 +7,7 @@ import { getAdventureMapCenter } from './mapUtils';
 import { normalizeMapExploration } from './mapDiscovery';
 import { usesArFinder } from './expansion';
 import { CREATOR_WORLDS } from './seasonEngine';
+import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
 
 export const DISCOVERY_LEVELS = {
   NEIGHBORHOOD: 'neighborhood',
@@ -601,5 +602,5 @@ export function getWorldDiscoverySnapshot(options = {}) {
   };
 
   snapshot.timelineEntries = buildDiscoveryTimelineEntries(snapshot);
-  return snapshot;
+  return wrapEngineSnapshot(snapshot);
 }

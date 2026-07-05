@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   MapPin,
@@ -162,9 +162,15 @@ import {
   CreationFeeBanner,
   VerifiedSponsorBadge,
 } from './EconomyUI';
-import { CreatorDashboard } from './CreatorEconomyUI';
-import { MarketplaceScreen } from './MarketplaceUI';
-import { DeveloperDashboard } from './DeveloperDashboard';
+const CreatorDashboard = lazy(() =>
+  import('./CreatorEconomyUI').then((m) => ({ default: m.CreatorDashboard }))
+);
+const MarketplaceScreen = lazy(() =>
+  import('./MarketplaceUI').then((m) => ({ default: m.MarketplaceScreen }))
+);
+const DeveloperDashboard = lazy(() =>
+  import('./DeveloperDashboard').then((m) => ({ default: m.DeveloperDashboard }))
+);
 import { isDev } from './config/env';
 import './style.css';
 import './discoveryBloom.css';
@@ -344,6 +350,14 @@ function App() {
         <QuestoryApp />
       </AuthProvider>
     </AppErrorBoundary>
+  );
+}
+
+function PanelFallback({ label = 'Panel' }) {
+  return (
+    <div className="card panel-loading-fallback" aria-busy="true">
+      <p>Loading {label}…</p>
+    </div>
   );
 }
 
@@ -935,21 +949,25 @@ function QuestoryApp() {
           />
         )}
         {state.screen === 'creator-dashboard' && (
-          <CreatorDashboard
-            state={state}
-            setState={setState}
-            adventures={state.adventures}
-            nav={nav}
-            creatorId={state.selectedCreatorId || 'parsons-heritage'}
-          />
+          <Suspense fallback={<PanelFallback label="Creator Dashboard" />}>
+            <CreatorDashboard
+              state={state}
+              setState={setState}
+              adventures={state.adventures}
+              nav={nav}
+              creatorId={state.selectedCreatorId || 'parsons-heritage'}
+            />
+          </Suspense>
         )}
         {state.screen === 'marketplace' && (
-          <MarketplaceScreen
-            state={state}
-            setState={setState}
-            adventures={state.adventures}
-            nav={nav}
-          />
+          <Suspense fallback={<PanelFallback label="Marketplace" />}>
+            <MarketplaceScreen
+              state={state}
+              setState={setState}
+              adventures={state.adventures}
+              nav={nav}
+            />
+          </Suspense>
         )}
         {state.screen === 'social' && (
           <SocialHub
@@ -1055,12 +1073,14 @@ function QuestoryApp() {
           )
         )}
         {state.screen === 'dev-health' && (
-          <DeveloperDashboard
-            state={state}
-            adventures={state.adventures}
-            nav={nav}
-            isAdmin={isAdmin}
-          />
+          <Suspense fallback={<PanelFallback label="Dev Health" />}>
+            <DeveloperDashboard
+              state={state}
+              adventures={state.adventures}
+              nav={nav}
+              isAdmin={isAdmin}
+            />
+          </Suspense>
         )}
         {state.screen === 'admin' && (
           isSupabaseMode && !isAdmin ? (

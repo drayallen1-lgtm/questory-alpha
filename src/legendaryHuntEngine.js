@@ -8,6 +8,7 @@ import { isAdventureClaimed } from './engagement';
 import { computeCityCompletionPct } from './socialWorldEngine';
 import { isNightTime } from './livingWorldEventsEngine';
 import { normalizeCrafting } from './craftingEngine';
+import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
 import { grantExplorerCurrency, CURRENCY_TYPES } from './explorerEconomyEngine';
 import { safeGetTime } from './dateUtils';
 
@@ -493,7 +494,7 @@ export function getLegendaryHuntSnapshot(state, adventures = [], options = {}) {
   const timeline = buildLegendaryTimelineEntries(worldBoss, regionalHunts, now);
   const atmosphere = getLegendaryMapAtmosphere(worldBoss);
 
-  return {
+  return wrapEngineSnapshot({
     worldBoss,
     regionalHunts,
     activeBoss: worldBoss,
@@ -504,7 +505,7 @@ export function getLegendaryHuntSnapshot(state, adventures = [], options = {}) {
     hunt,
     hasActiveBoss:
       worldBoss.status === BOSS_STATUS.ACTIVE || worldBoss.status === BOSS_STATUS.AWAKENING,
-  };
+  });
 }
 
 export function getLegendaryMapAtmosphere(worldBoss) {

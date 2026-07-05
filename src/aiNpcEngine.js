@@ -19,6 +19,7 @@ import { getCurrentSeason } from './seasonEngine';
 import { safeGetWorldEventContext } from './worldEventEngine';
 import { isNightTime } from './livingWorldEventsEngine';
 import { safeGetTime } from './dateUtils';
+import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
 
 export const AI_NPC_LIMITS = {
   MAX_ENCOUNTERS: 40,
@@ -790,14 +791,14 @@ export function getAiNpcSnapshot(state, adventures = [], options = {}) {
     };
   });
 
-  return {
+  return wrapEngineSnapshot({
     profiles,
     npcMemory: aiNpc.npcMemory,
     questOffers: aiNpc.questOffers,
     timelineFeed: buildNpcTimelineFeed(state, adventures, { now }),
     context,
     promptPreviewEnabled: aiNpc.promptPreviewEnabled,
-  };
+  });
 }
 
 export const AI_NPC_ENGINE = {

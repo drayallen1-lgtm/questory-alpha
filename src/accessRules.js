@@ -2,7 +2,7 @@
  * Map + Access Rules — adventure access types, play radius, and remote reward policy.
  */
 import { haversineDistanceMeters } from './geolocation';
-import { getAdventureMapCenter, getAdventureMapPoint } from './mapUtils';
+import { getAdventureMapCenter, getAdventureMapPoint } from './mapCoordinates';
 import { ADVENTURE_STATUS, getPublishedAdventures } from './seed';
 
 export const ACCESS_TYPES = {

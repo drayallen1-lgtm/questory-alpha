@@ -11,6 +11,7 @@ import {
   getLivingWorldEventsSnapshot,
   getVisitHeatLevel,
 } from './livingWorldEventsEngine';
+import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
 
 export const LIVING_WORLD_LIMITS = {
   MAX_EXPLORER_DOTS: 12,
@@ -345,7 +346,7 @@ export function getLivingWorldSnapshot(adventures = [], options = {}) {
     .filter(Boolean)
     .join(' ');
 
-  return {
+  return wrapEngineSnapshot({
     presence,
     explorerDots,
     heatZones,
@@ -355,5 +356,5 @@ export function getLivingWorldSnapshot(adventures = [], options = {}) {
     revealedCount,
     atmosphereClass,
     ...events,
-  };
+  });
 }

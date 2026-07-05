@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { LocateFixed, MapPin } from 'lucide-react';
@@ -73,7 +73,9 @@ import { CityDiscoveryRingLayer } from './CityDiscoveryRingLayer';
 import { DiscoveredWorldPanel, DiscoveryCeremonyToast } from './DiscoveredWorldPanel';
 import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 import { getLivingEarthSnapshot, EARTH_MODE_EXIT_ZOOM } from './livingEarthEngine';
-import { LivingEarthOverlay } from './LivingEarthUI';
+const LivingEarthOverlay = lazy(() =>
+  import('./LivingEarthUI').then((m) => ({ default: m.LivingEarthOverlay }))
+);
 import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
 import { getMarketplaceSnapshot } from './marketplaceEngine';
 import { getAiNpcSnapshot } from './aiNpcEngine';
@@ -1123,11 +1125,6 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     return () => window.clearInterval(tick);
   }, []);
 
-  useEffect(() => {
-    const microTick = window.setInterval(() => setWorldNow(Date.now()), 180000);
-    return () => window.clearInterval(microTick);
-  }, []);
-
   const accessOptions = {
     userLatitude: location?.latitude,
     userLongitude: location?.longitude,
@@ -1903,13 +1900,15 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           onSpatialStatsChange={setSpatialStats}
         />
 
-        <LivingEarthOverlay
-          snapshot={livingEarthSnapshot}
-          onFlyTo={handleEarthFlyTo}
-          onReturnToMap={handleReturnToMap}
-          setState={setState}
-          showDiscoveryPanel={!livingCluster && !selectedAdventure}
-        />
+        <Suspense fallback={null}>
+          <LivingEarthOverlay
+            snapshot={livingEarthSnapshot}
+            onFlyTo={handleEarthFlyTo}
+            onReturnToMap={handleReturnToMap}
+            setState={setState}
+            showDiscoveryPanel={!livingCluster && !selectedAdventure}
+          />
+        </Suspense>
 
         {nav && !earthOverlayVisible && (
           <MarketplaceMapHud snapshot={marketplaceSnapshot} nav={nav} />

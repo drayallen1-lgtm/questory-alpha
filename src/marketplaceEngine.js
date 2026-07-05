@@ -7,6 +7,7 @@ import { getCraftingSnapshot } from './craftingEngine';
 import { getCreatorEconomySnapshot, STORE_CATALOG } from './creatorEconomyEngine';
 import { getCurrentSeason } from './seasonEngine';
 import { safeGetTime } from './dateUtils';
+import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
 
 export const MARKETPLACE_LIMITS = {
   MAX_LISTINGS: 40,
@@ -49,6 +50,7 @@ export const MARKET_VENUES = [
   { id: 'season-vendor', label: 'Season Vendor', icon: '🏔️', latitude: 37.338, longitude: -95.258, kind: 'season' },
 ];
 
+/** Intentional Phase 13+ future hooks — exported for marketplace integrations. */
 export const MARKET_EXTENSION_HOOKS = {
   stripeCheckout: { enabled: false, label: 'Stripe Checkout' },
   stripeConnect: { enabled: false, label: 'Stripe Connect payouts' },
@@ -423,7 +425,7 @@ export function getMarketplaceSnapshot(state = null, adventures = [], options = 
   const activityFeed = buildMarketActivity(stored.history, stored, now);
   const hallOfFame = buildHallOfFame(explorer, stored);
 
-  return {
+  return wrapEngineSnapshot({
     inventory,
     catalog,
     listings: allListings,
@@ -456,7 +458,7 @@ export function getMarketplaceSnapshot(state = null, adventures = [], options = 
     extensionHooks: MARKET_EXTENSION_HOOKS,
     season,
     stored,
-  };
+  });
 }
 
 function appendHistory(stored, entry) {
