@@ -23,4 +23,33 @@ describe('marketplaceEngine', () => {
     expect(result.message).toBeTruthy();
     expect(result.state).toBeUndefined();
   });
+
+  it('duplicate purchase of player listing is blocked', () => {
+    const listingId = 'player-test-listing';
+    const state = buildTestState({
+      coins: 5000,
+      marketplace: {
+        listings: [
+          {
+            id: listingId,
+            itemId: 'lantern-charm',
+            name: 'Lantern Charm',
+            icon: '🏮',
+            priceCoins: 50,
+            category: 'relic',
+            rarity: 'common',
+            listedAt: new Date().toISOString(),
+          },
+        ],
+      },
+    });
+
+    const first = purchaseListing(state, listingId, state.adventures);
+    expect(first.ok).toBe(true);
+    expect(first.state).toBeTruthy();
+
+    const second = purchaseListing(first.state, listingId, state.adventures);
+    expect(second.ok).toBe(false);
+    expect(second.message).toMatch(/not found/i);
+  });
 });
