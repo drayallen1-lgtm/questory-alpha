@@ -2,7 +2,15 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "node node_modules/vite/bin/vite.js build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "lint": "eslint .",
+    "check:exports": "knip",
+    "check:cycles": "madge src --circular --extensions js,jsx",
+    "check:all": "npm run build && npm run lint && npm run test:unit && npm run check:cycles"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
@@ -15,6 +23,14 @@
     "vite": "latest"
   },
   "devDependencies": {
-    "playwright": "^1.61.1"
+    "@playwright/test": "^1.61.1",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
+    "knip": "^6.24.0",
+    "madge": "^8.0.0",
+    "playwright": "^1.61.1",
+    "vitest": "^4.1.9"
   }
 }
