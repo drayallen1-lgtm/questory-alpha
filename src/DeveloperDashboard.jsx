@@ -1,8 +1,8 @@
 /**
- * Questory 2.0 — Phase 14.5: Developer Dashboard (dev / admin only)
+ * Questory 2.0 — Phase 14.5/14.75: Developer Dashboard (dev / admin only)
  */
 import React, { useMemo, useState } from 'react';
-import { Activity, ArrowLeft, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Activity, ArrowLeft, AlertTriangle, RefreshCw, ShieldCheck } from 'lucide-react';
 import { runDeveloperHealthCheck } from './developerHealthEngine';
 import { isDev } from './config/env';
 
@@ -42,7 +42,7 @@ export function DeveloperDashboard({ state, adventures = [], nav, isAdmin = fals
           <h2>
             <Activity size={20} /> Dev Health
           </h2>
-          <p>Engine snapshots, timing, and state inspector — read-only diagnostics.</p>
+          <p>Engine snapshots, timing, state size, and inspector — read-only diagnostics.</p>
         </div>
         <div className="dev-dashboard-actions">
           <button type="button" className="ghost" onClick={() => nav?.('admin')}>
@@ -59,7 +59,43 @@ export function DeveloperDashboard({ state, adventures = [], nav, isAdmin = fals
           <span className="dev-summary-pill ok">
             <ShieldCheck size={14} /> {active.summary.healthy}/{active.summary.total} engines healthy
           </span>
-          <small>Ran {active.ranAt}</small>
+          <span className="dev-summary-pill">
+            {active.summary.totalTimingMs}ms total probe time
+          </span>
+          {active.stateSize && (
+            <span className={`dev-summary-pill ${active.stateSize.safe ? 'ok' : 'warn'}`}>
+              State: {active.stateSize.formatted}
+            </span>
+          )}
+          {active.dependencyCycles && (
+            <span className="dev-summary-pill">
+              ~{active.dependencyCycles.knownCount} known import cycles
+            </span>
+          )}
+          <small>Last check: {active.ranAt}</small>
+        </div>
+      )}
+
+      {active?.summary?.stateSizeWarning && (
+        <div className="card dev-warning-card">
+          <AlertTriangle size={16} />
+          <p>{active.summary.stateSizeWarning}</p>
+        </div>
+      )}
+
+      {(active?.activeErrors?.length > 0 || active?.launchErrors?.length > 0) && (
+        <div className="card dev-errors-card">
+          <h3>Active Errors</h3>
+          {active.activeErrors?.map((entry) => (
+            <p key={entry.id} className="dev-engine-error">
+              <strong>{entry.id}:</strong> {entry.error}
+            </p>
+          ))}
+          {active.launchErrors?.map((entry) => (
+            <p key={entry.id} className="dev-engine-error">
+              <strong>launch/{entry.context}:</strong> {entry.message}
+            </p>
+          ))}
         </div>
       )}
 

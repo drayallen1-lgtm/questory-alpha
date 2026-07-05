@@ -36,6 +36,34 @@
   color: #86efac;
 }
 
+.dev-summary-pill.warn {
+  background: rgba(234, 179, 8, 0.15);
+  color: #fde047;
+}
+
+.dev-summary-card {
+  flex-wrap: wrap;
+}
+
+.dev-warning-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid rgba(234, 179, 8, 0.8);
+  color: #fde047;
+  font-size: 0.85rem;
+}
+
+.dev-errors-card {
+  margin-bottom: 0.75rem;
+}
+
+.dev-errors-card h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}
+
 .dev-inspector-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

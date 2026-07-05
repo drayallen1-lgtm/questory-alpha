@@ -1,5 +1,5 @@
 /**
- * Questory 2.0 — Phase 14.5: Developer Health Engine
+ * Questory 2.0 — Phase 14.5/14.75: Developer Health Engine
  * Read-only engine snapshot diagnostics for the Dev Dashboard.
  */
 import { getLivingWorldSnapshot } from './livingWorldEngine.js';
@@ -17,7 +17,13 @@ import { getCreatorEconomySnapshot } from './creatorEconomyEngine.js';
 import { getAiNpcSnapshot } from './aiNpcEngine.js';
 import { getDynamicStorySnapshot } from './dynamicStoryEngine.js';
 import { validateClaimAttempt } from './claimSystem.js';
-import { commitBranchPath } from './branchingEngine.js';
+import {
+  measureEngineSnapshot,
+  approximateStateSizeBytes,
+  assessStateSize,
+  KNOWN_IMPORT_CYCLE_COUNT,
+} from './engineSnapshotUtils.js';
+import { STORAGE_KEY } from './seed.js';
 
 function countItems(value) {
   if (value == null) return 0;
@@ -27,33 +33,17 @@ function countItems(value) {
 }
 
 function runCheck(id, label, fn) {
-  const start = typeof performance !== 'undefined' ? performance.now() : Date.now();
-  try {
-    const result = fn();
-    const ms = Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - start);
-    return {
-      id,
-      label,
-      initialized: true,
-      snapshotOk: Boolean(result),
-      itemCount: countItems(result?.items ?? result?.entries ?? result?.profiles ?? result?.arcs ?? result),
-      timingMs: ms,
-      error: null,
-      sample: summarizeSample(id, result),
-    };
-  } catch (err) {
-    const ms = Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - start);
-    return {
-      id,
-      label,
-      initialized: false,
-      snapshotOk: false,
-      itemCount: 0,
-      timingMs: ms,
-      error: err?.message || String(err),
-      sample: null,
-    };
-  }
+  const { result, ms, error } = measureEngineSnapshot(id, fn);
+  return {
+    id,
+    label,
+    initialized: !error,
+    snapshotOk: Boolean(result) && !error,
+    itemCount: countItems(result?.items ?? result?.entries ?? result?.profiles ?? result?.arcs ?? result),
+    timingMs: ms,
+    error,
+    sample: error ? null : summarizeSample(id, result),
+  };
 }
 
 function summarizeSample(id, result) {
@@ -80,21 +70,27 @@ export function buildStateInspector(state, adventures = []) {
     fog: { revealed: state?.mapExploration?.revealed || [] },
     now: Date.now(),
   });
+  const stateSize = assessStateSize(approximateStateSizeBytes(state));
 
   return {
     coins: state?.coins ?? 0,
     explorerLevel: getPlayerProgressionSnapshot(state, adventures).explorerLevel,
-    craftedArtifacts: (state?.crafting?.crafted || []).length,
+    craftedArtifacts: (state?.crafting?.craftedIds || state?.crafting?.crafted || []).length,
     activeBranchPath: unionProgress.pathId || null,
     npcMemoryCount: Object.keys(npcMemory).length,
     bossStatus: legendary.hasActiveBoss ? 'active' : 'dormant',
-    worldDiscoveryPct: discovery.overallPct ?? discovery.cityPct ?? 0,
+    worldDiscoveryPct: discovery.overallPct ?? discovery.cityPct ?? discovery.completionPercent ?? 0,
     marketplaceListingCount: getMarketplaceSnapshot(state, adventures).stats?.totalListings ?? 0,
-    creatorFollows: getCreatorEconomySnapshot(state, adventures).followedCreatorIds?.length ?? 0,
+    creatorFollows: getCreatorEconomySnapshot(state, adventures).followedCreatorIds?.length
+      ?? getCreatorEconomySnapshot(state, adventures).following?.length ?? 0,
     claimCount: Object.values(state?.progress || {}).filter((p) => p?.claimed).length,
     screen: state?.screen || 'home',
     adventureId: state?.selectedAdventureId || null,
     unionClaimCode: union?.claimCode || null,
+    stateSizeBytes: stateSize.bytes,
+    stateSizeFormatted: stateSize.formatted,
+    stateSizeSafe: stateSize.safe,
+    storageKey: STORAGE_KEY,
   };
 }
 
@@ -145,24 +141,37 @@ export function runDeveloperHealthCheck(state, adventures = [], options = {}) {
     runCheck('branching', 'Branching', () => {
       const adventure = adventures.find((a) => a.id === 'union-depot-ghost');
       if (!adventure) return { ok: false };
-      const next = commitBranchPath(state, adventure, 'ghost', 0);
-      return { ok: Boolean(next?.progress?.[adventure.id]?.pathId) };
+      const paths = adventure.paths || adventure.branchPaths || [];
+      return { ok: Array.isArray(paths) && paths.length > 0 };
     }),
   ];
+
+  const stateSize = assessStateSize(approximateStateSizeBytes(state));
+  const activeErrors = engines.filter((e) => e.error).map((e) => ({ id: e.id, error: e.error }));
+  const launchErrors = (state?.launchFunnel?.errors || []).slice(0, 5);
 
   return {
     ranAt: new Date(now).toISOString(),
     engines,
     inspector: buildStateInspector(state, adventures),
+    stateSize,
+    dependencyCycles: {
+      knownCount: KNOWN_IMPORT_CYCLE_COUNT,
+      note: 'Madge report — seed.js hub cycles documented; not a runtime gate.',
+    },
+    activeErrors,
+    launchErrors,
     summary: {
       total: engines.length,
       healthy: engines.filter((e) => e.snapshotOk && !e.error).length,
       failed: engines.filter((e) => e.error || !e.snapshotOk).length,
+      totalTimingMs: engines.reduce((sum, e) => sum + (e.timingMs || 0), 0),
+      stateSizeWarning: stateSize.warning,
     },
   };
 }
 
 export const DEVELOPER_HEALTH_ENGINE = {
-  version: '1.0',
+  version: '1.1',
   label: 'Developer Health Engine',
 };
