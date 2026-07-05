@@ -208,6 +208,22 @@ Adventure data is not one monolithic engine. Responsibilities are split:
 
 **Consumers:** `DeveloperDashboard.jsx` (Admin → Dev Health; `import.meta.env.DEV` or admin only)
 
+### engineSnapshotUtils.js (Phase 14.75)
+
+**Purpose:** Dev-only snapshot helpers — timing probes, shallow freeze, state size assessment.
+
+**Outputs:** `measureEngineSnapshot`, `wrapEngineSnapshot`, `approximateStateSizeBytes`, `assessStateSize`, `KNOWN_IMPORT_CYCLE_COUNT`
+
+**Consumers:** `developerHealthEngine.js`, major engine `get*Snapshot` functions
+
+### Shared hardening modules (Phase 14.75)
+
+| Module | Breaks cycle between |
+|--------|---------------------|
+| `timelineCore.js` | `horrorTimelineDefaults` ↔ `timelineEngine` |
+| `mapCoordinates.js` | `accessRules` ↔ `mapUtils` |
+| `messageUtils.js` | `stability` ↔ `draftIntegrity` |
+
 ---
 
 ## Living World

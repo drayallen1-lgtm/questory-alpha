@@ -62,6 +62,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full engine map.
 | 13 — Global Marketplace | ✓ Complete |
 | 14 — AI Living NPCs & Dynamic Story | ✓ Complete |
 | 14.5 — Developer Experience & Quality | ✓ Complete |
+| 14.75 — Engine Hardening | ✓ Complete |
 
 Full roadmap: [ROADMAP.md](./ROADMAP.md)
 

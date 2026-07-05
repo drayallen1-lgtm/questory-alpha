@@ -136,6 +136,14 @@ Vitest engine unit tests, Playwright E2E smoke flows, a dev-only Developer Dashb
 
 ---
 
+### Phase 14.75 — Engine Hardening ✓ Complete
+
+Import cycle reduction (timelineCore, mapCoordinates, messageUtils), dev-only snapshot freezing, expanded unit/E2E tests, Dev Health metrics (timing, state size, cycle note), lazy-loaded heavy panels, and timer cleanup. No new gameplay systems.
+
+**Why it mattered:** Stabilized the engine layer and reduced dangerous import cycles before Phase 15 territory systems.
+
+---
+
 ## Future Phases
 
 ### Phase 15 — Dynamic Factions, Guilds & Territory Wars
@@ -156,4 +164,4 @@ Faction allegiance, guild territory control, regional conflicts, and map-scale s
 
 ---
 
-*Last updated: Phase 14.5 complete. Next milestone: Phase 15 — Dynamic Factions, Guilds & Territory Wars.*
+*Last updated: Phase 14.75 complete. Next milestone: Phase 15 — Dynamic Factions, Guilds & Territory Wars.*

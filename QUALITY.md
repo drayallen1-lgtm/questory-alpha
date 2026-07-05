@@ -1,6 +1,6 @@
 # Questory Quality Guide
 
-Phase 14.5 — Developer Experience & Quality safeguards for Questory before Phase 15.
+Phase 14.5–14.75 — Developer Experience, Quality, and Engine Hardening safeguards before Phase 15.
 
 ## Quick commands
 
@@ -26,8 +26,12 @@ Engines covered:
 - `claimFlow` — wrong code, valid claim, duplicate block
 - `worldDiscoveryEngine` — snapshot shape and percentage bounds
 - `playerProgressionEngine` — XP snapshot and victory hook
-- `marketplaceEngine` — snapshot load and safe purchase failure
+- `marketplaceEngine` — snapshot load, safe purchase failure, duplicate player listing block
 - `aiNpcEngine` — snapshot, dialogue, relationship labels
+- `dateUtils` — safe date conversion and fallbacks
+- `craftingEngine` — bonus calculation from crafted artifacts
+- `aiNpcEngine` (memory) — encounter and memory flag updates
+- `legendaryHuntEngine` — snapshot shape and boss fields
 
 Setup file `tests/unit/setup.js` preloads `seed.js` to avoid circular import races in Node.
 
@@ -41,6 +45,7 @@ Location: `tests/e2e/`
 | `map-flow.spec.js` | Map container and markers |
 | `passport-tabs.spec.js` | Vault tab switching |
 | `adventure-flow.spec.js` | Branch path + Union Depot Ghost claim (`DEPOTGHOST`) |
+| `full-journey.spec.js` | Map → adventure → branch → claim → passport regression |
 
 Playwright config:
 
@@ -64,10 +69,39 @@ npx playwright install chromium
 Shows:
 
 - Engine health cards (snapshot ok, timing ms, errors)
-- State inspector (coins, level, branch path, NPC memory, boss, etc.)
-- **Run Health Check** button (read-only; does not mutate gameplay state)
+- State inspector (coins, level, branch path, NPC memory, boss, state size, etc.)
+- Approximate saved state size with 4 MB warning threshold
+- Known import cycle count (~21, seed.js hub — informational)
+- Active engine errors and recent launch funnel errors
+- **Run Health Check** button (read-only; branching probe does not mutate state)
 
-Files: `src/developerHealthEngine.js`, `src/DeveloperDashboard.jsx`, `src/developerDashboard.css`
+Files: `src/developerHealthEngine.js`, `src/DeveloperDashboard.jsx`, `src/developerDashboard.css`, `src/engineSnapshotUtils.js`
+
+## Engine hardening (Phase 14.75)
+
+### Snapshot safety
+
+Major engine snapshots use `wrapEngineSnapshot()` from `engineSnapshotUtils.js` — shallow `Object.freeze` in dev only to catch accidental mutation.
+
+### Import cycle reduction
+
+Standalone modules extracted where safe (no gameplay changes):
+
+| Module | Purpose |
+|--------|---------|
+| `timelineCore.js` | Timeline actions + normalization (breaks horror timeline cycle) |
+| `mapCoordinates.js` | Pure adventure coordinate helpers (breaks accessRules ↔ mapUtils cycle) |
+| `messageUtils.js` | `safeMessage`, `REASON_MESSAGES` (breaks stability ↔ draftIntegrity cycle) |
+
+Run `npm run check:cycles` — **~21 known cycles** remain centered on `seed.js` hub imports. Use as a report, not a hard gate.
+
+### Lazy-loaded panels
+
+React.lazy + Suspense for Codex, Living Earth overlay, Developer Dashboard, and screen-level Marketplace/Creator Dashboard routes. Play/adventure flow is not lazy-loaded.
+
+### Timer audit
+
+Removed duplicate world clock interval in `QuestoryMap.jsx` (was 60s + 180s). Other intervals retain `useEffect` cleanup.
 
 ## Static analysis
 
@@ -81,7 +115,7 @@ Gentle config in `eslint.config.js` — catches `no-undef` without React style r
 
 ### Madge
 
-`npm run check:cycles` reports circular dependencies in `src/`. **Known:** ~23 cycles centered on `seed.js` hub imports (documented, not blocking gameplay). Future refactors should reduce hub coupling.
+`npm run check:cycles` reports circular dependencies in `src/`. **Known:** ~21 cycles centered on `seed.js` hub imports (down from ~23 after Phase 14.75 extractions). Documented, not blocking gameplay.
 
 ### Import audit scripts
 
@@ -94,7 +128,8 @@ Gentle config in `eslint.config.js` — catches `no-undef` without React style r
 - Map E2E uses fallback map markers when `VITE_MAPBOX_TOKEN` is unset.
 - `check:cycles` exits non-zero while legacy cycles remain — use as a report, not a hard gate yet.
 - `check:all` does not include E2E (run separately before release).
-- Dev Dashboard adds bundle weight in dev/admin paths only; tree-shaken from typical player flow.
+- Knip may OOM on large repos — re-run with more memory or scan subsets if needed.
+- Lazy imports for Marketplace/Creator screens are partially ineffective while those modules remain statically imported from map/passport paths — chunks still split for Codex, Living Earth, Dev Dashboard.
 
 ## Before Phase 15
 

@@ -178,6 +178,14 @@ Vitest unit tests for core engines, Playwright E2E smoke/adventure/map/passport 
 
 ---
 
+### Engine Hardening (Phase 14.75)
+
+Import cycle reduction via `timelineCore`, `mapCoordinates`, and `messageUtils`; dev-only snapshot freezing via `engineSnapshotUtils`; expanded tests; Dev Health state-size and timing metrics; lazy-loaded Codex/Living Earth/Dev panels; duplicate map timer removed.
+
+**Why it mattered:** Stabilized the engine hub and observability without adding gameplay systems — safer foundation for Phase 15.
+
+---
+
 ## Timeline Summary
 
 | Era | Milestone | Phase |
@@ -199,6 +207,7 @@ Vitest unit tests for core engines, Playwright E2E smoke/adventure/map/passport 
 | 2.0 | Global marketplace & trading network | 13 |
 | 2.0 | AI Living NPCs & dynamic story engine | 14 |
 | 2.0 | Developer experience & quality safeguards | 14.5 |
+| 2.0 | Engine hardening & stabilization | 14.75 |
 | Next | Dynamic factions, guilds & territory wars | 15 |
 
 ---

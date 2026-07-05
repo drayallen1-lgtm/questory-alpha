@@ -463,6 +463,10 @@ Each entry lists:
 | `mapCamera.js` | Map camera animations |
 | `templates.js` | Adventure template presets |
 | `developerHealthEngine.js` | Dev-only engine health checks (Phase 14.5) |
+| `engineSnapshotUtils.js` | Dev snapshot freeze, timing, state size (Phase 14.75) |
+| `timelineCore.js` | Timeline actions/normalization shared module |
+| `mapCoordinates.js` | Pure adventure coordinate helpers |
+| `messageUtils.js` | Safe message formatting, reason codes |
 
 ---
 
