@@ -20,6 +20,7 @@ Every developer and AI session starts here:
 | [ENGINE_INDEX.md](./ENGINE_INDEX.md) | Alphabetical engine catalog |
 | [KNOWN_PATTERNS.md](./KNOWN_PATTERNS.md) | Recurring architectural patterns |
 | [AI_WORKFLOW.md](./AI_WORKFLOW.md) | Mandatory AI/developer workflow |
+| [QUALITY.md](./QUALITY.md) | Tests, lint, Dev Dashboard, static checks |
 | [QUESTORY_HISTORY.md](./QUESTORY_HISTORY.md) | Major milestones and why they mattered |
 
 ---
@@ -60,8 +61,26 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full engine map.
 | 12 — Creator Economy | ✓ Complete |
 | 13 — Global Marketplace | ✓ Complete |
 | 14 — AI Living NPCs & Dynamic Story | ✓ Complete |
+| 14.5 — Developer Experience & Quality | ✓ Complete |
 
 Full roadmap: [ROADMAP.md](./ROADMAP.md)
+
+---
+
+## Quality & Testing
+
+See [QUALITY.md](./QUALITY.md) for the full guide.
+
+| Command | Purpose |
+|---------|---------|
+| `npm run test:unit` | Vitest engine unit tests |
+| `npm run test:e2e` | Playwright end-to-end flows |
+| `npm run lint` | ESLint (gentle — undefined vars, unused imports) |
+| `npm run check:cycles` | Circular dependency report (`madge`) |
+| `npm run check:exports` | Unused exports (`knip`) |
+| `npm run check:all` | Build + lint + unit tests + cycle check |
+
+**Dev Dashboard:** Admin → **Dev Health** (visible in dev mode or for admin users). Runs engine health checks and state inspection without mutating gameplay.
 
 ---
 

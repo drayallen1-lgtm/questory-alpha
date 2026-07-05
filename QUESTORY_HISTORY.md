@@ -170,6 +170,14 @@ NPCs gained long-term memory, relationship labels (Stranger → Legendary Bond),
 
 ---
 
+### Developer Experience & Quality (Phase 14.5)
+
+Vitest unit tests for core engines, Playwright E2E smoke/adventure/map/passport flows, a Developer Dashboard with engine health checks and state inspection, and gentle static analysis (ESLint, Knip, Madge). See [QUALITY.md](./QUALITY.md).
+
+**Why it mattered:** Automated protection before Phase 15 — claim, branching, progression, marketplace, and NPC regressions surface in CI/local runs without gameplay changes.
+
+---
+
 ## Timeline Summary
 
 | Era | Milestone | Phase |
@@ -190,6 +198,7 @@ NPCs gained long-term memory, relationship labels (Stranger → Legendary Bond),
 | 2.0 | Creator economy & dashboards | 12 |
 | 2.0 | Global marketplace & trading network | 13 |
 | 2.0 | AI Living NPCs & dynamic story engine | 14 |
+| 2.0 | Developer experience & quality safeguards | 14.5 |
 | Next | Dynamic factions, guilds & territory wars | 15 |
 
 ---

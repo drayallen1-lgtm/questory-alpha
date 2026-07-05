@@ -29,6 +29,7 @@ Every AI session **must begin** by reading these documents in order:
 
 Optional context:
 - [QUESTORY_HISTORY.md](./QUESTORY_HISTORY.md) — why phases exist
+- [QUALITY.md](./QUALITY.md) — tests, lint, Dev Dashboard (Phase 14.5+)
 
 ---
 
@@ -80,14 +81,16 @@ Commits: [1. engine  2. UI  3. wiring]
 
 ```
 1. npm run build          # must pass
-2. git add src/ ...       # source only
-3. git commit -m "..."    # descriptive message
-4. Never git add dist/
+2. npm run test:unit      # before engine/claim changes (Phase 14.5+)
+3. git add src/ ...       # source only
+4. git commit -m "..."    # descriptive message
+5. Never git add dist/
 ```
 
 | Rule | Detail |
 |------|--------|
 | Build before commit | Always run `npm run build` |
+| Test before engine changes | Run `npm run test:unit`; E2E when UI flows change — see [QUALITY.md](./QUALITY.md) |
 | Source only | Commit `src/`, config, docs — never `dist/` |
 | No empty commits | Skip if nothing changed |
 | No git config changes | Never modify user git config |
@@ -118,6 +121,7 @@ Before ending a session:
 - [ ] No duplicate responsibilities
 - [ ] State normalized in `seed.js` if new slices added
 - [ ] `npm run build` passes
+- [ ] `npm run test:unit` passes when engines or claim flow changed
 - [ ] Only source files committed
 - [ ] Roadmap updated if phase completed
 - [ ] No gameplay changes unless that was the task

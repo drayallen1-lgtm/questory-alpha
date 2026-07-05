@@ -128,6 +128,14 @@ AI-ready NPC memory engine with long-term relationships, deterministic dynamic d
 
 ---
 
+### Phase 14.5 — Developer Experience & Quality ✓ Complete
+
+Vitest engine unit tests, Playwright E2E smoke flows, a dev-only Developer Dashboard (engine health + state inspector), and gentle static analysis (ESLint, Knip, Madge). Documented in [QUALITY.md](./QUALITY.md).
+
+**Why it mattered:** Questory gained automated safeguards before Phase 15 — regressions in claim flow, branching, progression, marketplace, and NPC engines are caught early without changing gameplay.
+
+---
+
 ## Future Phases
 
 ### Phase 15 — Dynamic Factions, Guilds & Territory Wars
@@ -148,4 +156,4 @@ Faction allegiance, guild territory control, regional conflicts, and map-scale s
 
 ---
 
-*Last updated: Phase 14 complete. Next milestone: Phase 15 — Dynamic Factions, Guilds & Territory Wars.*
+*Last updated: Phase 14.5 complete. Next milestone: Phase 15 — Dynamic Factions, Guilds & Territory Wars.*

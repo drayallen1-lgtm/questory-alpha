@@ -40,6 +40,7 @@ import {
   usesArFinder,
   withdrawCash,
 } from './expansion';
+import { isPremiumAdventure } from './economy';
 
 const PLATFORM_TABS = [
   ['premium', 'Premium'],

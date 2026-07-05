@@ -198,6 +198,16 @@ Adventure data is not one monolithic engine. Responsibilities are split:
 
 **Consumers:** `AiNpcUI.jsx`, `codexEngine.js`, `claimFlow.js`, `QuestoryMap.jsx`
 
+### developerHealthEngine.js (Phase 14.5)
+
+**Purpose:** Dev-only engine health probes and state inspector snapshots for the Developer Dashboard.
+
+**Inputs:** All major engines, `defaultState` / live state
+
+**Outputs:** `runDeveloperHealthCheck`, per-engine `{ initialized, snapshotOk, itemCount, error, timingMs }`, state inspector fields
+
+**Consumers:** `DeveloperDashboard.jsx` (Admin → Dev Health; `import.meta.env.DEV` or admin only)
+
 ---
 
 ## Living World

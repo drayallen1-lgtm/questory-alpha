@@ -216,6 +216,17 @@ Each entry lists:
 
 ---
 
+### developerHealthEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Dev-only engine health probes and state inspector for Developer Dashboard |
+| **Primary exports** | `runDeveloperHealthCheck` |
+| **Dependencies** | Major engines (living world, discovery, economy, NPC, claim, branching, etc.) |
+| **Consumers** | `DeveloperDashboard.jsx` |
+
+---
+
 ### marketplaceEngine.js
 
 | | |
@@ -451,6 +462,7 @@ Each entry lists:
 | `mapSpatial.js` | Spatial clustering helpers |
 | `mapCamera.js` | Map camera animations |
 | `templates.js` | Adventure template presets |
+| `developerHealthEngine.js` | Dev-only engine health checks (Phase 14.5) |
 
 ---
 
