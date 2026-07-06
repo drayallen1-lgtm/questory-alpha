@@ -144,11 +144,19 @@ Import cycle reduction (timelineCore, mapCoordinates, messageUtils), dev-only sn
 
 ---
 
+### Phase 15 — Dynamic Factions, Guilds & Territory Wars ✓ Complete
+
+Faction engine with 7 seed guilds and 10 Parsons territories, weighted influence control, guild join/leave, territory wars UI, map faction overlays with clickable chips, Living World / Earth timeline integration, legendary hunt guild bonuses, marketplace territory modifiers, NPC faction dialogue, Passport guild identity, dev health probe, and unit/E2E tests.
+
+**Why it mattered:** Teams became map-scale powers — territories contest, guilds earn reputation, and the city feels politically alive without replacing social or living world systems.
+
+---
+
 ## Future Phases
 
-### Phase 15 — Dynamic Factions, Guilds & Territory Wars
+### Phase 16 — Questory AI Director
 
-Faction allegiance, guild territory control, regional conflicts, and map-scale social competition layered on top of exploration.
+Adaptive narrative director that orchestrates beats across adventures, NPCs, factions, and world events.
 
 **Status:** Future
 
@@ -164,4 +172,4 @@ Faction allegiance, guild territory control, regional conflicts, and map-scale s
 
 ---
 
-*Last updated: Phase 14.75 complete. Next milestone: Phase 15 — Dynamic Factions, Guilds & Territory Wars.*
+*Last updated: Phase 15 complete. Next milestone: Phase 16 — Questory AI Director.*

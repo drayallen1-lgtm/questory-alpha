@@ -1,6 +1,6 @@
 # Questory Quality Guide
 
-Phase 14.5–14.75 — Developer Experience, Quality, and Engine Hardening safeguards before Phase 15.
+Phase 14.5–14.75 — Developer Experience, Quality, and Engine Hardening safeguards. Phase 15 adds faction engine tests and guild E2E coverage.
 
 ## Quick commands
 
@@ -32,6 +32,7 @@ Engines covered:
 - `craftingEngine` — bonus calculation from crafted artifacts
 - `aiNpcEngine` (memory) — encounter and memory flag updates
 - `legendaryHuntEngine` — snapshot shape and boss fields
+- `factionEngine` — snapshot, territory owner, contributions, rewards, deterministic activity
 
 Setup file `tests/unit/setup.js` preloads `seed.js` to avoid circular import races in Node.
 
@@ -46,6 +47,7 @@ Location: `tests/e2e/`
 | `passport-tabs.spec.js` | Vault tab switching |
 | `adventure-flow.spec.js` | Branch path + Union Depot Ghost claim (`DEPOTGHOST`) |
 | `full-journey.spec.js` | Map → adventure → branch → claim → passport regression |
+| `guilds.spec.js` | Social → Guilds hub, territory detail, rankings |
 
 Playwright config:
 

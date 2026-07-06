@@ -183,6 +183,17 @@ Each entry lists:
 
 ---
 
+### factionEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Guild/faction identity, territory influence, control scores, wars, seasonal scoring |
+| **Primary exports** | `getFactionSnapshot`, `joinFaction`, `leaveFaction`, `recordFactionContribution`, `calculateTerritoryControl`, `getTerritoryOwner`, `applyFactionOnVictory`, `buildFactionMapOverlays` |
+| **Dependencies** | `dateUtils`, `engineSnapshotUtils` |
+| **Consumers** | `FactionGuildUI.jsx`, `QuestoryMap.jsx`, `claimFlow.js`, `livingWorldEngine.js`, `livingEarthEngine.js`, `legendaryHuntEngine.js`, `marketplaceEngine.js`, `aiNpcEngine.js`, Dev Dashboard |
+
+---
+
 ### livingNpcEngine.js
 
 | | |

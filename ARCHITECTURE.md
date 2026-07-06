@@ -79,6 +79,7 @@ These are the integration points every new feature must touch:
 | Progression | `playerProgressionEngine` | `PlayerProgressionUI`, Passport Progress tab |
 | Crafting | `craftingEngine` | `CraftingUI`, Passport Craft tab |
 | Legendary Hunts | `legendaryHuntEngine` | `LegendaryHuntUI`, map HUD, `WorldBossLayer` |
+| Factions & Territories | `factionEngine` | `FactionGuildUI`, `TerritoryLayer`, Social → Guilds |
 
 ---
 
