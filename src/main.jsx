@@ -188,6 +188,7 @@ import './creatorEconomy.css';
 import './marketplace.css';
 import './developerDashboard.css';
 import './aiNpc.css';
+import './factionGuild.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';

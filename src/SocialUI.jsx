@@ -11,6 +11,7 @@ import {
   Radio,
   Trophy,
   Zap,
+  Shield,
 } from 'lucide-react';
 import { formatSuccessMessage } from './claimSystem';
 import {
@@ -37,9 +38,10 @@ import {
 } from './social';
 import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
 import { getMarketplaceSnapshot } from './marketplaceEngine';
+import { FactionGuildPanel } from './FactionGuildUI';
 
 export function SocialHub({ state, setState, adventures, nav, auth }) {
-  const [tab, setTab] = useState('teams');
+  const [tab, setTab] = useState(state?.faction?.focusedTerritoryId ? 'guilds' : 'teams');
   const creatorSnapshot = useMemo(
     () => getCreatorEconomySnapshot(state, adventures),
     [state, adventures]
@@ -50,6 +52,7 @@ export function SocialHub({ state, setState, adventures, nav, auth }) {
   );
 
   const tabs = [
+    ['guilds', 'Guilds', Shield],
     ['teams', 'Teams', Users],
     ['friends', 'Friends', UserPlus],
     ['stories', 'Stories', Camera],
@@ -110,6 +113,15 @@ export function SocialHub({ state, setState, adventures, nav, auth }) {
         ))}
       </div>
 
+      {tab === 'guilds' && (
+        <FactionGuildPanel
+          state={state}
+          setState={setState}
+          adventures={adventures}
+          nav={nav}
+          initialTerritoryId={state?.faction?.focusedTerritoryId}
+        />
+      )}
       {tab === 'teams' && <TeamsPanel state={state} setState={setState} />}
       {tab === 'friends' && (
         <FriendsPanel state={state} setState={setState} adventures={adventures} />
