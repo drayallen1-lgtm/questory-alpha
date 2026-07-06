@@ -56,6 +56,7 @@ import { DEFAULT_CREATOR_ECONOMY, normalizeCreatorEconomy } from './creatorEcono
 import { DEFAULT_MARKETPLACE, normalizeMarketplace } from './marketplaceEngine';
 import { DEFAULT_AI_NPC, normalizeAiNpc } from './aiNpcEngine';
 import { DEFAULT_DYNAMIC_STORY, normalizeDynamicStory } from './dynamicStoryEngine';
+import { DEFAULT_FACTION, normalizeFaction } from './factionEngine';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -103,6 +104,7 @@ export const defaultState = {
   marketplace: { ...DEFAULT_MARKETPLACE },
   aiNpc: { ...DEFAULT_AI_NPC },
   dynamicStory: { ...DEFAULT_DYNAMIC_STORY },
+  faction: { ...DEFAULT_FACTION },
   vaultTab: 'passport',
   adventures: ensureDemoAdventure([
     {
@@ -794,6 +796,7 @@ export function loadState() {
       marketplace: normalizeMarketplace(saved.marketplace),
       aiNpc: normalizeAiNpc(saved.aiNpc),
       dynamicStory: normalizeDynamicStory(saved.dynamicStory),
+      faction: normalizeFaction(saved.faction),
       vaultTab: saved.vaultTab || 'passport',
       growthTab: saved.growthTab || 'referrals',
       pendingInviteAdventureId: saved.pendingInviteAdventureId || null,
