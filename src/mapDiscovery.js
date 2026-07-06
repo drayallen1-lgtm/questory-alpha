@@ -9,6 +9,7 @@ import { safeGetWorldEventContext } from './worldEventEngine';
 import { resolveCreatorPinOverlays } from './creatorEconomyEngine';
 import { safeGetTime } from './dateUtils';
 import { getFogRevealRadiusMultiplier } from './craftingEngine';
+import { applyFactionOnMapReveal } from './factionEngine';
 
 export const MAP_FILTERS = {
   ALL: 'all',
@@ -619,7 +620,7 @@ export function recordMapReveal(state, adventure) {
   if (exploration.revealed.some((r) => r.key === key)) return state;
   const baseRadius = Number(adventure.finderSearchRadiusM) || 500;
   const radiusM = Math.round(baseRadius * getFogRevealRadiusMultiplier(state));
-  return {
+  const nextState = {
     ...state,
     mapExploration: {
       ...exploration,
@@ -636,6 +637,7 @@ export function recordMapReveal(state, adventure) {
       ],
     },
   };
+  return applyFactionOnMapReveal(nextState, 'downtown');
 }
 
 export function revealedAreasGeoJSON(exploration, now = Date.now()) {

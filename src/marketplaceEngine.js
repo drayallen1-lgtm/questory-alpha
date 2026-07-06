@@ -8,6 +8,7 @@ import { getCreatorEconomySnapshot, STORE_CATALOG } from './creatorEconomyEngine
 import { getCurrentSeason } from './seasonEngine';
 import { safeGetTime } from './dateUtils';
 import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
+import { getTerritoryModifierForVenue } from './factionEngine.js';
 
 export const MARKETPLACE_LIMITS = {
   MAX_LISTINGS: 40,
@@ -424,6 +425,7 @@ export function getMarketplaceSnapshot(state = null, adventures = [], options = 
 
   const activityFeed = buildMarketActivity(stored.history, stored, now);
   const hallOfFame = buildHallOfFame(explorer, stored);
+  const territoryModifiers = MARKET_VENUES.map((v) => getTerritoryModifierForVenue(v.id, state, now)).filter(Boolean);
 
   return wrapEngineSnapshot({
     inventory,
@@ -456,6 +458,7 @@ export function getMarketplaceSnapshot(state = null, adventures = [], options = 
       coins: state?.coins || 0,
     },
     extensionHooks: MARKET_EXTENSION_HOOKS,
+    territoryModifiers,
     season,
     stored,
   });

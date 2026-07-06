@@ -9,6 +9,7 @@ import { computeCityCompletionPct } from './socialWorldEngine';
 import { isNightTime } from './livingWorldEventsEngine';
 import { normalizeCrafting } from './craftingEngine';
 import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
+import { getBossTerritoryBonus } from './factionEngine.js';
 import { grantExplorerCurrency, CURRENCY_TYPES } from './explorerEconomyEngine';
 import { safeGetTime } from './dateUtils';
 
@@ -493,6 +494,8 @@ export function getLegendaryHuntSnapshot(state, adventures = [], options = {}) {
   const alerts = buildLegendaryAlerts(worldBoss, hunt);
   const timeline = buildLegendaryTimelineEntries(worldBoss, regionalHunts, now);
   const atmosphere = getLegendaryMapAtmosphere(worldBoss);
+  const territoryBonus = getBossTerritoryBonus(state, worldBoss.bossId, now);
+  const memberFactionId = state?.faction?.memberFactionId || state?.social?.myTeamId;
 
   return wrapEngineSnapshot({
     worldBoss,
@@ -503,6 +506,9 @@ export function getLegendaryHuntSnapshot(state, adventures = [], options = {}) {
     timeline: timeline.slice(0, LEGENDARY_HUNT_LIMITS.MAX_TIMELINE_ENTRIES),
     atmosphere,
     hunt,
+    guildBossBonus: territoryBonus,
+    guildContributionPct: memberFactionId ? Math.min(100, (hunt.bossProgress?.[worldBoss.bossId] || 0) / 10) : 0,
+    topGuildFactionId: memberFactionId,
     hasActiveBoss:
       worldBoss.status === BOSS_STATUS.ACTIVE || worldBoss.status === BOSS_STATUS.AWAKENING,
   });

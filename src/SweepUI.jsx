@@ -83,6 +83,7 @@ import {
   PlayerProgressionHomeCard,
   PlayerProgressionPanel,
 } from './PlayerProgressionUI';
+import { FactionPassportSection } from './FactionGuildUI';
 import { CraftingPanel } from './CraftingUI';
 import { isDev } from './config/env';
 import { CreatorPassportPanel } from './CreatorEconomyUI';
@@ -414,6 +415,7 @@ export function QuestoryPassport({ state, adventures, onRedeem, setState, nav })
 
       {tab === 'passport' && (
         <>
+          <FactionPassportSection state={state} adventures={adventures} />
           <NationalPassportPanel state={state} />
           {featuredCollections.length > 0 && (
             <div className="card passport-featured-collections">

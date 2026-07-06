@@ -17,6 +17,7 @@ import { CREATOR_WORLDS, getCurrentSeason } from './seasonEngine';
 import { HALL_OF_FAME_EXPLORERS } from './questoryIdentityEngine';
 import { safeGetTime } from './dateUtils';
 import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
+import { applyFactionOnCreatorCompletion } from './factionEngine';
 
 export const CREATOR_ECONOMY_LIMITS = {
   MAX_TIMELINE: 12,
@@ -573,7 +574,8 @@ export function recordCreatorCompletion(state, adventure, options = {}) {
     completions: (state?.creatorEconomy?.creatorStats?.[creatorId]?.completions || 0) + 1,
     dailyPlayers: (state?.creatorEconomy?.creatorStats?.[creatorId]?.dailyPlayers || 12) + 1,
   });
-  return awardCreatorXP({ ...state, creatorEconomy: stored }, creatorId, 25, 'completion');
+  const withXp = awardCreatorXP({ ...state, creatorEconomy: stored }, creatorId, 25, 'completion');
+  return applyFactionOnCreatorCompletion(withXp, 'creator-bazaar');
 }
 
 export function recordCreatorRevenue(state, creatorId, amount, kind = 'premium') {

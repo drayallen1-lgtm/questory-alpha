@@ -20,6 +20,7 @@ import { safeGetWorldEventContext } from './worldEventEngine';
 import { isNightTime } from './livingWorldEventsEngine';
 import { safeGetTime } from './dateUtils';
 import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
+import { getFactionNpcContextLine } from './factionEngine.js';
 
 export const AI_NPC_LIMITS = {
   MAX_ENCOUNTERS: 40,
@@ -480,6 +481,9 @@ export function generateNpcDialogue(npc, state, adventures = [], options = {}) {
   let text = baseText;
   if (modifiers.length) text = `${modifiers[0]} ${text}`;
   if (memoryLine && context.trust >= 45) text = `${memoryLine} ${text}`;
+
+  const factionLine = getFactionNpcContextLine(merged.id, state, options.now);
+  if (factionLine) text = `${factionLine} ${text}`;
 
   const mood =
     context.trust < 30 ? 'warning' : context.bossActive ? 'mysterious' : merged.dialogues?.[0]?.mood || 'guide';

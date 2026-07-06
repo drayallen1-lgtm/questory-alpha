@@ -28,6 +28,7 @@ import {
   getLegendaryHuntSnapshot,
 } from './legendaryHuntEngine';
 import { recordCreatorCompletion, recordPremiumPurchaseForCreator } from './creatorEconomyEngine';
+import { applyFactionOnVictory } from './factionEngine';
 import {
   resolveClaimRewards,
   resolveClaimRewardsAsync,
@@ -176,6 +177,7 @@ export function buildClaimSuccessState(
     worldBoss: worldBossLinked,
   });
   nextState = recordCreatorCompletion(nextState, freshAdventure);
+  nextState = applyFactionOnVictory(nextState, freshAdventure);
 
   const playerName =
     nextState.playerName || certificate?.playerName || 'You';
