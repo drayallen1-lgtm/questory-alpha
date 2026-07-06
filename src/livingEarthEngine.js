@@ -21,6 +21,7 @@ import { getMarketplaceSnapshot } from './marketplaceEngine';
 import { getAiNpcSnapshot } from './aiNpcEngine';
 import { getDynamicStorySnapshot } from './dynamicStoryEngine';
 import { buildEarthFactionMarkers, getFactionSnapshot } from './factionEngine';
+import { buildDirectorEarthPulses } from './questoryAiDirectorEngine';
 import { getCurrentSeason } from './seasonEngine';
 import { CREATOR_WORLDS } from './seasonEngine';
 import { safeGetTime } from './dateUtils';
@@ -294,6 +295,7 @@ export function getLivingEarthSnapshot(options = {}) {
   const dynamicStory = getDynamicStorySnapshot(state, adventures, { now });
   const factionSnapshot = getFactionSnapshot(state, adventures, { now });
   const factionMarkers = buildEarthFactionMarkers(state, now);
+  const directorPulses = buildDirectorEarthPulses(state, adventures, now);
 
   const continents = buildContinentMarkers(worldDiscovery, { state, adventures, now });
   const countries = buildCountryMarkers(worldDiscovery);
@@ -356,7 +358,13 @@ export function getLivingEarthSnapshot(options = {}) {
         label: e.text,
         kind: 'faction',
       })),
+      ...(directorPulses || []).map((e) => ({
+        ...e,
+        label: e.label,
+        kind: 'director',
+      })),
     ].slice(0, 10),
+    directorPulses,
     heatZones: livingWorld.heatZones?.slice(0, 4) || [],
     stored,
     flyTargets: {
