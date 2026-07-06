@@ -20,6 +20,7 @@ import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
 import { getMarketplaceSnapshot } from './marketplaceEngine';
 import { getAiNpcSnapshot } from './aiNpcEngine';
 import { getDynamicStorySnapshot } from './dynamicStoryEngine';
+import { buildEarthFactionMarkers, getFactionSnapshot } from './factionEngine';
 import { getCurrentSeason } from './seasonEngine';
 import { CREATOR_WORLDS } from './seasonEngine';
 import { safeGetTime } from './dateUtils';
@@ -291,6 +292,8 @@ export function getLivingEarthSnapshot(options = {}) {
   const marketplace = getMarketplaceSnapshot(state, adventures, { now });
   const aiNpc = getAiNpcSnapshot(state, adventures, { now });
   const dynamicStory = getDynamicStorySnapshot(state, adventures, { now });
+  const factionSnapshot = getFactionSnapshot(state, adventures, { now });
+  const factionMarkers = buildEarthFactionMarkers(state, now);
 
   const continents = buildContinentMarkers(worldDiscovery, { state, adventures, now });
   const countries = buildCountryMarkers(worldDiscovery);
@@ -325,6 +328,8 @@ export function getLivingEarthSnapshot(options = {}) {
     ceremonies,
     worldDiscovery,
     liveExplorerCount: worldDiscovery.liveExplorerCount || social?.presenceBoost?.activeHunts || 0,
+    factionMarkers,
+    factionInfluence: factionMarkers,
     timelineEntries: [
       ...(worldDiscovery.timelineEntries || []),
       ...(creatorEconomy.timelineFeed || []).map((e) => ({
@@ -345,6 +350,11 @@ export function getLivingEarthSnapshot(options = {}) {
         ...e,
         label: e.text,
         kind: 'story',
+      })),
+      ...(factionSnapshot.timeline || []).slice(0, 3).map((e) => ({
+        ...e,
+        label: e.text,
+        kind: 'faction',
       })),
     ].slice(0, 10),
     heatZones: livingWorld.heatZones?.slice(0, 4) || [],

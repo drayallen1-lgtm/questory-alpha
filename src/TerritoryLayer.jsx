@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-function TerritoryZone({ overlay, map }) {
+function TerritoryZone({ overlay, map, contested }) {
   const [pos, setPos] = useState(null);
 
   useEffect(() => {
@@ -25,10 +25,11 @@ function TerritoryZone({ overlay, map }) {
   if (!pos) return null;
 
   const size = 120 * pos.scale;
+  const isContested = contested || overlay.contested;
 
   return (
     <span
-      className="territory-zone"
+      className={`territory-zone${isContested ? ' contested' : ''}`}
       style={{
         left: pos.x,
         top: pos.y,
@@ -43,20 +44,67 @@ function TerritoryZone({ overlay, map }) {
       title={`${overlay.teamName} · ${overlay.areaLabel}`}
     >
       <span className="territory-zone-fill" />
-      <span className="territory-zone-label">{overlay.teamName}</span>
+      <span className="territory-zone-label">
+        {overlay.emblem ? `${overlay.emblem} ` : ''}
+        {overlay.areaLabel || overlay.teamName}
+      </span>
     </span>
   );
 }
 
-/** Team territory overlays — visual only, pointer-events none */
-export function TerritoryLayer({ map, overlays = [] }) {
+function TerritoryChip({ overlay, map, onSelect }) {
+  const [pos, setPos] = useState(null);
+
+  useEffect(() => {
+    if (!map || overlay.latitude == null) return undefined;
+    const update = () => {
+      const point = map.project([overlay.longitude, overlay.latitude]);
+      setPos({ x: point.x, y: point.y });
+    };
+    update();
+    map.on('move', update);
+    map.on('zoom', update);
+    map.on('resize', update);
+    return () => {
+      map.off('move', update);
+      map.off('zoom', update);
+      map.off('resize', update);
+    };
+  }, [map, overlay.latitude, overlay.longitude]);
+
+  if (!pos || !onSelect) return null;
+
+  return (
+    <button
+      type="button"
+      className={`faction-territory-chip${overlay.contested ? ' contested' : ''}`}
+      style={{ left: pos.x, top: pos.y + 36 }}
+      onClick={() => onSelect(overlay.territoryId || overlay.id)}
+      title={`${overlay.areaLabel} · ${overlay.teamName}`}
+    >
+      {overlay.emblem || '🏳️'} {overlay.areaLabel || overlay.teamName}
+    </button>
+  );
+}
+
+/** Team / faction territory overlays — visual zones + optional clickable chips */
+export function TerritoryLayer({ map, overlays = [], onTerritorySelect = null }) {
   if (!map || !overlays.length) return null;
 
   return (
-    <div className="territory-layer" aria-hidden="true">
+    <div className={`territory-layer faction-layer${onTerritorySelect ? ' has-chips' : ''}`} aria-hidden={!onTerritorySelect}>
       {overlays.map((overlay) => (
-        <TerritoryZone key={overlay.id} overlay={overlay} map={map} />
+        <TerritoryZone key={overlay.id} overlay={overlay} map={map} contested={overlay.contested} />
       ))}
+      {onTerritorySelect &&
+        overlays.map((overlay) => (
+          <TerritoryChip
+            key={`chip-${overlay.id}`}
+            overlay={overlay}
+            map={map}
+            onSelect={onTerritorySelect}
+          />
+        ))}
     </div>
   );
 }

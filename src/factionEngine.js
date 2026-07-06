@@ -328,6 +328,7 @@ export const DEFAULT_FACTION = {
   seasonScore: 0,
   lastActivityAt: null,
   warSeasonId: '2026-q2-war',
+  focusedTerritoryId: null,
 };
 
 function hashSeed(str) {
@@ -791,6 +792,32 @@ export function getBossTerritoryBonus(state, bossId, now = Date.now()) {
   }
 
   return { lootBonus: bonus, label, bossId };
+}
+
+export function getFactionNpcContextLine(npcId, state, now = Date.now()) {
+  const depot = buildTerritoryView(resolveTerritoryById('union-depot'), state, now);
+  const market = buildTerritoryView(resolveTerritoryById('downtown-market'), state, now);
+  const downtown = buildTerritoryView(resolveTerritoryById('downtown'), state, now);
+  const horror = buildTerritoryView(resolveTerritoryById('horror-crest'), state, now);
+  const lines = {
+    groundskeeper: `${depot.ownerName} influences the station district now. Watch your step.`,
+    'market-trader': `Prices shifted when ${market.ownerName} took Downtown Market.`,
+    'pastor-grace': `The Chapel feels safer under ${downtown.ownerName}.`,
+    'black-lantern-keeper': `${horror.ownerName} contest Horror Crest this season.`,
+  };
+  return lines[npcId] || null;
+}
+
+export function buildFactionCodexEntries(state, now = Date.now()) {
+  const snapshot = getFactionSnapshot(state, [], { now });
+  return snapshot.territories.map((t) => ({
+    id: `faction-territory-${t.territoryId}`,
+    title: t.name,
+    subtitle: `${t.ownerName} · ${t.contested ? 'contested' : 'stable'}`,
+    body: `Territory influence led by ${t.ownerName} at ${t.ranked[0]?.pct || 0}%.`,
+    icon: t.ownerEmblem,
+    unlocked: (state?.faction?.territoryVisits || []).includes(t.territoryId) || Boolean(state?.faction?.memberFactionId),
+  }));
 }
 
 export function getFactionSnapshot(state, adventures = [], { now = Date.now() } = {}) {

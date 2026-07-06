@@ -12,6 +12,7 @@ import {
   getVisitHeatLevel,
 } from './livingWorldEventsEngine';
 import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
+import { buildFactionTimeline } from './factionEngine.js';
 
 export const LIVING_WORLD_LIMITS = {
   MAX_EXPLORER_DOTS: 12,
@@ -332,6 +333,13 @@ export function getLivingWorldSnapshot(adventures = [], options = {}) {
     explorerDots,
   });
   const timeline = buildTimelineEntries(adventures, { state, eventContext });
+  const factionTimeline = buildFactionTimeline(state, adventures, now).slice(0, 4).map((entry) => ({
+    ...entry,
+    kind: entry.kind || 'faction',
+  }));
+  const mergedTimeline = [...factionTimeline, ...timeline]
+    .sort((a, b) => (a.minutesAgo || 0) - (b.minutesAgo || 0))
+    .slice(0, LIVING_WORLD_LIMITS.MAX_TIMELINE);
   const pulses = buildDiscoveryPulses(adventures, {
     trigger: pulseTrigger,
     heatZones,
@@ -350,7 +358,7 @@ export function getLivingWorldSnapshot(adventures = [], options = {}) {
     presence,
     explorerDots,
     heatZones,
-    timeline,
+    timeline: mergedTimeline,
     pulses,
     eventContext,
     revealedCount,

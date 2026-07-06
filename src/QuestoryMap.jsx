@@ -67,6 +67,7 @@ import {
 } from './socialWorldEngine';
 import { getQuestoryIdentitySnapshot } from './questoryIdentityEngine';
 import { getLegendaryHuntSnapshot } from './legendaryHuntEngine';
+import { getFactionSnapshot } from './factionEngine';
 import { LegendaryHuntMapHud } from './LegendaryHuntUI';
 import { DiscoveryHud } from './DiscoveryHud';
 import { CityDiscoveryRingLayer } from './CityDiscoveryRingLayer';
@@ -332,6 +333,7 @@ export function QuestoryMap({
   socialDiscovery = null,
   questoryIdentity = null,
   worldDiscovery = null,
+  onTerritorySelect = null,
   onMapZoomChange,
   onMapFlyReady,
   isAdmin = false,
@@ -1056,7 +1058,11 @@ export function QuestoryMap({
             nightMode={livingWorld.nightMode}
           />
           {socialDiscovery?.territoryOverlays?.length > 0 && (
-            <TerritoryLayer map={mapRef.current} overlays={socialDiscovery.territoryOverlays} />
+            <TerritoryLayer
+              map={mapRef.current}
+              overlays={socialDiscovery.territoryOverlays}
+              onTerritorySelect={onTerritorySelect}
+            />
           )}
           {socialDiscovery?.raceMarkers?.length > 0 && (
             <SocialRaceLayer map={mapRef.current} markers={socialDiscovery.raceMarkers} />
@@ -1184,6 +1190,11 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
     [state, adventures, worldNow]
   );
 
+  const factionSnapshot = useMemo(
+    () => getFactionSnapshot(state, adventures, { now: worldNow }),
+    [state, adventures, worldNow]
+  );
+
   const mergedRaces = useMemo(() => {
     const seen = new Set();
     return [...legendaryHuntSnapshot.races, ...socialDiscoverySnapshot.races].filter((r) => {
@@ -1198,8 +1209,26 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
       ...socialDiscoverySnapshot,
       races: mergedRaces,
       raceMarkers: buildRaceMarkers(mergedRaces),
+      territoryOverlays: factionSnapshot.mapOverlays?.length
+        ? factionSnapshot.mapOverlays
+        : socialDiscoverySnapshot.territoryOverlays,
     }),
-    [socialDiscoverySnapshot, mergedRaces]
+    [socialDiscoverySnapshot, mergedRaces, factionSnapshot.mapOverlays]
+  );
+
+  const handleTerritorySelect = useCallback(
+    (territoryId) => {
+      if (!setState) return;
+      setState((s) => ({
+        ...s,
+        screen: 'social',
+        faction: {
+          ...s.faction,
+          focusedTerritoryId: territoryId,
+        },
+      }));
+    },
+    [setState]
   );
 
   const worldDiscoverySnapshot = useMemo(
@@ -1882,6 +1911,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
           socialDiscovery={mergedSocialDiscovery}
           questoryIdentity={questoryIdentitySnapshot}
           worldDiscovery={worldDiscoverySnapshot}
+          onTerritorySelect={handleTerritorySelect}
           onMapZoomChange={setMapZoom}
           onMapFlyReady={(api) => {
             earthFlyRef.current = api;
