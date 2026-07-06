@@ -16,6 +16,7 @@ import { getMarketplaceSnapshot } from './marketplaceEngine.js';
 import { getCreatorEconomySnapshot } from './creatorEconomyEngine.js';
 import { getAiNpcSnapshot } from './aiNpcEngine.js';
 import { getDynamicStorySnapshot } from './dynamicStoryEngine.js';
+import { getFactionSnapshot } from './factionEngine.js';
 import { validateClaimAttempt } from './claimSystem.js';
 import {
   measureEngineSnapshot,
@@ -55,6 +56,7 @@ function summarizeSample(id, result) {
   if (id === 'marketplace') return { listings: result.stats?.totalListings, coins: result.stats?.coins };
   if (id === 'ai-npc') return { profiles: result.profiles?.length || 0 };
   if (id === 'dynamic-story') return { arcs: result.arcs?.length || 0 };
+  if (id === 'factions') return { territories: result.territoryCount, contested: result.contestedCount };
   return null;
 }
 
@@ -79,6 +81,8 @@ export function buildStateInspector(state, adventures = []) {
     activeBranchPath: unionProgress.pathId || null,
     npcMemoryCount: Object.keys(npcMemory).length,
     bossStatus: legendary.hasActiveBoss ? 'active' : 'dormant',
+    factionCount: getFactionSnapshot(state, adventures).factionCount,
+    contestedTerritories: getFactionSnapshot(state, adventures).contestedCount,
     worldDiscoveryPct: discovery.overallPct ?? discovery.cityPct ?? discovery.completionPercent ?? 0,
     marketplaceListingCount: getMarketplaceSnapshot(state, adventures).stats?.totalListings ?? 0,
     creatorFollows: getCreatorEconomySnapshot(state, adventures).followedCreatorIds?.length
@@ -132,6 +136,9 @@ export function runDeveloperHealthCheck(state, adventures = [], options = {}) {
     runCheck('ai-npc', 'AI NPC', () => getAiNpcSnapshot(state, adventures, { now })),
     runCheck('dynamic-story', 'Dynamic Story', () =>
       getDynamicStorySnapshot(state, adventures, { now })
+    ),
+    runCheck('factions', 'Factions & Territories', () =>
+      getFactionSnapshot(state, adventures, { now })
     ),
     runCheck('claim-flow', 'Claim Flow', () => {
       const adventure = adventures.find((a) => a.id === 'union-depot-ghost');
