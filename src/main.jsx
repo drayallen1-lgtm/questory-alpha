@@ -171,6 +171,7 @@ const MarketplaceScreen = lazy(() =>
 const DeveloperDashboard = lazy(() =>
   import('./DeveloperDashboard').then((m) => ({ default: m.DeveloperDashboard }))
 );
+import { AiDirectorPanel } from './AiDirectorUI';
 import { isDev } from './config/env';
 import './style.css';
 import './discoveryBloom.css';
@@ -189,6 +190,7 @@ import './marketplace.css';
 import './developerDashboard.css';
 import './aiNpc.css';
 import './factionGuild.css';
+import './aiDirector.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';
@@ -1082,6 +1084,15 @@ function QuestoryApp() {
               isAdmin={isAdmin}
             />
           </Suspense>
+        )}
+        {state.screen === 'ai-director' && (
+          <AiDirectorPanel
+            state={state}
+            setState={setState}
+            adventures={state.adventures}
+            nav={nav}
+            isAdmin={isAdmin}
+          />
         )}
         {state.screen === 'admin' && (
           isSupabaseMode && !isAdmin ? (
@@ -3726,6 +3737,11 @@ function AdminReview({
       <div className="section-head">
         <h2>Admin Review</h2>
         <p>Preview, publish, analytics, and manage adventures</p>
+        {(isDev || isAdmin) && (
+          <button type="button" className="ghost dev-health-link" onClick={() => nav('ai-director')}>
+            AI Director
+          </button>
+        )}
         {(isDev || isAdmin) && (
           <button type="button" className="ghost dev-health-link" onClick={() => nav('dev-health')}>
             Dev Health
