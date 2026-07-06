@@ -1,6 +1,6 @@
 # Questory Quality Guide
 
-Phase 14.5–14.75 — Developer Experience, Quality, and Engine Hardening safeguards. Phase 15 adds faction engine tests and guild E2E coverage.
+Phase 14.5–14.75 — Developer Experience, Quality, and Engine Hardening safeguards. Phase 15 adds faction engine tests and guild E2E coverage. Phase 16 adds AI Director engine tests and dev health probe.
 
 ## Quick commands
 
@@ -33,6 +33,7 @@ Engines covered:
 - `aiNpcEngine` (memory) — encounter and memory flag updates
 - `legendaryHuntEngine` — snapshot shape and boss fields
 - `factionEngine` — snapshot, territory owner, contributions, rewards, deterministic activity
+- `questoryAiDirectorEngine` — snapshot, signals, opportunity ranking, draft safety, prompt payload sanitization
 
 Setup file `tests/unit/setup.js` preloads `seed.js` to avoid circular import races in Node.
 
@@ -133,12 +134,12 @@ Gentle config in `eslint.config.js` — catches `no-undef` without React style r
 - Knip may OOM on large repos — re-run with more memory or scan subsets if needed.
 - Lazy imports for Marketplace/Creator screens are partially ineffective while those modules remain statically imported from map/passport paths — chunks still split for Codex, Living Earth, Dev Dashboard.
 
-## Before Phase 15
+## Before Phase 17
 
 1. `npm run build`
 2. `npm run test:unit`
 3. `npm run test:e2e`
 4. `npm run lint`
-5. Spot-check Dev Health in Admin
+5. Spot-check Dev Health and AI Director in Admin
 
 Source-only commits. Never commit `dist/`.

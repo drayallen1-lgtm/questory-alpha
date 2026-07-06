@@ -152,11 +152,19 @@ Faction engine with 7 seed guilds and 10 Parsons territories, weighted influence
 
 ---
 
+### Phase 16 — Questory AI Director ✓ Complete
+
+Deterministic world-director engine that observes progression, factions, hunts, marketplace, creator economy, dynamic story, and discovery — then ranks opportunities, drafts events (no auto world mutation), builds fantasy-friendly timeline/Earth pulses, NPC hook suggestions, and future AI prompt payloads. Admin **AI Director** panel with Overview, Opportunities, Events, Timeline, and dev Payload tab. Integrated into Living World timeline, Living Earth pulses, AI NPC dialogue hooks, and Dev Health probe. Unit tests for signals, ranking, drafts, and payload sanitization.
+
+**Why it mattered:** Questory gained a safe orchestration layer that recommends what the world should do next without replacing existing engines or exposing private player data.
+
+---
+
 ## Future Phases
 
-### Phase 16 — Questory AI Director
+### Phase 17 — Real Economy, Payments & Partner Operations
 
-Adaptive narrative director that orchestrates beats across adventures, NPCs, factions, and world events.
+Stripe-ready payments, partner revenue splits, sponsor billing, and operational tooling for creators and venues.
 
 **Status:** Future
 
@@ -164,7 +172,7 @@ Adaptive narrative director that orchestrates beats across adventures, NPCs, fac
 
 ## Roadmap Rules
 
-1. **This file is canonical.** Do not add Phase 16+ without explicit product direction.
+1. **This file is canonical.** Do not add Phase 18+ without explicit product direction.
 2. **Completed phases stay checked off.** Do not un-complete work.
 3. **In-progress means actively being built** — move to complete only when committed and buildable.
 4. **Future phases are ordered by dependency**, not by excitement.
@@ -172,4 +180,4 @@ Adaptive narrative director that orchestrates beats across adventures, NPCs, fac
 
 ---
 
-*Last updated: Phase 15 complete. Next milestone: Phase 16 — Questory AI Director.*
+*Last updated: Phase 16 complete. Next milestone: Phase 17 — Real Economy, Payments & Partner Operations.*

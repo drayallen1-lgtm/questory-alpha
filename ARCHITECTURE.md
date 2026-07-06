@@ -80,6 +80,7 @@ These are the integration points every new feature must touch:
 | Crafting | `craftingEngine` | `CraftingUI`, Passport Craft tab |
 | Legendary Hunts | `legendaryHuntEngine` | `LegendaryHuntUI`, map HUD, `WorldBossLayer` |
 | Factions & Territories | `factionEngine` | `FactionGuildUI`, `TerritoryLayer`, Social → Guilds |
+| AI Director | `questoryAiDirectorEngine` | `AiDirectorUI`, Admin → AI Director, Living World / Earth timelines |
 
 ---
 

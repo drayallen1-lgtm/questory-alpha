@@ -211,7 +211,7 @@ Each entry lists:
 |---|---|
 | **Purpose** | Long-term NPC memory, relationships, dynamic dialogue, quest hooks, AI prompt payloads |
 | **Primary exports** | `getAiNpcSnapshot`, `recordNpcEncounter`, `recordNpcChoice`, `generateNpcDialogue`, `generateNpcQuestHook`, `buildNpcPromptPayload`, `AI_NPC_PROFILES` |
-| **Dependencies** | `livingNpcEngine`, `playerProgressionEngine`, `legendaryHuntEngine`, `marketplaceEngine`, `creatorEconomyEngine` |
+| **Dependencies** | `livingNpcEngine`, `playerProgressionEngine`, `legendaryHuntEngine`, `marketplaceEngine`, `creatorEconomyEngine`, `questoryAiDirectorEngine` |
 | **Consumers** | `AiNpcUI.jsx`, `WorldEngineUI.jsx`, `codexEngine`, `claimFlow.js`, `QuestoryMap.jsx` |
 
 ---
@@ -255,7 +255,7 @@ Each entry lists:
 |---|---|
 | **Purpose** | Globe presentation snapshot — discovery colors, world HUD, stream pulses, boss beacons |
 | **Primary exports** | `getLivingEarthSnapshot`, `isEarthMode`, `markEarthCeremonySeen`, `getRegionFlyTarget`, `FOG_VISUAL_COLORS` |
-| **Dependencies** | `worldDiscoveryEngine`, `livingWorldEngine`, `socialWorldEngine`, `questoryIdentityEngine`, `legendaryHuntEngine`, `seasonEngine` |
+| **Dependencies** | `worldDiscoveryEngine`, `livingWorldEngine`, `socialWorldEngine`, `questoryIdentityEngine`, `legendaryHuntEngine`, `seasonEngine`, `factionEngine`, `questoryAiDirectorEngine` |
 | **Consumers** | `LivingEarthUI.jsx`, `QuestoryMap.jsx` |
 
 ---
@@ -266,7 +266,7 @@ Each entry lists:
 |---|---|
 | **Purpose** | Map heat, explorer simulation, timeline pulses, heat zones |
 | **Primary exports** | `getLivingWorldSnapshot`, `HEAT_LEVELS`, `LIVING_WORLD_LIMITS` |
-| **Dependencies** | `livingWorldEventsEngine`, `mapDiscovery`, `social.js`, `worldEventEngine` |
+| **Dependencies** | `livingWorldEventsEngine`, `mapDiscovery`, `social.js`, `worldEventEngine`, `factionEngine`, `questoryAiDirectorEngine` |
 | **Consumers** | `LivingWorldLayer.jsx`, `QuestoryMap.jsx`, `LivingWorldTimeline.jsx`, `livingEarthEngine.js` |
 
 ---
@@ -336,6 +336,17 @@ Each entry lists:
 | **Primary exports** | `getIdentitySnapshot`, `getSeasonProgress`, `resolveWorldBoss`, `HALL_OF_FAME_EXPLORERS` |
 | **Dependencies** | `seasonEngine`, `socialWorldEngine`, `worldEventEngine`, `engagement.js` |
 | **Consumers** | `QuestoryIdentityPanel.jsx`, `WorldBossLayer.jsx`, `codexEngine` |
+
+---
+
+### questoryAiDirectorEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Deterministic world director — observes engines, ranks opportunities, drafts events, timeline/Earth pulses, NPC suggestions, future AI payloads (no auto mutation) |
+| **Primary exports** | `getAiDirectorSnapshot`, `evaluateDirectorSignals`, `rankDirectorOpportunities`, `generateDirectorRecommendations`, `draftDirectorEvent`, `buildDirectorTimeline`, `buildDirectorEarthPulses`, `buildDirectorPromptPayload`, `getDirectorNpcSuggestions` |
+| **Dependencies** | `factionEngine`, `legendaryHuntEngine`, `marketplaceEngine`, `creatorEconomyEngine`, `dynamicStoryEngine`, `playerProgressionEngine`, `worldDiscoveryEngine`, `questoryIdentityEngine`, `engineSnapshotUtils` |
+| **Consumers** | `AiDirectorUI.jsx`, `livingWorldEngine.js`, `livingEarthEngine.js`, `aiNpcEngine.js`, Dev Dashboard |
 
 ---
 

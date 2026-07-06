@@ -186,6 +186,22 @@ Import cycle reduction via `timelineCore`, `mapCoordinates`, and `messageUtils`;
 
 ---
 
+### Dynamic Factions, Guilds & Territory Wars (Phase 15)
+
+Faction engine with guild identity, territory influence, wars UI, map overlays, Living World / Earth integration, marketplace modifiers, NPC faction context, and dev health probe.
+
+**Why it mattered:** Teams became map-scale powers — Parsons feels politically contested without replacing social or living world systems.
+
+---
+
+### Questory AI Director (Phase 16)
+
+Deterministic director engine observing all major world systems; ranks opportunities, saves drafts only, feeds Living World / Earth timelines, suggests NPC hooks, and builds sanitized AI prompt payloads. Admin AI Director panel and unit tests.
+
+**Why it mattered:** Questory can recommend what happens next in the world safely — orchestration without replacing engines or mutating gameplay automatically.
+
+---
+
 ## Timeline Summary
 
 | Era | Milestone | Phase |
@@ -209,7 +225,8 @@ Import cycle reduction via `timelineCore`, `mapCoordinates`, and `messageUtils`;
 | 2.0 | Developer experience & quality safeguards | 14.5 |
 | 2.0 | Engine hardening & stabilization | 14.75 |
 | 2.0 | Dynamic factions, guilds & territory wars | 15 |
-| Next | Questory AI Director | 16 |
+| 2.0 | Questory AI Director | 16 |
+| Next | Real economy, payments & partner operations | 17 |
 
 ---
 
