@@ -75,6 +75,7 @@ import { DiscoveredWorldPanel, DiscoveryCeremonyToast } from './DiscoveredWorldP
 import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 import { getLivingEarthSnapshot, EARTH_MODE_EXIT_ZOOM } from './livingEarthEngine';
 import { getProgressiveLayerSnapshot, WORLD_LAYER_IDS } from './progressiveWorldLayersEngine';
+import { getLivingWorldAnimationsSnapshot } from './livingWorldAnimationsEngine';
 import { ProgressiveLayer } from './ProgressiveLayer';
 import { getSmartNotificationSnapshot, normalizeSmartNotification } from './smartNotificationEngine';
 const LivingEarthOverlay = lazy(() =>
@@ -1163,6 +1164,7 @@ export function MapScreen({
   const [spatialStats, setSpatialStats] = useState(null);
   const [selectedMarketVenueId, setSelectedMarketVenueId] = useState(null);
   const [venueCardEntering, setVenueCardEntering] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const { location } = usePlayerLocation();
   const visibility = state?.social?.visibility || VISIBILITY_MODES.TEAM;
   const follows = state?.economy?.follows || [];
@@ -1170,6 +1172,15 @@ export function MapScreen({
   useEffect(() => {
     const tick = window.setInterval(() => setWorldNow(Date.now()), 60000);
     return () => window.clearInterval(tick);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setPrefersReducedMotion(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
   }, []);
 
   useEffect(() => {
@@ -1371,10 +1382,6 @@ export function MapScreen({
   );
 
   useEffect(() => {
-    onProgressiveLayersChange?.(layerSnapshot);
-  }, [layerSnapshot, onProgressiveLayersChange]);
-
-  useEffect(() => {
     if (worldDiscoverySnapshot.milestones?.length) {
       milestonesSeenRef.current = [
         ...milestonesSeenRef.current,
@@ -1404,6 +1411,37 @@ export function MapScreen({
       }),
     [state, adventures, worldNow, marketplaceSnapshot, selectedMarketVenueId]
   );
+
+  const worldAnimationsSnapshot = useMemo(
+    () =>
+      getLivingWorldAnimationsSnapshot({
+        layerSnapshot,
+        livingWorld,
+        worldDiscovery: worldDiscoverySnapshot,
+        faction: factionSnapshot,
+        legendaryHunt: legendaryHuntSnapshot,
+        marketplaceVenueCount: marketplaceLayerSnapshot.venues?.length || 0,
+        earthOverlayVisible,
+        reducedMotion: prefersReducedMotion,
+      }),
+    [
+      layerSnapshot,
+      livingWorld,
+      worldDiscoverySnapshot,
+      factionSnapshot,
+      legendaryHuntSnapshot,
+      marketplaceLayerSnapshot.venues,
+      earthOverlayVisible,
+      prefersReducedMotion,
+    ]
+  );
+
+  useEffect(() => {
+    onProgressiveLayersChange?.({
+      ...layerSnapshot,
+      animations: worldAnimationsSnapshot,
+    });
+  }, [layerSnapshot, worldAnimationsSnapshot, onProgressiveLayersChange]);
 
   const aiNpcSnapshot = useMemo(
     () => getAiNpcSnapshot(state, adventures, { now: worldNow }),
@@ -2022,7 +2060,7 @@ export function MapScreen({
       )}
 
       <div
-        className={`map-stage map-stage-has-discovery-hud${shellMode ? ' map-stage-world-shell map-stage-world-layers' : ''}${shellMode && layerSnapshot.className ? ` ${layerSnapshot.className}` : ''}${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
+        className={`map-stage map-stage-has-discovery-hud${shellMode ? ' map-stage-world-shell map-stage-world-layers' : ''}${shellMode && layerSnapshot.className ? ` ${layerSnapshot.className}` : ''}${shellMode && worldAnimationsSnapshot.className ? ` ${worldAnimationsSnapshot.className}` : ''}${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
         style={shellMode ? layerSnapshot.style : undefined}
       >
         <ProgressiveLayer layerId={WORLD_LAYER_IDS.DISCOVERY} layers={shellMode ? layerSnapshot.layers : null}>

@@ -17,9 +17,11 @@ export function WorldShell({
   const [layerSnapshot, setLayerSnapshot] = useState(null);
 
   const hudAdventures = useMemo(() => adventures, [adventures]);
+  const shellAnimationClass =
+    layerSnapshot?.animations?.activeCount > 2 ? ' world-anim-shell-on' : '';
 
   return (
-    <div className="world-shell world-shell--map-hidden-panels">
+    <div className={`world-shell world-shell--map-hidden-panels${shellAnimationClass}`}>
       <header className="world-shell-header">
         <h1 className="world-shell-title">Questory World</h1>
       </header>

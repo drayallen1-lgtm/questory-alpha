@@ -1,0 +1,157 @@
+/* Questory V2 — Living World Animations */
+
+.map-stage-world-layers.world-anim-fog-dissolve-on .living-world-fog-vignette {
+  animation: world-fog-dissolve 14s ease-in-out infinite alternate;
+}
+
+.map-stage-world-layers.world-anim-discovery-on .city-discovery-ring-glow {
+  animation: world-discovery-spread 5.5s ease-in-out infinite;
+}
+
+.map-stage-world-layers.world-anim-guild-pulse-on .territory-zone.contested .territory-zone-fill,
+.map-stage-world-layers.world-anim-guild-pulse-on .faction-territory-chip.contested {
+  animation: world-guild-border-pulse 2.8s ease-in-out infinite;
+}
+
+.map-stage-world-layers.world-anim-market-shimmer-on .map-market-venue {
+  position: absolute;
+  overflow: hidden;
+}
+
+.map-stage-world-layers.world-anim-market-shimmer-on .map-market-venue::after {
+  content: '';
+  position: absolute;
+  inset: -40% -60%;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(251, 191, 36, 0.22) 50%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  animation: world-market-shimmer 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.map-stage-world-layers.world-anim-treasure-glow-on .legendary-map-hud {
+  animation: world-treasure-beacon-glow 2.4s ease-in-out infinite;
+}
+
+.map-stage-world-layers.world-anim-treasure-glow-on .map-discovery-pulse-legendary .map-discovery-pulse-ring {
+  animation: world-treasure-ring-glow 2.4s ease-in-out infinite;
+}
+
+.map-stage-world-layers.world-anim-explorer-drift-on .living-world-explorer:not(.reduced-motion) {
+  animation: living-explorer-drift 5.2s ease-in-out infinite;
+}
+
+.map-stage-world-layers.world-anim-earth-on .living-earth-globe:not(.living-earth-globe-static) {
+  animation-duration: 140s;
+}
+
+.map-stage-world-layers.world-anim-clouds-on .living-earth-globe-clouds:not(.living-earth-globe-clouds-static) {
+  animation-duration: 72s;
+}
+
+.world-shell.world-anim-shell-on::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(56, 189, 248, 0.08), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(251, 191, 36, 0.05), transparent 50%);
+  animation: world-shell-ambient 18s ease-in-out infinite alternate;
+  z-index: 1;
+}
+
+@keyframes world-fog-dissolve {
+  0% {
+    opacity: 0.95;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0.62;
+    filter: blur(0.4px);
+  }
+}
+
+@keyframes world-discovery-spread {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.95;
+  }
+}
+
+@keyframes world-guild-border-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.2);
+    opacity: 0.75;
+  }
+  50% {
+    box-shadow: 0 0 18px 4px rgba(248, 113, 113, 0.35);
+    opacity: 1;
+  }
+}
+
+@keyframes world-market-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  45%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes world-treasure-beacon-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(167, 139, 250, 0);
+    border-color: rgba(167, 139, 250, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(167, 139, 250, 0.45);
+    border-color: rgba(196, 181, 253, 0.75);
+  }
+}
+
+@keyframes world-treasure-ring-glow {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+@keyframes world-shell-ambient {
+  0% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 0.85;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-stage-world-layers[class*='world-anim-'] .living-world-fog-vignette,
+  .map-stage-world-layers[class*='world-anim-'] .city-discovery-ring-glow,
+  .map-stage-world-layers[class*='world-anim-'] .territory-zone.contested .territory-zone-fill,
+  .map-stage-world-layers[class*='world-anim-'] .faction-territory-chip.contested,
+  .map-stage-world-layers[class*='world-anim-'] .map-market-venue::after,
+  .map-stage-world-layers[class*='world-anim-'] .legendary-map-hud,
+  .map-stage-world-layers[class*='world-anim-'] .map-discovery-pulse-legendary .map-discovery-pulse-ring,
+  .world-shell.world-anim-shell-on::before {
+    animation: none !important;
+  }
+}

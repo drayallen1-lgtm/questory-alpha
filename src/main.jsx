@@ -181,6 +181,7 @@ import { isDev } from './config/env';
 import './style.css';
 import './discoveryBloom.css';
 import './livingWorld.css';
+import './livingWorldAnimations.css';
 import './livingWorldEvents.css';
 import './socialDiscovery.css';
 import './questoryIdentity.css';
