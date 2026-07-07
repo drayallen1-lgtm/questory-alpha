@@ -10,6 +10,7 @@ const PASSPORT_TABS = [
   'Rewards',
   'Market',
   'Creators',
+  'Wallet',
   'Badges',
 ];
 

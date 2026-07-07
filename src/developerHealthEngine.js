@@ -18,6 +18,10 @@ import { getAiNpcSnapshot } from './aiNpcEngine.js';
 import { getDynamicStorySnapshot } from './dynamicStoryEngine.js';
 import { getFactionSnapshot } from './factionEngine.js';
 import { getAiDirectorSnapshot } from './questoryAiDirectorEngine.js';
+import { getPaymentSnapshot } from './paymentEngine.js';
+import { getComplianceSnapshot } from './complianceEngine.js';
+import { getRiskSnapshot } from './riskEngine.js';
+import { getPartnerSnapshot } from './partnerOperationsEngine.js';
 import { validateClaimAttempt } from './claimSystem.js';
 import {
   measureEngineSnapshot,
@@ -59,6 +63,10 @@ function summarizeSample(id, result) {
   if (id === 'dynamic-story') return { arcs: result.arcs?.length || 0 };
   if (id === 'factions') return { territories: result.territoryCount, contested: result.contestedCount };
   if (id === 'ai-director') return { signals: result.signalCount, top: result.topRecommendation?.title };
+  if (id === 'payments') return { pending: result.stats?.pendingPayoutCount, tx: result.stats?.transactionCount };
+  if (id === 'compliance') return { kyc: result.kycStatus, reviews: result.stats?.openReviews };
+  if (id === 'risk') return { level: result.overallLevel, alerts: result.alerts?.length };
+  if (id === 'partners') return { count: result.stats?.partnerCount, campaigns: result.stats?.activeCampaignCount };
   return null;
 }
 
@@ -86,6 +94,8 @@ export function buildStateInspector(state, adventures = []) {
     factionCount: getFactionSnapshot(state, adventures).factionCount,
     contestedTerritories: getFactionSnapshot(state, adventures).contestedCount,
     directorSignals: getAiDirectorSnapshot(state, adventures).signalCount,
+    pendingPayouts: getPaymentSnapshot(state, adventures).stats?.pendingPayoutCount ?? 0,
+    riskLevel: getRiskSnapshot(state).overallLevel,
     worldDiscoveryPct: discovery.overallPct ?? discovery.cityPct ?? discovery.completionPercent ?? 0,
     marketplaceListingCount: getMarketplaceSnapshot(state, adventures).stats?.totalListings ?? 0,
     creatorFollows: getCreatorEconomySnapshot(state, adventures).followedCreatorIds?.length
@@ -145,6 +155,14 @@ export function runDeveloperHealthCheck(state, adventures = [], options = {}) {
     ),
     runCheck('ai-director', 'AI Director', () =>
       getAiDirectorSnapshot(state, adventures, { now })
+    ),
+    runCheck('payments', 'Payments & Treasury', () =>
+      getPaymentSnapshot(state, adventures, { now })
+    ),
+    runCheck('compliance', 'Compliance', () => getComplianceSnapshot(state)),
+    runCheck('risk', 'Risk Engine', () => getRiskSnapshot(state, { now })),
+    runCheck('partners', 'Partner Operations', () =>
+      getPartnerSnapshot(state, adventures, { now })
     ),
     runCheck('claim-flow', 'Claim Flow', () => {
       const adventure = adventures.find((a) => a.id === 'union-depot-ghost');
