@@ -74,6 +74,7 @@ import { CityDiscoveryRingLayer } from './CityDiscoveryRingLayer';
 import { DiscoveredWorldPanel, DiscoveryCeremonyToast } from './DiscoveredWorldPanel';
 import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 import { getLivingEarthSnapshot, EARTH_MODE_EXIT_ZOOM } from './livingEarthEngine';
+import { getLivingEarthExperienceSnapshot } from './livingEarthExperienceEngine';
 import { getProgressiveLayerSnapshot, WORLD_LAYER_IDS } from './progressiveWorldLayersEngine';
 import { getLivingWorldAnimationsSnapshot } from './livingWorldAnimationsEngine';
 import { getAdaptiveHudSnapshot } from './adaptiveHudEngine';
@@ -1334,8 +1335,8 @@ export function MapScreen({
   );
 
   const livingEarthSnapshot = useMemo(
-    () =>
-      getLivingEarthSnapshot({
+    () => {
+      const base = getLivingEarthSnapshot({
         zoom: mapZoom,
         state,
         adventures,
@@ -1343,8 +1344,26 @@ export function MapScreen({
         now: worldNow,
         previousMilestones: milestonesSeenRef.current,
         worldDiscovery: worldDiscoverySnapshot,
-      }),
-    [mapZoom, state, adventures, livingWorld.exploration, worldNow, worldDiscoverySnapshot]
+      });
+      const experience = getLivingEarthExperienceSnapshot({
+        state,
+        adventures,
+        worldDiscovery: worldDiscoverySnapshot,
+        faction: factionSnapshot,
+        livingEarth: base,
+        now: worldNow,
+      });
+      return { ...base, experience };
+    },
+    [
+      mapZoom,
+      state,
+      adventures,
+      livingWorld.exploration,
+      worldNow,
+      worldDiscoverySnapshot,
+      factionSnapshot,
+    ]
   );
 
   const handleEarthFlyTo = useCallback((target) => {

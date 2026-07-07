@@ -741,3 +741,260 @@
     animation: none !important;
   }
 }
+
+/* V2 — Living Earth Experience */
+
+.living-earth-planet-story-headline {
+  margin: 4px 0 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #f8fafc;
+  line-height: 1.3;
+}
+
+.living-earth-planet-story-subline {
+  margin: 0 0 4px;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.living-earth-city-pulse {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 3;
+  color: #e2e8f0;
+}
+
+.living-earth-city-pulse-ring {
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 2px solid var(--city-pulse-color, #5eead4);
+  opacity: 0.55;
+  animation: living-earth-city-ring 2.8s ease-out infinite;
+}
+
+.living-earth-city-pulse-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--city-pulse-color, #5eead4);
+  box-shadow: 0 0 10px var(--city-pulse-color, #5eead4);
+}
+
+.living-earth-city-pulse--legendary .living-earth-city-pulse-core {
+  background: #fde68a;
+  box-shadow: 0 0 14px #fde68a;
+}
+
+.living-earth-city-pulse--home .living-earth-city-pulse-ring {
+  border-width: 3px;
+}
+
+.living-earth-city-pulse-label {
+  display: block;
+  margin-top: 2px;
+  max-width: 72px;
+  font-size: 0.58rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+
+.living-earth-city-pulse-static .living-earth-city-pulse-ring {
+  animation: none;
+}
+
+@keyframes living-earth-city-ring {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+.living-earth-guild-control {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.living-earth-guild-control-emblem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--guild-color, #94a3b8);
+  background: rgba(8, 12, 22, 0.82);
+  font-size: 0.85rem;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--guild-color) 45%, transparent);
+}
+
+.living-earth-guild-control-pct {
+  font-size: 0.55rem;
+  color: #cbd5e1;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+
+.living-earth-guild-control-contested .living-earth-guild-control-emblem {
+  animation: living-earth-guild-contested 2.2s ease-in-out infinite;
+}
+
+.living-earth-guild-control-static .living-earth-guild-control-emblem {
+  animation: none;
+}
+
+@keyframes living-earth-guild-contested {
+  0%,
+  100% {
+    box-shadow: 0 0 8px color-mix(in srgb, var(--guild-color) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 16px color-mix(in srgb, #f87171 55%, transparent);
+  }
+}
+
+.living-earth-global-ticker {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  gap: 8px;
+  width: min(38vw, 180px);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.living-earth-global-ticker-item {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(6, 10, 18, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  font-size: 0.62rem;
+  color: #e2e8f0;
+  line-height: 1.3;
+}
+
+.living-earth-global-ticker-item--legendary {
+  border-color: rgba(250, 204, 21, 0.35);
+}
+
+.living-earth-global-ticker-item--war {
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.living-earth-global-ticker-item-animate {
+  animation: living-earth-ticker-rise 6s ease-in-out infinite;
+}
+
+@keyframes living-earth-ticker-rise {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translateY(4px);
+  }
+  20%,
+  80% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.living-earth-guild-banner p {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  color: #cbd5e1;
+}
+
+.living-earth-guild-banner-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.living-earth-guild-banner-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  font-size: 0.62rem;
+  color: #e2e8f0;
+}
+
+.living-earth-city-pulse-list {
+  display: grid;
+  gap: 4px;
+}
+
+.living-earth-city-pulse-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(15, 23, 42, 0.55);
+  color: #e2e8f0;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.living-earth-city-pulse-row small {
+  color: #94a3b8;
+  font-size: 0.65rem;
+}
+
+.living-earth-experience--contested .living-earth-globe-sphere {
+  box-shadow:
+    inset -24px -18px 48px rgba(0, 0, 0, 0.55),
+    inset 12px 8px 24px rgba(248, 113, 113, 0.08),
+    0 0 60px rgba(248, 113, 113, 0.12);
+}
+
+@media (max-width: 720px) {
+  .living-earth-global-ticker {
+    right: 8px;
+    width: min(44vw, 150px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .living-earth-city-pulse-ring,
+  .living-earth-guild-control-contested .living-earth-guild-control-emblem,
+  .living-earth-global-ticker-item-animate {
+    animation: none !important;
+  }
+}

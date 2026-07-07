@@ -14,7 +14,7 @@ function useReducedMotion() {
   return reduced;
 }
 
-export function LivingEarthWorldHud({ hud, onReturnToMap }) {
+export function LivingEarthWorldHud({ hud, planetStory = null, onReturnToMap }) {
   const [displayPct, setDisplayPct] = useState(0);
 
   useEffect(() => {
@@ -44,6 +44,12 @@ export function LivingEarthWorldHud({ hud, onReturnToMap }) {
             {formatDiscoveryPercent(displayPct, 2)}%
           </span>
         </div>
+        {planetStory?.headline && (
+          <p className="living-earth-planet-story-headline">{planetStory.headline}</p>
+        )}
+        {planetStory?.subline && (
+          <p className="living-earth-planet-story-subline">{planetStory.subline}</p>
+        )}
         <p className="living-earth-world-hud-sub">Discovered</p>
         <code className="living-earth-world-hud-bar" aria-hidden="true">
           {hud.progressBar}
@@ -110,9 +116,86 @@ function StreamPulse({ pulse, reducedMotion }) {
   );
 }
 
+function CityPulseMarker({ city, onFlyTo, reducedMotion }) {
+  return (
+    <button
+      type="button"
+      className={`living-earth-city-pulse ${city.className || ''}${reducedMotion ? ' living-earth-city-pulse-static' : ''}`}
+      style={{
+        left: `${city.position.x}%`,
+        top: `${city.position.y}%`,
+        '--city-pulse-color':
+          city.intensity === 'legendary'
+            ? '#fde68a'
+            : city.intensity === 'strong'
+              ? '#5eead4'
+              : '#60a5fa',
+      }}
+      onClick={() =>
+        onFlyTo?.({
+          latitude: city.latitude,
+          longitude: city.longitude,
+          zoom: city.isHome ? 12 : 8,
+        })
+      }
+      title={`${city.label} · ${Math.round(city.completionPercent)}% · ${city.explorers} explorers`}
+    >
+      <span className="living-earth-city-pulse-ring" aria-hidden="true" />
+      <span className="living-earth-city-pulse-core" aria-hidden="true" />
+      <span className="living-earth-city-pulse-label">{city.label}</span>
+    </button>
+  );
+}
+
+function GuildControlMarker({ marker, reducedMotion }) {
+  return (
+    <div
+      className={`living-earth-guild-control${marker.contested ? ' living-earth-guild-control-contested' : ''}${reducedMotion ? ' living-earth-guild-control-static' : ''}`}
+      style={{
+        left: `${marker.position.x}%`,
+        top: `${marker.position.y}%`,
+        '--guild-color': marker.color,
+      }}
+      title={`${marker.name} · ${marker.influencePct}% influence`}
+    >
+      <span className="living-earth-guild-control-emblem" aria-hidden="true">
+        {marker.emblem}
+      </span>
+      <span className="living-earth-guild-control-pct">{marker.influencePct}%</span>
+    </div>
+  );
+}
+
+function GlobalDiscoveryTicker({ discoveries = [], reducedMotion }) {
+  if (!discoveries.length) return null;
+
+  return (
+    <div className="living-earth-global-ticker" aria-live="polite">
+      {discoveries.slice(0, 5).map((item) => (
+        <div
+          key={item.id}
+          className={`living-earth-global-ticker-item living-earth-global-ticker-item--${item.impact || item.kind || 'normal'}${reducedMotion ? '' : ' living-earth-global-ticker-item-animate'}`}
+          style={{ animationDelay: `${item.animationDelayMs || 0}ms` }}
+        >
+          <span>{item.icon || (item.impact === 'legendary' ? '💎' : item.kind === 'faction' ? '⚔' : '📍')}</span>
+          <span>{item.text || item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function LivingEarthGlobe({ snapshot, onFlyTo, reducedMotion }) {
-  const { continents, countries, bossBeacons, creatorWorlds, pulses, seasonAtmosphere, fullEarth } =
-    snapshot;
+  const {
+    continents,
+    countries,
+    bossBeacons,
+    creatorWorlds,
+    pulses,
+    seasonAtmosphere,
+    fullEarth,
+    experience,
+  } = snapshot;
 
   const morphOpacity = fullEarth ? 1 : 0.55;
 
@@ -156,6 +239,17 @@ export function LivingEarthGlobe({ snapshot, onFlyTo, reducedMotion }) {
               }
               reducedMotion={reducedMotion}
             />
+          ))}
+          {(experience?.cityPulses || []).map((city) => (
+            <CityPulseMarker
+              key={city.id}
+              city={city}
+              onFlyTo={onFlyTo}
+              reducedMotion={reducedMotion}
+            />
+          ))}
+          {(experience?.guildControl?.influenceMarkers || []).map((marker) => (
+            <GuildControlMarker key={marker.factionId} marker={marker} reducedMotion={reducedMotion} />
           ))}
           {bossBeacons.map((b) => (
             <button
@@ -216,6 +310,10 @@ export function LivingEarthGlobe({ snapshot, onFlyTo, reducedMotion }) {
           <StreamPulse key={p.id} pulse={p} reducedMotion={reducedMotion} />
         ))}
       </div>
+      <GlobalDiscoveryTicker
+        discoveries={experience?.globalDiscoveries}
+        reducedMotion={reducedMotion}
+      />
       <div className={`living-earth-weather${reducedMotion ? ' living-earth-weather-static' : ''}`} aria-hidden="true">
         <span className="living-earth-weather-rain" />
         <span className="living-earth-weather-storm" />
@@ -284,6 +382,7 @@ export function LivingEarthDiscoveryPanel({ snapshot, onFlyTo, collapsed = false
     creatorWorlds,
     liveExplorerCount,
     timelineEntries,
+    experience,
   } = snapshot;
 
   return (
@@ -303,6 +402,51 @@ export function LivingEarthDiscoveryPanel({ snapshot, onFlyTo, collapsed = false
 
       {!collapsed && (
         <>
+      {experience?.guildControl?.headline && (
+        <section className="living-earth-section living-earth-guild-banner">
+          <h5>Guild Control</h5>
+          <p>{experience.guildControl.headline}</p>
+          <div className="living-earth-guild-banner-grid">
+            {(experience.guildControl.influenceMarkers || []).slice(0, 4).map((marker) => (
+              <span
+                key={marker.factionId}
+                className="living-earth-guild-banner-chip"
+                style={{ borderColor: marker.color }}
+              >
+                {marker.emblem} {marker.name} · {marker.influencePct}%
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {experience?.cityPulses?.length > 0 && (
+        <section className="living-earth-section">
+          <h5>City Pulses</h5>
+          <div className="living-earth-city-pulse-list">
+            {experience.cityPulses.slice(0, 4).map((city) => (
+              <button
+                key={city.id}
+                type="button"
+                className="living-earth-city-pulse-row"
+                onClick={() =>
+                  onFlyTo?.({
+                    latitude: city.latitude,
+                    longitude: city.longitude,
+                    zoom: city.isHome ? 12 : 8,
+                  })
+                }
+              >
+                <span>{city.label}</span>
+                <small>
+                  {Math.round(city.completionPercent)}% · {city.explorers} explorers
+                </small>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="living-earth-section">
         <h5>Continents</h5>
         <div className="living-earth-continent-grid">
@@ -453,11 +597,15 @@ export function LivingEarthOverlay({
 
   return (
     <div
-      className={`living-earth-overlay${snapshot.fullEarth ? ' living-earth-overlay-full' : ''}${reducedMotion ? ' living-earth-reduced-motion' : ''}`}
+      className={`living-earth-overlay${snapshot.fullEarth ? ' living-earth-overlay-full' : ''}${snapshot.experience?.className ? ` ${snapshot.experience.className}` : ''}${reducedMotion ? ' living-earth-reduced-motion' : ''}`}
       aria-label="Living Earth view"
     >
       {showHud && (
-        <LivingEarthWorldHud hud={snapshot.worldHud} onReturnToMap={onReturnToMap} />
+        <LivingEarthWorldHud
+          hud={snapshot.worldHud}
+          planetStory={snapshot.experience?.planetStory}
+          onReturnToMap={onReturnToMap}
+        />
       )}
       <LivingEarthGlobe snapshot={snapshot} onFlyTo={onFlyTo} reducedMotion={reducedMotion} />
       {showDiscoveryPanel && showHud && (

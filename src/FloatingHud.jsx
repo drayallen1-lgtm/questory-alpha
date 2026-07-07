@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { getLivingWorldSnapshot } from './livingWorldEngine';
 import { getLivingEarthSnapshot } from './livingEarthEngine';
+import { getLivingEarthExperienceSnapshot } from './livingEarthExperienceEngine';
 import { getMarketplaceSnapshot } from './marketplaceEngine';
 import { getFactionSnapshot } from './factionEngine';
 import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
@@ -42,6 +43,19 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null,
     [zoom, state, adventures, now, worldDiscovery, layerSnapshot]
   );
 
+  const earthExperience = useMemo(
+    () =>
+      getLivingEarthExperienceSnapshot({
+        state,
+        adventures,
+        worldDiscovery,
+        faction,
+        livingEarth: earth,
+        now,
+      }),
+    [state, adventures, worldDiscovery, faction, earth, now]
+  );
+
   const marketplace = useMemo(
     () => getMarketplaceSnapshot(state, adventures, { now }),
     [state, adventures, now]
@@ -65,10 +79,11 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null,
         faction,
         worldDiscovery,
         earth,
+        earthExperience,
         legendaryHunt,
         layerSnapshot,
       }),
-    [livingWorld, marketplace, faction, worldDiscovery, earth, legendaryHunt, layerSnapshot]
+    [livingWorld, marketplace, faction, worldDiscovery, earth, earthExperience, legendaryHunt, layerSnapshot]
   );
 
   const adaptiveHudSnapshot = useMemo(

@@ -20,6 +20,7 @@ function mapTimelineItems(entries = [], fallback = 'Activity nearby') {
  * @param {object} options.faction
  * @param {object} options.worldDiscovery
  * @param {object} options.earth
+ * @param {object} [options.earthExperience]
  * @param {object} [options.legendaryHunt]
  * @param {object} [options.layerSnapshot]
  */
@@ -30,6 +31,7 @@ export function buildFloatingHudCards(options = {}) {
     faction = {},
     worldDiscovery = {},
     earth = {},
+    earthExperience = null,
     legendaryHunt = {},
     layerSnapshot = null,
   } = options;
@@ -48,6 +50,7 @@ export function buildFloatingHudCards(options = {}) {
     0;
   const cityLabel = worldDiscovery.currentRegion?.label || 'Your city';
   const cityPct = worldDiscovery.currentRegion?.completionPercent;
+  const earthCard = earthExperience?.earthCard;
 
   const cards = [
     {
@@ -150,20 +153,25 @@ export function buildFloatingHudCards(options = {}) {
       layerKey: 'earth',
       icon: '🌍',
       title: 'Earth',
-      metric: `${Number(earthPct).toFixed(1)}%`,
-      metricLabel: 'living planet',
+      metric: earthCard?.metric || `${Number(earthPct).toFixed(1)}%`,
+      metricLabel: earthCard?.metricLabel || 'living planet',
       wide: true,
-      items: [
-        { id: 'e1', text: `${cityLabel}${cityPct != null ? ` · ${Math.round(cityPct)}% discovered` : ''}` },
-        ...(earth.globalGoals || []).slice(0, 2).map((goal) => ({
-          id: goal.id,
-          text: `${goal.icon || '🌍'} ${goal.label}`,
-        })),
-        ...(earth.discoveryStream || []).slice(0, 1).map((s) => ({
-          id: s.id || s.text,
-          text: s.text || s.label || 'Global discovery spreading',
-        })),
-      ],
+      items: earthCard?.items?.length
+        ? earthCard.items.map((item) => ({
+            id: item.id,
+            text: item.text,
+          }))
+        : [
+            { id: 'e1', text: `${cityLabel}${cityPct != null ? ` · ${Math.round(cityPct)}% discovered` : ''}` },
+            ...(earth.globalGoals || []).slice(0, 2).map((goal) => ({
+              id: goal.id,
+              text: `${goal.icon || '🌍'} ${goal.label}`,
+            })),
+            ...(earth.discoveryStream || []).slice(0, 1).map((s) => ({
+              id: s.id || s.text,
+              text: s.text || s.label || 'Global discovery spreading',
+            })),
+          ],
       viewAllScreen: 'world',
       expandable: true,
     },
