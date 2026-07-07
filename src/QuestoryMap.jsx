@@ -1148,6 +1148,7 @@ export function MapScreen({
   shellMode = false,
   onProgressiveLayersChange = null,
   onHudContextChange = null,
+  onMapFlyReady = null,
 }) {
   const [activeFilter, setActiveFilter] = useState(MAP_FILTERS.ALL);
   const [selectedMarker, setSelectedMarker] = useState(null);
@@ -2182,6 +2183,7 @@ export function MapScreen({
           onMapZoomChange={setMapZoom}
           onMapFlyReady={(api) => {
             earthFlyRef.current = api;
+            onMapFlyReady?.(api);
           }}
           isAdmin={isAdmin}
           userId={userId}

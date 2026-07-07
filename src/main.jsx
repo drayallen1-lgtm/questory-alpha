@@ -206,6 +206,7 @@ import './livingCity.css';
 import './socialHub.css';
 import './smartNotifications.css';
 import './adaptiveHud.css';
+import './ambientWorldDirector.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';

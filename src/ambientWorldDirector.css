@@ -1,0 +1,117 @@
+/* Questory V2 — Ambient World Director whispers */
+
+.ambient-director-whisper {
+  position: absolute;
+  left: 12px;
+  bottom: 88px;
+  z-index: 14;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px;
+  align-items: start;
+  max-width: min(92%, 320px);
+  pointer-events: auto;
+}
+
+.ambient-director-whisper-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(6, 10, 18, 0.86);
+  color: #e2e8f0;
+  text-align: left;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  animation: ambient-director-fade-in 0.45s ease;
+}
+
+.ambient-director-whisper--ominous .ambient-director-whisper-body {
+  border-color: rgba(167, 139, 250, 0.35);
+  box-shadow: 0 10px 28px rgba(88, 28, 135, 0.18);
+}
+
+.ambient-director-whisper--strategic .ambient-director-whisper-body {
+  border-color: rgba(248, 113, 113, 0.32);
+}
+
+.ambient-director-whisper--mystery .ambient-director-whisper-body {
+  border-color: rgba(96, 165, 250, 0.32);
+}
+
+.ambient-director-whisper--curious .ambient-director-whisper-body {
+  border-color: rgba(94, 234, 212, 0.28);
+}
+
+.ambient-director-whisper-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.ambient-director-whisper-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ambient-director-whisper-copy small {
+  color: #94a3b8;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ambient-director-whisper-copy strong {
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.ambient-director-whisper-dismiss {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.82);
+  color: #cbd5e1;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.ambient-director-whisper-count {
+  grid-column: 1 / -1;
+  font-size: 0.62rem;
+  color: #64748b;
+  padding-left: 4px;
+}
+
+@keyframes ambient-director-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 720px) {
+  .ambient-director-whisper {
+    left: 8px;
+    right: 8px;
+    bottom: 78px;
+    max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-director-whisper-body {
+    animation: none;
+  }
+}

@@ -3,6 +3,7 @@ import { MapScreen } from './QuestoryMap';
 import { FloatingHud } from './FloatingHud';
 import { FloatingDock } from './FloatingDock';
 import { LivingCityPanel } from './LivingCityPanel';
+import { AmbientDirectorWhisper } from './AmbientDirectorWhisper';
 
 export function WorldShell({
   adventures,
@@ -16,6 +17,7 @@ export function WorldShell({
 }) {
   const [layerSnapshot, setLayerSnapshot] = useState(null);
   const [hudContext, setHudContext] = useState(null);
+  const [mapFlyApi, setMapFlyApi] = useState(null);
 
   const hudAdventures = useMemo(() => adventures, [adventures]);
   const shellAnimationClass =
@@ -54,6 +56,16 @@ export function WorldShell({
           shellMode
           onProgressiveLayersChange={setLayerSnapshot}
           onHudContextChange={setHudContext}
+          onMapFlyReady={setMapFlyApi}
+        />
+        <AmbientDirectorWhisper
+          state={state}
+          adventures={hudAdventures}
+          layerSnapshot={layerSnapshot}
+          hudContext={hudContext}
+          nav={nav}
+          setState={setState}
+          onFlyTo={mapFlyApi?.flyTo}
         />
       </div>
 
