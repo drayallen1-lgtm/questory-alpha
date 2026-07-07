@@ -41,6 +41,85 @@
   color: var(--muted);
 }
 
+.guild-member-contribution {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.guild-home-shell .guild-home-head p {
+  color: var(--muted);
+}
+
+.guild-home-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.guild-home-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.22);
+  color: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.guild-home-tabs button.active {
+  border-color: var(--accent);
+  background: rgba(94, 234, 212, 0.14);
+  color: var(--accent);
+}
+
+.faction-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.guild-overview-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.16);
+  text-align: left;
+}
+
+.guild-overview-stat strong {
+  font-size: 1.2rem;
+}
+
+.guild-overview-stat span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.guild-member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (min-width: 720px) {
+  .guild-home-tabs {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+
 .faction-hub-tabs {
   margin-top: 4px;
 }

@@ -486,6 +486,11 @@ function QuestoryApp() {
         quickSponsor: 'quickSponsor' in options ? options.quickSponsor : s.quickSponsor,
         growthTab: options.growthTab ?? s.growthTab,
         socialTab: options.socialTab ?? (options.adminTab === 'guild' ? 'guild' : s.socialTab),
+        guildTab:
+          options.guildTab ??
+          (options.socialTab === 'guild' && options.adminTab === 'guild'
+            ? 'territories'
+            : s.guildTab),
         vaultTab: options.tab ?? s.vaultTab,
       };
       if (screen === 'detail' && adventureId) {

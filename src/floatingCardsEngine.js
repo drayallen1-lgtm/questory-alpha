@@ -75,7 +75,7 @@ export function buildFloatingHudCards(options = {}) {
           }))
         : mapTimelineItems(faction.timeline?.slice(0, 3) || [], 'No active territory wars'),
       viewAllScreen: 'social',
-      viewAllOptions: { socialTab: 'guild' },
+      viewAllOptions: { socialTab: 'guild', guildTab: 'wars' },
       expandable: true,
     },
     {

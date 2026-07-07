@@ -1246,6 +1246,7 @@ export function MapScreen({
         ...s,
         screen: 'social',
         socialTab: 'guild',
+        guildTab: 'territories',
         faction: {
           ...s.faction,
           focusedTerritoryId: territoryId,
