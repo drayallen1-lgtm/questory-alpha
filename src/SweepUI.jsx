@@ -197,7 +197,7 @@ export function GoodMorningHome({ state, adventures, auth, nav, setState }) {
         <button type="button" className="card mini home-quick-btn" onClick={() => nav('social')}>
           <Users size={20} />
           <b>Social</b>
-          <p>Teams, friends, stories, challenges</p>
+          <p>Guild, friends, messages, teams</p>
         </button>
         <button type="button" className="card mini home-quick-btn" onClick={() => nav('leaderboard')}>
           <Trophy size={20} />

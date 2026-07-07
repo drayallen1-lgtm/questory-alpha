@@ -39,9 +39,16 @@ import {
 import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
 import { getMarketplaceSnapshot } from './marketplaceEngine';
 import { FactionGuildPanel } from './FactionGuildUI';
+import {
+  SOCIAL_TAB_IDS,
+  SOCIAL_TAB_LABELS,
+  SOCIAL_TAB_ORDER,
+  buildMessagesFeed,
+  resolveSocialTab,
+} from './socialHubEngine';
 
 export function SocialHub({ state, setState, adventures, nav, auth }) {
-  const [tab, setTab] = useState(state?.faction?.focusedTerritoryId ? 'guilds' : 'teams');
+  const tab = resolveSocialTab(state.socialTab, state);
   const creatorSnapshot = useMemo(
     () => getCreatorEconomySnapshot(state, adventures),
     [state, adventures]
@@ -50,70 +57,66 @@ export function SocialHub({ state, setState, adventures, nav, auth }) {
     () => getMarketplaceSnapshot(state, adventures),
     [state, adventures]
   );
+  const messagesFeed = useMemo(() => buildMessagesFeed(state, adventures), [state, adventures]);
 
-  const tabs = [
-    ['guilds', 'Guilds', Shield],
-    ['teams', 'Teams', Users],
-    ['friends', 'Friends', UserPlus],
-    ['stories', 'Stories', Camera],
-    ['challenges', 'Challenges', Swords],
-    ['events', 'Live Events', Radio],
-  ];
+  const tabIcons = {
+    [SOCIAL_TAB_IDS.GUILD]: Shield,
+    [SOCIAL_TAB_IDS.FRIENDS]: UserPlus,
+    [SOCIAL_TAB_IDS.CHALLENGES]: Swords,
+    [SOCIAL_TAB_IDS.EVENTS]: Radio,
+    [SOCIAL_TAB_IDS.MESSAGES]: MessageCircle,
+    [SOCIAL_TAB_IDS.TEAMS]: Users,
+  };
+
+  function setTab(nextTab) {
+    setState((s) => ({ ...s, socialTab: nextTab }));
+  }
 
   return (
-    <>
+    <div className="social-hub-shell">
       <div className="section-head">
         <h2>Social</h2>
-        <p>Teams · Friends · Stories · The Social Loop</p>
+        <p>Guild · Friends · Challenges · Events · Messages · Teams</p>
       </div>
 
-      <div className="card social-feed-preview">
+      <div className="card social-feed-preview social-hub-feed-preview">
         <h4>Your Feed</h4>
         {getPersonalizedFeed(state, adventures).slice(0, 3).map((item) => (
           <p key={item.id} className="feed-item">
             <Zap size={12} /> {item.text} <small>{item.at}</small>
           </p>
         ))}
-        {creatorSnapshot.socialFeed.slice(0, 3).map((item) => (
+        {creatorSnapshot.socialFeed.slice(0, 2).map((item) => (
           <p key={item.id} className="feed-item feed-item-creator">
             <span>{item.icon}</span> {item.text}
           </p>
         ))}
-        {marketplaceSnapshot.activityFeed.slice(0, 3).map((item) => (
+        {marketplaceSnapshot.activityFeed.slice(0, 2).map((item) => (
           <p key={item.id} className="feed-item feed-item-market">
             <span>{item.icon}</span> {item.text}
           </p>
         ))}
       </div>
 
-      <div className="card creator-social-rankings">
-        <h4>Trending Creators</h4>
-        {creatorSnapshot.trendingCreators.slice(0, 4).map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            className="ghost creator-passport-trend"
-            onClick={() => nav('creator', null, { creatorId: c.id })}
-          >
-            {c.name} · {c.rank.label}
-          </button>
-        ))}
+      <div className="social-hub-tabs" role="tablist" aria-label="Social sections">
+        {SOCIAL_TAB_ORDER.map((id) => {
+          const Icon = tabIcons[id];
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              className={tab === id ? 'active' : ''}
+              onClick={() => setTab(id)}
+            >
+              <Icon size={14} /> {SOCIAL_TAB_LABELS[id]}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="vault-tabs vault-tabs-scroll">
-        {tabs.map(([id, label, Icon]) => (
-          <button
-            key={id}
-            type="button"
-            className={tab === id ? 'active' : ''}
-            onClick={() => setTab(id)}
-          >
-            <Icon size={14} /> {label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'guilds' && (
+      {tab === SOCIAL_TAB_IDS.GUILD && (
         <FactionGuildPanel
           state={state}
           setState={setState}
@@ -122,16 +125,23 @@ export function SocialHub({ state, setState, adventures, nav, auth }) {
           initialTerritoryId={state?.faction?.focusedTerritoryId}
         />
       )}
-      {tab === 'teams' && <TeamsPanel state={state} setState={setState} />}
-      {tab === 'friends' && (
+      {tab === SOCIAL_TAB_IDS.TEAMS && <TeamsPanel state={state} setState={setState} />}
+      {tab === SOCIAL_TAB_IDS.FRIENDS && (
         <FriendsPanel state={state} setState={setState} adventures={adventures} />
       )}
-      {tab === 'stories' && <StoriesPanel state={state} setState={setState} />}
-      {tab === 'challenges' && (
+      {tab === SOCIAL_TAB_IDS.MESSAGES && (
+        <MessagesPanel
+          state={state}
+          setState={setState}
+          adventures={adventures}
+          messagesFeed={messagesFeed}
+        />
+      )}
+      {tab === SOCIAL_TAB_IDS.CHALLENGES && (
         <ChallengesPanel state={state} setState={setState} adventures={adventures} />
       )}
-      {tab === 'events' && <LiveEventsPanel nav={nav} />}
-    </>
+      {tab === SOCIAL_TAB_IDS.EVENTS && <LiveEventsPanel nav={nav} />}
+    </div>
   );
 }
 
@@ -247,27 +257,53 @@ function FriendsPanel({ state, setState, adventures }) {
   );
 }
 
-function StoriesPanel({ state, setState }) {
+function MessagesPanel({ state, setState, adventures, messagesFeed = [] }) {
   const stories = getActiveStories(state);
   const [text, setText] = useState('');
 
   return (
     <>
       <div className="card">
-        <h3>Post Story (24h)</h3>
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Victory, team celebration..." />
-        <button type="button" onClick={() => { setState((s) => addStory(s, text)); setText(''); }}>
-          Share Story
+        <h3>Messages & Stories</h3>
+        <p className="admin-meta">Stories, team chats, and adventure comments — one inbox.</p>
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Share a story or message..." />
+        <button
+          type="button"
+          onClick={() => {
+            setState((s) => addStory(s, text));
+            setText('');
+          }}
+        >
+          Post Story
         </button>
       </div>
-      <div className="stories-ring">
-        {stories.map((s) => (
-          <div className="story-bubble" key={s.id}>
-            <span>{s.type === 'photo' ? '📸' : '✨'}</span>
-            <small>{s.text?.slice(0, 20)}</small>
+
+      {stories.length > 0 && (
+        <div className="social-hub-stories-inline stories-ring">
+          {stories.map((s) => (
+            <div className="story-bubble" key={s.id}>
+              <span>{s.type === 'photo' ? '📸' : '✨'}</span>
+              <small>{s.text?.slice(0, 20)}</small>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="social-hub-messages-list">
+        {messagesFeed.map((message) => (
+          <div className="social-hub-message" key={message.id}>
+            <span className="social-hub-message-icon" aria-hidden>
+              {message.icon}
+            </span>
+            <div className="social-hub-message-copy">
+              <strong>{message.title}</strong>
+              <p>{message.text}</p>
+            </div>
           </div>
         ))}
-        {!stories.length && <p className="admin-meta">No active stories. Post one!</p>}
+        {!messagesFeed.length && (
+          <p className="admin-meta">No messages yet. Join a team or follow explorers to start the conversation.</p>
+        )}
       </div>
     </>
   );

@@ -38,7 +38,7 @@ export function LivingCityPanel({
 
   function handlePulseAction(pulse) {
     if (!nav || !pulse?.action) return;
-    if (pulse.action === 'guild') nav('social', undefined, { adminTab: 'guild' });
+    if (pulse.action === 'guild') nav('social', undefined, { socialTab: 'guild' });
     if (pulse.action === 'director') nav('ai-director');
     if (pulse.action === 'create') nav('create');
     if (pulse.action === 'sponsor') nav('sponsor');

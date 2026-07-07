@@ -1,0 +1,99 @@
+/* Questory V2 — Consolidated Social Hub */
+
+.social-hub-shell .section-head p {
+  color: rgba(100, 116, 139, 0.95);
+}
+
+.social-hub-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.social-hub-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.55);
+  color: rgba(226, 232, 240, 0.9);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.social-hub-tabs button.active {
+  color: #042f2e;
+  border-color: rgba(94, 234, 212, 0.45);
+  background: linear-gradient(135deg, #5eead4, #2dd4bf);
+}
+
+.social-hub-tabs button:not(.active):hover {
+  border-color: rgba(94, 234, 212, 0.25);
+  background: rgba(30, 41, 59, 0.72);
+}
+
+.social-hub-feed-preview {
+  margin-bottom: 12px;
+}
+
+.social-hub-messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.social-hub-message {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.social-hub-message-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.social-hub-message-copy {
+  min-width: 0;
+}
+
+.social-hub-message-copy strong {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.95);
+  margin-bottom: 2px;
+}
+
+.social-hub-message-copy p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.social-hub-stories-inline {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 10px;
+}
+
+@media (min-width: 640px) {
+  .social-hub-tabs {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}

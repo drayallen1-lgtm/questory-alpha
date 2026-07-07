@@ -358,7 +358,7 @@ export function FactionPassportSection({ state, adventures }) {
     return (
       <div className="card faction-passport-empty">
         <h4>Guild identity</h4>
-        <p>Join a guild from Social → Guilds to earn territory reputation.</p>
+        <p>Join a guild from Social → Guild to earn territory reputation.</p>
       </div>
     );
   }

@@ -1245,6 +1245,7 @@ export function MapScreen({
       setState((s) => ({
         ...s,
         screen: 'social',
+        socialTab: 'guild',
         faction: {
           ...s.faction,
           focusedTerritoryId: territoryId,

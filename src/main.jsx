@@ -201,6 +201,7 @@ import './WorldLayout.css';
 import './progressiveLayers.css';
 import './floatingCards.css';
 import './livingCity.css';
+import './socialHub.css';
 import './smartNotifications.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
@@ -484,6 +485,7 @@ function QuestoryApp() {
         adminTab: options.adminTab ?? s.adminTab,
         quickSponsor: 'quickSponsor' in options ? options.quickSponsor : s.quickSponsor,
         growthTab: options.growthTab ?? s.growthTab,
+        socialTab: options.socialTab ?? (options.adminTab === 'guild' ? 'guild' : s.socialTab),
         vaultTab: options.tab ?? s.vaultTab,
       };
       if (screen === 'detail' && adventureId) {

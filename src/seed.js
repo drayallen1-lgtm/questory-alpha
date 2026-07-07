@@ -100,6 +100,7 @@ export const defaultState = {
   growth: { ...DEFAULT_GROWTH },
   launchFunnel: { ...DEFAULT_LAUNCH_FUNNEL },
   growthTab: 'referrals',
+  socialTab: 'friends',
   pendingInviteAdventureId: null,
   editingAdventureId: null,
   quickSponsor: false,
