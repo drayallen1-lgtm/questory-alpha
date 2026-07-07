@@ -73,7 +73,7 @@ export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMod
 export const defaultState = {
   coins: 0,
   entries: 0,
-  screen: 'home',
+  screen: 'map',
   selectedAdventureId: null,
   selectedCreatorId: null,
   progress: {},
@@ -779,7 +779,9 @@ export function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     const rewards = (saved.rewards || []).map(normalizeReward);
-    const screen = saved.screen === 'victory' ? 'home' : saved.screen;
+    const rawScreen = saved.screen === 'victory' ? 'map' : saved.screen;
+    const screen =
+      rawScreen === 'home' ? 'map' : rawScreen;
     return {
       ...defaultState,
       ...saved,

@@ -197,6 +197,7 @@ import './factionGuild.css';
 import './aiDirector.css';
 import './payments.css';
 import './platformConsole.css';
+import './WorldLayout.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';
@@ -229,6 +230,7 @@ import {
   validateAdventureCluesForPublish,
 } from './adventureEditor';
 import { MapScreen, MiniClueMap } from './QuestoryMap';
+import { WorldShell } from './WorldShell';
 import {
   AccessTypeSelector,
   AccessStatusBanner,
@@ -745,9 +747,11 @@ function QuestoryApp() {
 
   const needsLoginForVault = isSupabaseMode && !user;
 
+  const isWorldScreen = state.screen === 'map';
+
   return (
     <div>
-      <main className={`app ${getAccessibilityClassName(state.accessibility)}`}>
+      <main className={`app ${getAccessibilityClassName(state.accessibility)}${isWorldScreen ? ' app-world-mode' : ''}`}>
         {shouldShowWelcome(state) && (
           <WelcomeOnboarding state={state} setState={setState} />
         )}
@@ -788,9 +792,14 @@ function QuestoryApp() {
             onClose={() => setShowFirstCelebration(false)}
           />
         )}
-        <Header state={state} auth={auth} onLoginClick={() => setShowLogin(true)} />
+        <Header
+          state={state}
+          auth={auth}
+          onLoginClick={() => setShowLogin(true)}
+          hidden={isWorldScreen}
+        />
         <AuthDebugPanel />
-        {!isSupabaseMode && (
+        {!isSupabaseMode && !isWorldScreen && (
           <div className="dev-mode-banner">Local dev mode · data saved in localStorage</div>
         )}
         {isSupabaseMode && remoteLoading && (
@@ -840,7 +849,7 @@ function QuestoryApp() {
           />
         )}
         {state.screen === 'map' && (
-          <MapScreen
+          <WorldShell
             adventures={getMapVisibleAdventures(state.adventures, {
               isAdmin,
               userId: user?.id,
@@ -850,6 +859,8 @@ function QuestoryApp() {
             setState={setState}
             isAdmin={isAdmin}
             userId={user?.id}
+            adminPreview={state.adminPreview}
+            isSponsor={isSponsor || isAdmin}
           />
         )}
         {state.screen === 'detail' && selected && (
@@ -1185,7 +1196,7 @@ function QuestoryApp() {
           )
         )}
       </main>
-      {!['play', 'finder', 'medallion-signal', 'victory', 'bonus'].includes(state.screen) && (
+      {!['play', 'finder', 'medallion-signal', 'victory', 'bonus', 'map'].includes(state.screen) && (
         <BottomNav
           screen={state.screen}
           nav={nav}
@@ -1261,7 +1272,8 @@ function AdminGate({ onLogin }) {
   );
 }
 
-function Header({ state, auth, onLoginClick }) {
+function Header({ state, auth, onLoginClick, hidden = false }) {
+  if (hidden) return null;
   const displayName =
     auth?.profile?.display_name || auth?.user?.email?.split('@')[0] || 'Explorer';
   const [signOutError, setSignOutError] = useState('');
@@ -3982,9 +3994,8 @@ function AdminReview({
 function BottomNav({ screen, nav, adminPreview, isSponsor }) {
   const items = isSponsor
     ? [
-        ['home', 'Home'],
+        ['map', 'World'],
         ['feed', 'Feed'],
-        ['map', 'Map'],
         ['vault', 'Passport'],
         ['social', 'Social'],
         ['sponsor', 'Sponsor'],
@@ -3992,9 +4003,8 @@ function BottomNav({ screen, nav, adminPreview, isSponsor }) {
         ['admin', 'Admin'],
       ]
     : [
-        ['home', 'Home'],
+        ['map', 'World'],
         ['feed', 'Feed'],
-        ['map', 'Map'],
         ['vault', 'Passport'],
         ['social', 'Social'],
         ['create', 'Create'],
@@ -4003,19 +4013,20 @@ function BottomNav({ screen, nav, adminPreview, isSponsor }) {
 
   const active = (id) => {
     if (screen === id) return true;
-    if (screen === 'leaderboard') return id === 'home';
+    if (id === 'map' && (screen === 'home' || screen === 'map')) return true;
+    if (screen === 'leaderboard') return id === 'map';
     if (screen === 'creator') return id === 'feed';
     if (screen === 'marketplace') return id === 'vault';
     if (screen === 'social') return id === 'social';
-    if (screen === 'platform') return id === 'home';
-    if (screen === 'world' || screen === 'growth') return id === 'home';
+    if (screen === 'platform') return id === 'map';
+    if (screen === 'world' || screen === 'growth') return id === 'map';
     if (screen === 'play' || screen === 'detail' || screen === 'bonus') {
       return adminPreview ? id === 'admin' : id === 'feed';
     }
     return false;
   };
 
-  const navClass = items.length > 7 ? 'bottom-nav-8' : 'bottom-nav-7';
+  const navClass = items.length > 7 ? 'bottom-nav-8' : items.length > 6 ? 'bottom-nav-7' : 'bottom-nav-6';
 
   return (
     <nav className={navClass}>

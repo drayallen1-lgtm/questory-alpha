@@ -1105,7 +1105,15 @@ export function QuestoryMap({
   );
 }
 
-export function MapScreen({ adventures, nav, state, setState, isAdmin = false, userId = null }) {
+export function MapScreen({
+  adventures,
+  nav,
+  state,
+  setState,
+  isAdmin = false,
+  userId = null,
+  shellMode = false,
+}) {
   const [activeFilter, setActiveFilter] = useState(MAP_FILTERS.ALL);
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [livingCluster, setLivingCluster] = useState(null);
@@ -1819,32 +1827,52 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
 
   return (
     <>
-      <div className="section-head map-section-head">
-        <div>
-          <h2>Adventure Map</h2>
-          <p>
-            {hasMapboxToken()
-              ? 'Tap clusters to uncover adventures · blossom reveals secrets nearby'
-              : 'Trail list · add VITE_MAPBOX_TOKEN for live map'}
-          </p>
+      {!shellMode && (
+        <div className="section-head map-section-head">
+          <div>
+            <h2>Adventure Map</h2>
+            <p>
+              {hasMapboxToken()
+                ? 'Tap clusters to uncover adventures · blossom reveals secrets nearby'
+                : 'Trail list · add VITE_MAPBOX_TOKEN for live map'}
+            </p>
+          </div>
+          {location?.latitude != null && (
+            <button
+              type="button"
+              className="ghost map-find-me-btn"
+              onClick={() => {
+                handleReturnToMap({ zoom: 14 });
+                setFindMeSignal((n) => n + 1);
+              }}
+            >
+              <LocateFixed size={16} /> Find Me
+            </button>
+          )}
         </div>
-        {location?.latitude != null && (
-          <button
-            type="button"
-            className="ghost map-find-me-btn"
-            onClick={() => {
-              handleReturnToMap({ zoom: 14 });
-              setFindMeSignal((n) => n + 1);
-            }}
-          >
-            <LocateFixed size={16} /> Find Me
-          </button>
-        )}
-      </div>
+      )}
 
-      <MapFilterBar activeFilter={activeFilter} onChange={setActiveFilter} counts={filterCounts} />
+      <MapFilterBar
+        activeFilter={activeFilter}
+        onChange={setActiveFilter}
+        counts={filterCounts}
+        className={shellMode ? 'map-shell-filter' : ''}
+      />
 
-      {state && setState && (
+      {shellMode && location?.latitude != null && (
+        <button
+          type="button"
+          className="ghost map-find-me-btn map-shell-find-me"
+          onClick={() => {
+            handleReturnToMap({ zoom: 14 });
+            setFindMeSignal((n) => n + 1);
+          }}
+        >
+          <LocateFixed size={16} /> Find Me
+        </button>
+      )}
+
+      {!shellMode && state && setState && (
         <LiveMapOverlay
           presence={livePresence}
           socialDiscovery={mergedSocialDiscovery}
@@ -1858,22 +1886,26 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         />
       )}
 
-      <DiscoveredWorldPanel snapshot={worldDiscoverySnapshot} />
+      {!shellMode && <DiscoveredWorldPanel snapshot={worldDiscoverySnapshot} />}
 
-      <QuestoryIdentityPanel
-        identity={questoryIdentitySnapshot}
-        onNavigateLeaderboard={nav ? () => nav('leaderboard') : null}
-        onOpenLegendaryHunt={nav ? () => nav('legendary-hunt') : null}
-      />
+      {!shellMode && (
+        <QuestoryIdentityPanel
+          identity={questoryIdentitySnapshot}
+          onNavigateLeaderboard={nav ? () => nav('leaderboard') : null}
+          onOpenLegendaryHunt={nav ? () => nav('legendary-hunt') : null}
+        />
+      )}
 
-      <LivingWorldTimeline
-        entries={timelineEntries}
-        races={mergedRaces}
-        boss={questoryIdentitySnapshot.boss}
-      />
+      {!shellMode && (
+        <LivingWorldTimeline
+          entries={timelineEntries}
+          races={mergedRaces}
+          boss={questoryIdentitySnapshot.boss}
+        />
+      )}
 
       <div
-        className={`map-stage map-stage-has-discovery-hud${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
+        className={`map-stage map-stage-has-discovery-hud${shellMode ? ' map-stage-world-shell' : ''}${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
       >
         {!earthOverlayVisible && <LegendaryHuntMapHud snapshot={legendaryHuntSnapshot} />}
         {!earthOverlayVisible && (
@@ -2009,7 +2041,7 @@ export function MapScreen({ adventures, nav, state, setState, isAdmin = false, u
         </div>
       )}
 
-      {worldDiscoverySnapshot.currentRegion && (
+      {!shellMode && worldDiscoverySnapshot.currentRegion && (
         <p className="admin-meta map-fog-hint">
           🌍 {worldDiscoverySnapshot.currentRegion.label}{' '}
           {Math.round(worldDiscoverySnapshot.currentRegion.completionPercent)}% discovered · Earth{' '}

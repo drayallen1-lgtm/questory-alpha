@@ -1,0 +1,314 @@
+/* Questory V2 — Living World Shell (map-first layout) */
+
+.app.app-world-mode {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.world-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100dvh;
+  background: radial-gradient(ellipse 120% 80% at 50% 0%, #0f172a 0%, #020617 55%, #000 100%);
+  color: #e2e8f0;
+}
+
+.world-shell-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px 8px;
+  pointer-events: none;
+}
+
+.world-shell-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.72);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+}
+
+.world-map-frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  height: calc(100dvh - 72px);
+  padding: 44px 8px 88px;
+}
+
+.world-map-frame .map-stage-world-shell {
+  height: 100%;
+  min-height: min(88dvh, calc(100dvh - 120px));
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.12),
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.world-map-frame .map-stage-world-shell .questory-map-wrap,
+.world-map-frame .map-stage-world-shell .questory-map {
+  height: 100%;
+  min-height: 100%;
+}
+
+.world-map-frame .map-shell-filter {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 12;
+  margin: 0;
+}
+
+.world-map-frame .map-shell-find-me {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 13;
+}
+
+.world-shell--map-hidden-panels .map-section-head,
+.world-shell--map-hidden-panels .discovered-world-panel,
+.world-shell--map-hidden-panels .questory-identity-panel,
+.world-shell--map-hidden-panels .living-world-timeline {
+  display: none;
+}
+
+/* Floating HUD */
+
+.floating-hud {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  right: 0;
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px;
+  pointer-events: none;
+}
+
+.floating-hud > * {
+  pointer-events: auto;
+}
+
+.floating-notifications {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 96px;
+  overflow: hidden;
+}
+
+.floating-notification {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.3;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  animation: world-notif-in 0.35s ease;
+}
+
+.floating-notification--adventure {
+  border-color: rgba(94, 234, 212, 0.35);
+}
+
+.floating-notification--nearby {
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+@keyframes world-notif-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.floating-hud-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.floating-hud-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.floating-hud-card:hover,
+.floating-hud-card:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(94, 234, 212, 0.35);
+  background: rgba(30, 41, 59, 0.82);
+  outline: none;
+}
+
+.floating-hud-card--earth {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.floating-hud-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.88);
+}
+
+.floating-hud-card-metric {
+  font-size: 18px;
+  font-weight: 800;
+  color: #5eead4;
+  line-height: 1.1;
+}
+
+.floating-hud-card-sub {
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.92);
+}
+
+.floating-hud-card-chevron {
+  font-size: 10px;
+  opacity: 0.55;
+}
+
+/* Floating dock */
+
+.floating-dock-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  padding: 0 12px 16px;
+  pointer-events: none;
+}
+
+.floating-dock {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  width: min(100%, 520px);
+  padding: 6px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  pointer-events: auto;
+}
+
+.floating-dock button {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 4px 8px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: rgba(148, 163, 184, 0.95);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.floating-dock button.active {
+  color: #042f2e;
+  background: linear-gradient(135deg, var(--questory-accent, #5eead4), #2dd4bf);
+  box-shadow: 0 4px 16px rgba(94, 234, 212, 0.28);
+}
+
+.floating-dock button:not(.active):hover {
+  color: #e2e8f0;
+  background: rgba(51, 65, 85, 0.55);
+}
+
+@media (min-width: 768px) {
+  .world-map-frame {
+    padding: 48px 20px 96px;
+  }
+
+  .floating-hud {
+    top: 44px;
+    padding: 0 20px;
+  }
+
+  .floating-hud-grid {
+    max-width: 420px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .floating-notifications {
+    max-width: 420px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+@media (max-height: 640px) {
+  .world-map-frame {
+    height: calc(100dvh - 64px);
+    padding-bottom: 76px;
+  }
+
+  .floating-hud-grid {
+    gap: 6px;
+  }
+
+  .floating-hud-card {
+    padding: 8px 10px;
+  }
+}

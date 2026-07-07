@@ -328,9 +328,9 @@ export function ClusterAdventurePicker({
   );
 }
 
-export function MapFilterBar({ activeFilter, onChange, counts = {} }) {
+export function MapFilterBar({ activeFilter, onChange, counts = {}, className = '' }) {
   return (
-    <div className="map-filter-bar" role="toolbar" aria-label="Map filters">
+    <div className={`map-filter-bar${className ? ` ${className}` : ''}`} role="toolbar" aria-label="Map filters">
       {MAP_FILTER_OPTIONS.map((opt) => (
         <button
           key={opt.id}
