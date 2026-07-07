@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { SmartNotificationStack } from './SmartNotificationStack';
+import { normalizeSmartNotification, partitionNotificationStack } from './smartNotificationEngine';
 
 const ROTATE_MS = 9000;
 const ENTER_MS = 420;
@@ -55,38 +57,57 @@ export function LivingWorldActivityFeed({ banners = [], paused = false }) {
   );
 }
 
+function mapLegacyKindToPriority(kind) {
+  if (kind === 'legendary' || kind === 'boss') return 'critical';
+  if (kind === 'race' || kind === 'heat') return 'adventure';
+  if (kind === 'nearby') return 'nearby';
+  return 'background';
+}
+
+function legacyNotificationsToSnapshot(notifications = []) {
+  const normalized = notifications.map((n) =>
+    normalizeSmartNotification({
+      id: n.id,
+      priority: n.priority || mapLegacyKindToPriority(n.kind),
+      title: n.title,
+      text: n.body || n.text,
+      icon: n.icon,
+      kind: n.kind,
+      action: n.action,
+    })
+  );
+  const { prominent, stacked } = partitionNotificationStack(normalized);
+  return {
+    prominent,
+    stacked,
+    stackCount: stacked.length,
+  };
+}
+
 /**
- * Toast-style world notifications (legendary drops, etc.)
+ * Priority-aware world notifications on the map.
  */
-export function LivingWorldNotifications({ notifications = [] }) {
-  const [dismissed, setDismissed] = useState(() => new Set());
+export function LivingWorldNotifications({
+  notifications = [],
+  snapshot = null,
+  nav = null,
+  compact = true,
+}) {
+  const view = snapshot || legacyNotificationsToSnapshot(notifications);
 
-  if (!notifications.length) return null;
-
-  const visible = notifications.filter((n) => !dismissed.has(n.id)).slice(0, 2);
-  if (!visible.length) return null;
+  function handleAction(notification) {
+    if (!nav || !notification?.action) return;
+    nav(notification.action, undefined, { adminPreview: false });
+  }
 
   return (
-    <div className="living-world-notifications" aria-live="polite">
-      {visible.map((n) => (
-        <div key={n.id} className={`living-world-notification living-world-notification-${n.kind}`}>
-          <span className="living-world-notification-icon" aria-hidden="true">
-            {n.icon}
-          </span>
-          <div className="living-world-notification-body">
-            <strong>{n.title}</strong>
-            <p>{n.body}</p>
-          </div>
-          <button
-            type="button"
-            className="living-world-notification-dismiss"
-            aria-label="Dismiss"
-            onClick={() => setDismissed((prev) => new Set([...prev, n.id]))}
-          >
-            ×
-          </button>
-        </div>
-      ))}
-    </div>
+    <SmartNotificationStack
+      className="living-world-notifications"
+      compact={compact}
+      prominent={view.prominent}
+      stacked={view.stacked}
+      stackCount={view.stackCount}
+      onAction={handleAction}
+    />
   );
 }

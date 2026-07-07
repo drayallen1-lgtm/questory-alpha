@@ -7,6 +7,8 @@ import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 import { getLegendaryHuntSnapshot } from './legendaryHuntEngine';
 import { buildFloatingHudCards } from './floatingCardsEngine';
 import { FloatingCard } from './FloatingCard';
+import { getSmartNotificationSnapshot } from './smartNotificationEngine';
+import { SmartNotificationStack } from './SmartNotificationStack';
 
 export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null }) {
   const zoom = layerSnapshot?.zoom ?? 11;
@@ -67,37 +69,24 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null 
     [livingWorld, marketplace, faction, worldDiscovery, earth, legendaryHunt, layerSnapshot]
   );
 
+  const notificationSnapshot = useMemo(
+    () =>
+      getSmartNotificationSnapshot({
+        state,
+        adventures,
+        now,
+        layerSnapshot,
+      }),
+    [state, adventures, now, layerSnapshot]
+  );
+
   const showNotifications =
-    layerSnapshot?.hudCards?.notifications !== false && !expandedCardId;
+    notificationSnapshot.visible && !expandedCardId;
 
-  const notifications = useMemo(() => {
-    const items = [];
-    const timelinePreview = (livingWorld.timeline || []).slice(0, 1);
-    const activeWars = faction.wars?.length ?? faction.contestedCount ?? 0;
-
-    if (timelinePreview[0] && layerSnapshot?.hudCards?.explorer !== false) {
-      items.push({
-        id: 'tl-0',
-        tone: 'adventure',
-        text: timelinePreview[0].text || timelinePreview[0].label || 'Explorer activity nearby',
-      });
-    }
-    if (activeWars > 0 && layerSnapshot?.hudCards?.guild !== false) {
-      items.push({
-        id: 'war',
-        tone: 'nearby',
-        text: `${activeWars} guild war${activeWars === 1 ? '' : 's'} active on the map`,
-      });
-    }
-    if (marketplace.activityFeed?.[0] && layerSnapshot?.hudCards?.marketplace !== false) {
-      items.push({
-        id: 'market',
-        tone: 'background',
-        text: marketplace.activityFeed[0].text || 'Market prices updated',
-      });
-    }
-    return items.slice(0, 2);
-  }, [livingWorld.timeline, faction, marketplace.activityFeed, layerSnapshot]);
+  function handleNotificationAction(notification) {
+    if (!nav || !notification?.action) return;
+    nav(notification.action, undefined, { adminPreview: false });
+  }
 
   useEffect(() => {
     if (!expandedCardId) return undefined;
@@ -141,17 +130,13 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null 
       )}
 
       <div className="floating-hud" aria-label="World HUD" ref={hudRef}>
-        {showNotifications && notifications.length > 0 && (
-          <div className="floating-notifications" aria-live="polite">
-            {notifications.map((n) => (
-              <div
-                key={n.id}
-                className={`floating-notification floating-notification--${n.tone}`}
-              >
-                {n.text}
-              </div>
-            ))}
-          </div>
+        {showNotifications && (
+          <SmartNotificationStack
+            prominent={notificationSnapshot.prominent}
+            stacked={notificationSnapshot.stacked}
+            stackCount={notificationSnapshot.stackCount}
+            onAction={handleNotificationAction}
+          />
         )}
 
         <div

@@ -1,0 +1,230 @@
+/* Questory V2 — Smart notification stack */
+
+.smart-notif-stack-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.smart-notif {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  animation: smart-notif-in 0.32s ease;
+}
+
+@keyframes smart-notif-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.smart-notif--critical {
+  border-color: rgba(248, 113, 113, 0.45);
+  box-shadow:
+    0 8px 28px rgba(127, 29, 29, 0.35),
+    0 0 0 1px rgba(248, 113, 113, 0.12);
+}
+
+.smart-notif--adventure {
+  border-color: rgba(94, 234, 212, 0.38);
+}
+
+.smart-notif--nearby {
+  border-color: rgba(251, 191, 36, 0.38);
+}
+
+.smart-notif--background {
+  border-color: rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.62);
+  box-shadow: none;
+}
+
+.smart-notif-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.smart-notif-main:hover,
+.smart-notif-main:focus-visible {
+  background: rgba(30, 41, 59, 0.45);
+  outline: none;
+}
+
+.smart-notif-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.smart-notif-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.smart-notif-title {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.smart-notif-text {
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(226, 232, 240, 0.95);
+}
+
+.smart-notif-priority-badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #450a0a;
+  background: #fca5a5;
+}
+
+.smart-notif-dismiss {
+  width: 34px;
+  border: none;
+  border-left: 1px solid rgba(148, 163, 184, 0.12);
+  background: transparent;
+  color: rgba(148, 163, 184, 0.9);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.smart-notif-dismiss:hover,
+.smart-notif-dismiss:focus-visible {
+  color: #e2e8f0;
+  background: rgba(30, 41, 59, 0.55);
+  outline: none;
+}
+
+.smart-notif-background-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.smart-notif-stack-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.55);
+  color: rgba(148, 163, 184, 0.95);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.smart-notif-stack-toggle:hover,
+.smart-notif-stack-toggle:focus-visible {
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(30, 41, 59, 0.62);
+  outline: none;
+}
+
+.smart-notif-stack-count {
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #042f2e;
+  background: rgba(148, 163, 184, 0.85);
+}
+
+.smart-notif-stack-chevron {
+  margin-left: auto;
+  font-size: 9px;
+  opacity: 0.7;
+}
+
+.smart-notif-stack-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 4px;
+  animation: smart-notif-stack-open 0.22s ease;
+}
+
+@keyframes smart-notif-stack-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.smart-notif--stacked {
+  border-radius: 10px;
+}
+
+.smart-notif--stacked .smart-notif-main,
+.smart-notif--stacked {
+  width: 100%;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.smart-notif-stack-hint {
+  margin: 0;
+  padding: 0 4px;
+  font-size: 10px;
+  color: rgba(100, 116, 139, 0.95);
+}
+
+.smart-notif-stack-wrap--compact .smart-notif-text {
+  font-size: 11px;
+}
+
+/* Map overlay placement */
+.living-world-notifications.smart-notif-stack-wrap {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 18;
+  width: min(100% - 24px, 320px);
+}

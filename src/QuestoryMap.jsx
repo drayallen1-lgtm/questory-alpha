@@ -76,6 +76,7 @@ import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 import { getLivingEarthSnapshot, EARTH_MODE_EXIT_ZOOM } from './livingEarthEngine';
 import { getProgressiveLayerSnapshot, WORLD_LAYER_IDS } from './progressiveWorldLayersEngine';
 import { ProgressiveLayer } from './ProgressiveLayer';
+import { getSmartNotificationSnapshot, normalizeSmartNotification } from './smartNotificationEngine';
 const LivingEarthOverlay = lazy(() =>
   import('./LivingEarthUI').then((m) => ({ default: m.LivingEarthOverlay }))
 );
@@ -1397,18 +1398,38 @@ export function MapScreen({
     legendaryHuntSnapshot.alerts,
   ]);
 
-  const mapNotifications = useMemo(() => {
-    const socialToasts = socialDiscoverySnapshot.toasts || [];
-    const worldNotes = livingWorld.notifications || [];
-    const seen = new Set();
-    return [...socialToasts, ...worldNotes]
-      .filter((n) => {
-        if (seen.has(n.id)) return false;
-        seen.add(n.id);
-        return true;
-      })
-      .slice(0, 4);
-  }, [socialDiscoverySnapshot.toasts, livingWorld.notifications]);
+  const mapNotificationSnapshot = useMemo(() => {
+    const legacyNotes = [...(socialDiscoverySnapshot.toasts || []), ...(livingWorld.notifications || [])]
+      .filter((n, idx, arr) => arr.findIndex((x) => x.id === n.id) === idx)
+      .map((n) =>
+        normalizeSmartNotification({
+          id: n.id,
+          priority: n.priority,
+          title: n.title,
+          text: n.body || n.text,
+          icon: n.icon,
+          kind: n.kind,
+          action: n.kind === 'legendary' ? 'legendary-hunt' : n.kind === 'race' ? 'map' : null,
+        })
+      );
+
+    return getSmartNotificationSnapshot({
+      state,
+      adventures,
+      now: worldNow,
+      layerSnapshot: shellMode ? layerSnapshot : null,
+      socialToasts: socialDiscoverySnapshot.toasts || [],
+      extra: legacyNotes,
+    });
+  }, [
+    state,
+    adventures,
+    worldNow,
+    shellMode,
+    layerSnapshot,
+    socialDiscoverySnapshot.toasts,
+    livingWorld.notifications,
+  ]);
 
   const timelineEntries = useMemo(() => {
     const merged = [...livingWorld.timeline];
@@ -1959,7 +1980,7 @@ export function MapScreen({
               paused={Boolean(livingCluster || selectedAdventure)}
             />
           )}
-          <LivingWorldNotifications notifications={mapNotifications} />
+          <LivingWorldNotifications snapshot={mapNotificationSnapshot} nav={nav} />
         </ProgressiveLayer>
 
         <QuestoryMap
