@@ -58,6 +58,10 @@ import { DEFAULT_AI_NPC, normalizeAiNpc } from './aiNpcEngine';
 import { DEFAULT_DYNAMIC_STORY, normalizeDynamicStory } from './dynamicStoryEngine';
 import { DEFAULT_FACTION, normalizeFaction } from './factionEngine';
 import { DEFAULT_AI_DIRECTOR, normalizeAiDirector } from './questoryAiDirectorEngine';
+import { DEFAULT_PAYMENT, normalizePayment } from './paymentEngine';
+import { DEFAULT_PARTNER_OPS, normalizePartnerOps } from './partnerOperationsEngine';
+import { DEFAULT_COMPLIANCE, normalizeCompliance } from './complianceEngine';
+import { DEFAULT_RISK, normalizeRisk } from './riskEngine';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -107,6 +111,10 @@ export const defaultState = {
   dynamicStory: { ...DEFAULT_DYNAMIC_STORY },
   faction: { ...DEFAULT_FACTION },
   aiDirector: { ...DEFAULT_AI_DIRECTOR },
+  payment: { ...DEFAULT_PAYMENT },
+  partnerOps: { ...DEFAULT_PARTNER_OPS },
+  compliance: { ...DEFAULT_COMPLIANCE },
+  risk: { ...DEFAULT_RISK },
   vaultTab: 'passport',
   adventures: ensureDemoAdventure([
     {
@@ -800,6 +808,10 @@ export function loadState() {
       dynamicStory: normalizeDynamicStory(saved.dynamicStory),
       faction: normalizeFaction(saved.faction),
       aiDirector: normalizeAiDirector(saved.aiDirector),
+      payment: normalizePayment(saved.payment),
+      partnerOps: normalizePartnerOps(saved.partnerOps),
+      compliance: normalizeCompliance(saved.compliance),
+      risk: normalizeRisk(saved.risk),
       vaultTab: saved.vaultTab || 'passport',
       growthTab: saved.growthTab || 'referrals',
       pendingInviteAdventureId: saved.pendingInviteAdventureId || null,
