@@ -1,0 +1,72 @@
+.payments-admin-panel,
+.partner-dashboard,
+.wallet-passport-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payments-treasury-banner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.payments-treasury-banner .card.mini strong {
+  font-size: 1.1rem;
+}
+
+.payments-sim-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: rgba(255, 193, 7, 0.15);
+  color: #b8860b;
+}
+
+.payments-queue-list,
+.payments-wallet-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.payments-wallet-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.payments-wallet-card small {
+  text-transform: capitalize;
+  opacity: 0.7;
+}
+
+.payments-risk-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.payments-risk-chip.low { background: rgba(76, 175, 80, 0.15); }
+.payments-risk-chip.medium { background: rgba(255, 152, 0, 0.15); }
+.payments-risk-chip.high { background: rgba(244, 67, 54, 0.15); }
+.payments-risk-chip.critical { background: rgba(183, 28, 28, 0.2); }
+
+.partner-campaign-card {
+  border-left: 3px solid var(--accent, #6c5ce7);
+  padding-left: 12px;
+}
+
+.creator-payout-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.marketplace-seller-wallet {
+  margin-top: 12px;
+}

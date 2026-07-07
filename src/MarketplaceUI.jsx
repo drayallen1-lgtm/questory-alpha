@@ -405,6 +405,21 @@ export function MarketplacePassportPanel({ state, setState, adventures, nav }) {
         <div className="card mini"><small>Listings</small><strong>{snapshot.myListings.length}</strong></div>
         <div className="card mini"><small>Wishlist</small><strong>{snapshot.wishlist.length}</strong></div>
       </div>
+      {snapshot.sellerWallet && (
+        <div className="card marketplace-seller-wallet">
+          <h4>Seller Wallet (simulated)</h4>
+          <div className="grid creator-metrics-row">
+            <div className="card mini"><small>Balance</small><strong>{snapshot.sellerWallet.sellerBalance}</strong></div>
+            <div className="card mini"><small>Pending sales</small><strong>{snapshot.sellerWallet.pendingSales}</strong></div>
+            <div className="card mini"><small>Held</small><strong>{snapshot.sellerWallet.heldBalance}</strong></div>
+            <div className="card mini"><small>Tax est.</small><strong>${(snapshot.sellerWallet.taxEstimateCents / 100).toFixed(2)}</strong></div>
+          </div>
+          <p className="admin-meta">Refund status: {snapshot.sellerWallet.refundStatus}</p>
+          {snapshot.sellerWallet.receipts?.slice(0, 3).map((r) => (
+            <p key={r.id} className="feed-item">{r.label} · {r.amountCoins} coins</p>
+          ))}
+        </div>
+      )}
       <button type="button" onClick={() => nav('marketplace')}>Open Global Marketplace</button>
       <div className="card">
         <h4>Recent Activity</h4>

@@ -18,6 +18,8 @@ import {
   simulateStorePurchase,
   subscribeCreator,
 } from './creatorEconomyEngine';
+import { getPaymentSnapshot, getWalletSummary, WALLET_TYPES } from './paymentEngine';
+import { getComplianceSnapshot } from './complianceEngine';
 
 const DASHBOARD_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -68,6 +70,9 @@ export function CreatorDashboard({ state, setState, adventures, nav, creatorId =
     () => getCreatorEconomySnapshot(state, adventures, { creatorId }),
     [state, adventures, creatorId]
   );
+  const payment = useMemo(() => getPaymentSnapshot(state, adventures), [state, adventures]);
+  const creatorWallet = useMemo(() => getWalletSummary(state, WALLET_TYPES.CREATOR), [state]);
+  const compliance = useMemo(() => getComplianceSnapshot(state), [state]);
   const creator = snapshot.creatorById[creatorId] || snapshot.creators[0];
   if (!creator) return null;
 
@@ -145,16 +150,38 @@ export function CreatorDashboard({ state, setState, adventures, nav, creatorId =
       )}
 
       {tab === 'revenue' && (
-        <div className="card">
-          <h4><Wallet size={16} /> Revenue (simulated)</h4>
-          <div className="grid creator-metrics-row">
-            <MetricCard label="Total" value={`$${creator.analytics.revenue.total}`} />
-            <MetricCard label="Premium" value={`$${creator.analytics.revenue.premium}`} />
-            <MetricCard label="Tips" value={`$${creator.analytics.revenue.tips}`} />
-            <MetricCard label="Subscriptions" value={`$${creator.analytics.revenue.subscriptions}`} />
+        <>
+          <div className="card">
+            <h4><Wallet size={16} /> Revenue (simulated)</h4>
+            <div className="grid creator-metrics-row">
+              <MetricCard label="Total" value={`$${creator.analytics.revenue.total}`} />
+              <MetricCard label="Premium" value={`$${creator.analytics.revenue.premium}`} />
+              <MetricCard label="Tips" value={`$${creator.analytics.revenue.tips}`} />
+              <MetricCard label="Subscriptions" value={`$${creator.analytics.revenue.subscriptions}`} />
+            </div>
           </div>
-          <p className="admin-meta">Stripe Connect hook ready · payouts disabled in alpha</p>
-        </div>
+          <div className="grid creator-metrics-row">
+            <MetricCard label="Pending payout" value={`$${(creatorWallet.wallet.pending).toFixed(0)}`} sub="Simulated" />
+            <MetricCard label="Withdrawable" value={`$${creatorWallet.wallet.withdrawable}`} sub="Connect ready" />
+            <MetricCard label="Marketplace earnings" value={payment.stats.transactionCount} sub="Transactions" />
+            <MetricCard label="Sponsor earnings" value={`$${(payment.wallets[WALLET_TYPES.SPONSOR]?.earned || 0)}`} />
+          </div>
+          <div className="card">
+            <h4>Revenue History</h4>
+            {payment.transactions.filter((t) => t.walletType === WALLET_TYPES.CREATOR).slice(0, 5).map((t) => (
+              <p key={t.id} className="creator-payout-row">
+                <span>{t.label}</span>
+                <span>${(t.amountCents / 100).toFixed(2)}</span>
+              </p>
+            ))}
+          </div>
+          <div className="card">
+            <h4>Tax & Verification</h4>
+            <p>Tax status: <strong>{compliance.taxStatus}</strong></p>
+            <p>Verification: <strong>{compliance.verificationBadge.replace(/_/g, ' ')}</strong></p>
+            <p className="admin-meta">Stripe Connect hook ready · payouts disabled in alpha</p>
+          </div>
+        </>
       )}
 
       {tab === 'followers' && (

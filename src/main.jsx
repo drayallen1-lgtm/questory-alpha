@@ -172,6 +172,8 @@ const DeveloperDashboard = lazy(() =>
   import('./DeveloperDashboard').then((m) => ({ default: m.DeveloperDashboard }))
 );
 import { AiDirectorPanel } from './AiDirectorUI';
+import { PaymentsAdminPanel } from './PaymentsAdminUI';
+import { PartnerDashboard } from './PartnerDashboard';
 import { isDev } from './config/env';
 import './style.css';
 import './discoveryBloom.css';
@@ -191,6 +193,7 @@ import './developerDashboard.css';
 import './aiNpc.css';
 import './factionGuild.css';
 import './aiDirector.css';
+import './payments.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';
@@ -1092,6 +1095,23 @@ function QuestoryApp() {
             adventures={state.adventures}
             nav={nav}
             isAdmin={isAdmin}
+          />
+        )}
+        {state.screen === 'payments-admin' && (
+          <PaymentsAdminPanel
+            state={state}
+            setState={setState}
+            adventures={state.adventures}
+            nav={nav}
+            isAdmin={isAdmin}
+          />
+        )}
+        {state.screen === 'partner' && (
+          <PartnerDashboard
+            state={state}
+            adventures={state.adventures}
+            nav={nav}
+            partnerId={state.selectedPartnerId || 'parsons-tourism'}
           />
         )}
         {state.screen === 'admin' && (
@@ -3737,6 +3757,16 @@ function AdminReview({
       <div className="section-head">
         <h2>Admin Review</h2>
         <p>Preview, publish, analytics, and manage adventures</p>
+        {(isDev || isAdmin) && (
+          <button type="button" className="ghost dev-health-link" onClick={() => nav('payments-admin')}>
+            Payments
+          </button>
+        )}
+        {(isDev || isAdmin) && (
+          <button type="button" className="ghost dev-health-link" onClick={() => nav('partner')}>
+            Partner Ops
+          </button>
+        )}
         {(isDev || isAdmin) && (
           <button type="button" className="ghost dev-health-link" onClick={() => nav('ai-director')}>
             AI Director

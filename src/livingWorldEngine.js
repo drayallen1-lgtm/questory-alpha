@@ -14,6 +14,7 @@ import {
 import { wrapEngineSnapshot } from './engineSnapshotUtils.js';
 import { buildFactionTimeline } from './factionEngine.js';
 import { buildDirectorTimeline } from './questoryAiDirectorEngine.js';
+import { buildPaymentTimeline } from './paymentEngine.js';
 
 export const LIVING_WORLD_LIMITS = {
   MAX_EXPLORER_DOTS: 12,
@@ -342,7 +343,12 @@ export function getLivingWorldSnapshot(adventures = [], options = {}) {
     ...entry,
     kind: 'director',
   }));
-  const mergedTimeline = [...directorTimeline, ...factionTimeline, ...timeline]
+  const paymentTimeline = buildPaymentTimeline(state, adventures, now).slice(0, 3).map((entry) => ({
+    ...entry,
+    kind: entry.kind || 'payment',
+    minutesAgo: entry.minutesAgo ?? 2,
+  }));
+  const mergedTimeline = [...paymentTimeline, ...directorTimeline, ...factionTimeline, ...timeline]
     .sort((a, b) => (a.minutesAgo || 0) - (b.minutesAgo || 0))
     .slice(0, LIVING_WORLD_LIMITS.MAX_TIMELINE);
   const pulses = buildDiscoveryPulses(adventures, {

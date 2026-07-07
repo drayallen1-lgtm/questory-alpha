@@ -13,6 +13,8 @@ import { getDynamicStorySnapshot } from './dynamicStoryEngine';
 import { getPlayerProgressionSnapshot } from './playerProgressionEngine';
 import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 import { getQuestoryIdentitySnapshot } from './questoryIdentityEngine';
+import { getPaymentSnapshot } from './paymentEngine';
+import { getPartnerSnapshot } from './partnerOperationsEngine';
 
 export const DIRECTOR_LIMITS = {
   MAX_DRAFTS: 20,
@@ -103,6 +105,8 @@ export function evaluateDirectorSignals(state, adventures = [], now = Date.now()
     now,
   });
   const identity = getQuestoryIdentitySnapshot(state, adventures, { now });
+  const payment = getPaymentSnapshot(state, adventures, { now });
+  const partners = getPartnerSnapshot(state, adventures, { now });
 
   const recentClaims = countRecentClaims(state);
   if (recentClaims >= 2) {
@@ -236,6 +240,59 @@ export function evaluateDirectorSignals(state, adventures = [], now = Date.now()
       strength: clamp(identity.seasonProgress.chapterPct, 50, 90),
       label: 'Season chapter nearing unlock',
       detail: `${identity.seasonProgress.chapterPct}% chapter progress`,
+    });
+  }
+
+  if (payment.stats.pendingPayoutCount > 0) {
+    signals.push({
+      id: 'payment-payouts-pending',
+      kind: 'payment',
+      strength: clamp(payment.stats.pendingPayoutCount * 20, 40, 85),
+      label: 'Creator payouts processing',
+      detail: `${payment.stats.pendingPayoutCount} simulated payouts queued`,
+    });
+  }
+
+  const creatorWallet = payment.wallets?.creator;
+  if (creatorWallet && creatorWallet.pending > 200) {
+    signals.push({
+      id: 'creator-earnings-spike',
+      kind: 'payment',
+      strength: 62,
+      label: 'Creator earnings rising',
+      detail: `${creatorWallet.pending} coins pending settlement`,
+    });
+  }
+
+  if (partners.stats.activeCampaignCount > 0) {
+    signals.push({
+      id: 'partner-engagement',
+      kind: 'partner',
+      strength: clamp(partners.stats.activeCampaignCount * 25, 45, 90),
+      label: 'Partner campaigns active',
+      detail: `${partners.stats.activeCampaignCount} sponsorships live`,
+    });
+  }
+
+  const marketVelocity = marketplace.stats?.totalListings || 0;
+  if (marketVelocity > 5) {
+    signals.push({
+      id: 'market-velocity',
+      kind: 'market',
+      strength: clamp(marketVelocity * 8, 40, 88),
+      label: 'Market velocity elevated',
+      detail: `${marketVelocity} active listings`,
+    });
+  }
+
+  const treasury = payment.treasury;
+  if (treasury.platformReserved > 5000) {
+    signals.push({
+      id: 'reward-exhaustion-risk',
+      kind: 'payment',
+      strength: 48,
+      label: 'Treasury reserves tightening',
+      detail: `${treasury.platformReserved} reserved (simulated)`,
     });
   }
 
