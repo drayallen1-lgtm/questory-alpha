@@ -602,4 +602,27 @@ Each entry lists:
 
 ---
 
+## V2 Map-First Experience Engines
+
+| Module | Purpose |
+|--------|---------|
+| `adaptiveHudEngine.js` | Context HUD modes (walking, driving, adventure, guild war) |
+| `ambientWorldDirectorEngine.js` | Player-facing Director whispers on the map |
+| `floatingCardsEngine.js` | Floating HUD card summaries and priorities |
+| `guildExperienceEngine.js` | Unified Guild Home tabs and snapshots |
+| `livingCityEngine.js` | City personality pulses for Parsons |
+| `livingEarthExperienceEngine.js` | Earth city pulses, guild control, planet story |
+| `livingWorldAnimationsEngine.js` | Layer-aware ambient map animations |
+| `marketplaceLayerEngine.js` | Map marketplace venues and deep links |
+| `progressiveWorldLayersEngine.js` | Zoom-based layer visibility |
+| `smartNotificationEngine.js` | Priority notification stack for HUD |
+| `adventureLaunchEngine.js` | Guided create → director → publish flow |
+| `sponsorExperienceEngine.js` | Sponsor Home campaigns |
+
+**UI:** `WorldShell.jsx`, `FloatingHud.jsx`, `FloatingDock.jsx`, `AmbientDirectorWhisper.jsx`, `LivingCityPanel.jsx`
+
+**Docs:** [MAP_FIRST_ARCHITECTURE.md](./MAP_FIRST_ARCHITECTURE.md) · [WORLD_SYSTEM.md](./WORLD_SYSTEM.md) · [UX_GUIDELINES.md](./UX_GUIDELINES.md)
+
+---
+
 *When adding a new engine, add an entry here in the same commit.*

@@ -53,8 +53,9 @@ Location: `tests/e2e/`
 
 | Spec | Coverage |
 |------|----------|
-| `smoke.spec.js` | App load, Home, Map, Passport, Feed |
+| `smoke.spec.js` | App load, default world map, Passport, Feed |
 | `map-flow.spec.js` | Map container and markers |
+| `living-world.spec.js` | **V2** WorldShell, floating HUD, dock, city panel, mobile layouts |
 | `passport-tabs.spec.js` | Vault tab switching |
 | `adventure-flow.spec.js` | Branch path + Union Depot Ghost claim (`DEPOTGHOST`) |
 | `full-journey.spec.js` | Map → adventure → branch → claim → passport regression |

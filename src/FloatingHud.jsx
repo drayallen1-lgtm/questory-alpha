@@ -43,6 +43,11 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null,
     [zoom, state, adventures, now, worldDiscovery, layerSnapshot]
   );
 
+  const faction = useMemo(
+    () => getFactionSnapshot(state, adventures, { now }),
+    [state, adventures, now]
+  );
+
   const earthExperience = useMemo(
     () =>
       getLivingEarthExperienceSnapshot({
@@ -58,11 +63,6 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null,
 
   const marketplace = useMemo(
     () => getMarketplaceSnapshot(state, adventures, { now }),
-    [state, adventures, now]
-  );
-
-  const faction = useMemo(
-    () => getFactionSnapshot(state, adventures, { now }),
     [state, adventures, now]
   );
 
@@ -199,6 +199,7 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null,
           adaptiveHudSnapshot.simplified ? ' floating-hud--simplified' : ''
         }`}
         aria-label="World HUD"
+        data-testid="floating-hud"
         ref={hudRef}
       >
         {showNotifications && (

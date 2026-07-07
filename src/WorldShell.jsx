@@ -24,10 +24,25 @@ export function WorldShell({
     layerSnapshot?.animations?.activeCount > 2 ? ' world-anim-shell-on' : '';
 
   return (
-    <div className={`world-shell world-shell--map-hidden-panels${shellAnimationClass}`}>
+    <div
+      className={`world-shell world-shell--map-hidden-panels${
+        shellAnimationClass}${layerSnapshot ? ' world-shell--ready' : ' world-shell--loading'}`
+      }
+      data-testid="world-shell"
+    >
       <header className="world-shell-header">
         <h1 className="world-shell-title">Questory World</h1>
       </header>
+
+      {!layerSnapshot && (
+        <div className="world-shell-skeleton" aria-hidden="true">
+          <div className="world-shell-skeleton-grid">
+            <div className="world-shell-skeleton-card world-shell-skeleton-card--wide" />
+            <div className="world-shell-skeleton-card" />
+            <div className="world-shell-skeleton-card" />
+          </div>
+        </div>
+      )}
 
       <div className="world-shell-hud-stack">
         <LivingCityPanel

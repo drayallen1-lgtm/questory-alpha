@@ -2,15 +2,16 @@ import { test, expect } from '@playwright/test';
 import { gotoScreen } from './helpers.js';
 
 test.describe('Questory smoke', () => {
-  test('app loads and home renders', async ({ page }) => {
+  test('app loads and defaults to the living world map', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('main.app')).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByRole('button', { name: 'Home', exact: true })).toBeVisible();
+    await expect(page.getByTestId('world-shell')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('heading', { name: 'Questory World' })).toBeVisible();
   });
 
   test('map opens', async ({ page }) => {
     await gotoScreen(page, 'map');
-    await expect(page.getByRole('heading', { name: 'Adventure Map' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Questory World' })).toBeVisible({
       timeout: 30_000,
     });
     await expect(

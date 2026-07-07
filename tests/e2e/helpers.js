@@ -1,3 +1,5 @@
+import { expect } from '@playwright/test';
+
 const STORAGE_KEY = 'questoryAlpha';
 
 const E2E_ONBOARDING = {
@@ -162,13 +164,32 @@ export async function openPassportAfterClaim(page) {
 }
 
 export async function gotoScreen(page, screen) {
-  await primeAppState(page);
-  await page.waitForSelector('nav.bottom-nav-7, nav.bottom-nav-8', { timeout: 30_000 });
+  const screenAliases = { home: 'map', world: 'map' };
+  const target = screenAliases[screen] || screen;
+
+  await primeAppState(page, target === 'map' ? { screen: 'map' } : { screen: target });
+
+  if (target === 'map') {
+    await expect(page.getByTestId('world-shell')).toBeVisible({ timeout: 30_000 });
+    return;
+  }
+
   const labelMap = {
-    home: 'Home',
     feed: 'Feed',
-    map: 'Map',
+    map: 'World',
     vault: 'Passport',
+    social: 'Social',
+    create: 'Create',
+    admin: 'Admin',
+    sponsor: 'Sponsor',
   };
-  await page.getByRole('button', { name: labelMap[screen], exact: true }).click();
+  const label = labelMap[target];
+  if (!label) {
+    throw new Error(`Unknown e2e screen: ${screen}`);
+  }
+
+  const nav = page.locator(
+    'nav.floating-dock, nav.bottom-nav-6, nav.bottom-nav-7, nav.bottom-nav-8'
+  );
+  await nav.getByRole('button', { name: label, exact: true }).click();
 }

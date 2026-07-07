@@ -446,8 +446,13 @@ Supporting engines for immersion — not platform pillars, but used by adventure
 | File | Role |
 |------|------|
 | `main.jsx` | App shell, routing (`state.screen`), play/claim flows |
-| `SweepUI.jsx` | Home, passport vault tabs, feed components |
-| `QuestoryMap.jsx` | Mapbox map, layers, cluster/blossom interactions |
+| `WorldShell.jsx` | **V2 map-first home** — map frame, HUD stack, dock, director whisper |
+| `SweepUI.jsx` | Passport vault tabs, feed components |
+| `QuestoryMap.jsx` | Mapbox map, layers, cluster/blossom, Living Earth overlay |
+
+Default screen: `map` → `WorldShell` (not legacy home stack).
+
+See [MAP_FIRST_ARCHITECTURE.md](./MAP_FIRST_ARCHITECTURE.md) and [WORLD_SYSTEM.md](./WORLD_SYSTEM.md).
 
 ### Passport vault tabs (`SweepUI.jsx` → `QuestoryPassport`)
 

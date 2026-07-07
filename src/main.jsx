@@ -207,6 +207,7 @@ import './socialHub.css';
 import './smartNotifications.css';
 import './adaptiveHud.css';
 import './ambientWorldDirector.css';
+import './worldPolish.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';

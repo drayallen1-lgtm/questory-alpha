@@ -176,6 +176,14 @@ Versioned read-only Platform API (`platformApiEngine`) with 12 namespaces, Quest
 
 ---
 
+### Questory V2 — Map-First Living World Experience ✓ Complete
+
+Fifteen-commit UX rebuild: map as home screen (`WorldShell`), progressive layers, floating HUD cards, living city panel, smart notifications, social/guild/marketplace/sponsor experiences, adventure launch flow, ambient animations, adaptive HUD, Living Earth city pulses, ambient World Director whispers, and world polish (motion, glass, responsive HUD, Playwright living-world suite, `UX_GUIDELINES.md`, `WORLD_SYSTEM.md`, `MAP_FIRST_ARCHITECTURE.md`).
+
+**Why it mattered:** Questory stopped feeling like tabs around a map — the map became the operating system and the signature identity of the product.
+
+---
+
 ## Future Phases
 
 ### Phase 19 — Questory Intelligence Network
@@ -196,4 +204,4 @@ Global analytics, predictive AI, recommendation engine, and personalization.
 
 ---
 
-*Last updated: Phase 18 complete. Next milestone: Phase 19 — Questory Intelligence Network.*
+*Last updated: V2 Map-First Living World complete. Next milestone: Phase 19 — Questory Intelligence Network.*

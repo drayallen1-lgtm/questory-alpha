@@ -1,0 +1,206 @@
+/* Questory V2 — World Polish (motion, depth, glass, responsive HUD) */
+
+.world-shell {
+  --world-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --world-ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --world-blur-glass: 18px;
+  --world-shadow-float: 0 14px 36px rgba(0, 0, 0, 0.42);
+  --world-shadow-depth: 0 24px 64px rgba(0, 0, 0, 0.55);
+  --world-border-glass: rgba(148, 163, 184, 0.18);
+  --world-accent-glow: rgba(94, 234, 212, 0.28);
+  --world-transition-fast: 0.18s var(--world-ease-soft);
+  --world-transition-medium: 0.32s var(--world-ease-out);
+}
+
+.world-shell--loading .world-map-frame {
+  opacity: 0.72;
+}
+
+.world-shell--ready .world-map-frame {
+  opacity: 1;
+  transition: opacity var(--world-transition-medium);
+}
+
+.world-shell-skeleton {
+  position: absolute;
+  inset: 44px 8px 88px;
+  border-radius: 20px;
+  overflow: hidden;
+  z-index: 6;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.55), rgba(2, 6, 23, 0.72));
+  border: 1px solid var(--world-border-glass);
+}
+
+.world-shell-skeleton::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    rgba(148, 163, 184, 0.08) 45%,
+    rgba(148, 163, 184, 0.16) 50%,
+    rgba(148, 163, 184, 0.08) 55%,
+    transparent 100%
+  );
+  transform: translateX(-120%);
+  animation: world-shell-shimmer 1.6s ease-in-out infinite;
+}
+
+.world-shell-skeleton-grid {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.world-shell-skeleton-card {
+  height: 54px;
+  border-radius: 14px;
+  background: rgba(30, 41, 59, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.world-shell-skeleton-card--wide {
+  grid-column: 1 / -1;
+  height: 48px;
+}
+
+@keyframes world-shell-shimmer {
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.world-shell--ready .world-shell-skeleton {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+/* Depth + glass unification */
+
+.world-shell .floating-card,
+.world-shell .living-city-panel,
+.world-shell .ambient-director-whisper-body,
+.world-shell .adaptive-hud-chip,
+.world-shell .floating-dock {
+  transition:
+    transform var(--world-transition-fast),
+    border-color var(--world-transition-fast),
+    box-shadow var(--world-transition-fast),
+    background var(--world-transition-fast);
+}
+
+.world-shell .floating-card:focus-within,
+.world-shell .floating-card-summary:focus-visible,
+.world-shell .living-city-pulse:focus-visible,
+.world-shell .ambient-director-whisper-body:focus-visible,
+.world-shell .floating-dock button:focus-visible {
+  outline: 2px solid rgba(94, 234, 212, 0.55);
+  outline-offset: 2px;
+}
+
+.world-shell .floating-card {
+  box-shadow: var(--world-shadow-float);
+}
+
+.world-shell .floating-card--expanded {
+  box-shadow: var(--world-shadow-depth), 0 0 0 1px rgba(94, 234, 212, 0.1);
+}
+
+.world-shell .living-city-panel {
+  box-shadow: var(--world-shadow-float);
+  backdrop-filter: blur(var(--world-blur-glass));
+  -webkit-backdrop-filter: blur(var(--world-blur-glass));
+}
+
+.world-map-frame .map-stage-world-shell {
+  transition:
+    box-shadow var(--world-transition-medium),
+    transform var(--world-transition-medium);
+}
+
+.world-shell--ready .world-map-frame .map-stage-world-shell {
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.14),
+    var(--world-shadow-depth),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+/* Responsive HUD — landscape + compact */
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .world-shell-hud-stack {
+    top: 28px;
+    gap: 4px;
+  }
+
+  .living-city-panel {
+    padding: 8px 10px;
+  }
+
+  .floating-hud-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .floating-card--wide {
+    grid-column: span 2;
+  }
+
+  .ambient-director-whisper {
+    bottom: 72px;
+    max-width: min(48vw, 280px);
+  }
+
+  .world-map-frame {
+    padding-top: 36px;
+    padding-bottom: 68px;
+  }
+}
+
+@media (max-width: 480px) {
+  .world-shell-title {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+  }
+
+  .floating-hud-grid {
+    gap: 6px;
+  }
+
+  .floating-dock {
+    border-radius: 18px;
+    padding: 5px;
+  }
+
+  .floating-dock button {
+    font-size: 9px;
+    padding: 8px 2px 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-shell,
+  .world-shell .floating-card,
+  .world-shell .living-city-panel,
+  .world-map-frame .map-stage-world-shell {
+    transition: none;
+  }
+
+  .world-shell-skeleton::before {
+    animation: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .world-shell .floating-card,
+  .world-shell .living-city-panel,
+  .world-shell .floating-dock {
+    border-color: rgba(226, 232, 240, 0.45);
+  }
+}

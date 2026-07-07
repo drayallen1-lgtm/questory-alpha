@@ -4,7 +4,7 @@ import { gotoScreen } from './helpers.js';
 test.describe('Map flow', () => {
   test('map container loads and adventure markers render', async ({ page }) => {
     await gotoScreen(page, 'map');
-    await expect(page.getByRole('heading', { name: 'Adventure Map' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Questory World' })).toBeVisible({
       timeout: 30_000,
     });
     await expect(

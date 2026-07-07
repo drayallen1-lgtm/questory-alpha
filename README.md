@@ -22,6 +22,9 @@ Every developer and AI session starts here:
 | [AI_WORKFLOW.md](./AI_WORKFLOW.md) | Mandatory AI/developer workflow |
 | [QUALITY.md](./QUALITY.md) | Tests, lint, Dev Dashboard, static checks |
 | [QUESTORY_HISTORY.md](./QUESTORY_HISTORY.md) | Major milestones and why they mattered |
+| [MAP_FIRST_ARCHITECTURE.md](./MAP_FIRST_ARCHITECTURE.md) | V2 map-first rebuild (15 commits) |
+| [WORLD_SYSTEM.md](./WORLD_SYSTEM.md) | Living world shell, layers, floating UI |
+| [UX_GUIDELINES.md](./UX_GUIDELINES.md) | V2 visual and interaction standards |
 
 ---
 
@@ -67,8 +70,9 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full engine map.
 | 16 — Questory AI Director | ✓ Complete |
 | 17 — Real Economy, Payments & Partners | ✓ Complete |
 | 18 — Open Questory Platform | ✓ Complete |
+| **V2 — Map-First Living World** | ✓ Complete |
 
-Full roadmap: [ROADMAP.md](./ROADMAP.md)
+Full roadmap: [ROADMAP.md](./ROADMAP.md) · V2 details: [MAP_FIRST_ARCHITECTURE.md](./MAP_FIRST_ARCHITECTURE.md)
 
 ---
 
