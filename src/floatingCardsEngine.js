@@ -89,6 +89,7 @@ export function buildFloatingHudCards(options = {}) {
         { id: 'c2', text: 'Preview pins on the map before you publish' },
       ],
       viewAllScreen: 'create',
+      viewAllOptions: { launchStep: 'describe' },
       expandable: true,
     },
     {

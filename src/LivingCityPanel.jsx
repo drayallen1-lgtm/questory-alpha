@@ -40,7 +40,7 @@ export function LivingCityPanel({
     if (!nav || !pulse?.action) return;
     if (pulse.action === 'guild') nav('social', undefined, { socialTab: 'guild', guildTab: 'wars' });
     if (pulse.action === 'director') nav('ai-director');
-    if (pulse.action === 'create') nav('create');
+    if (pulse.action === 'create') nav('create', undefined, { launchStep: 'describe' });
     if (pulse.action === 'sponsor') nav('sponsor');
     if (pulse.action === 'marketplace') {
       nav('map', undefined, {

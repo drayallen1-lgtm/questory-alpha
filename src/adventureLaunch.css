@@ -1,0 +1,197 @@
+/* Questory V2 — Adventure Launch Experience */
+
+.adventure-launch {
+  display: grid;
+  gap: 16px;
+}
+
+.adventure-launch-head {
+  align-items: flex-start;
+}
+
+.adventure-launch-advanced {
+  white-space: nowrap;
+}
+
+.adventure-launch-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0 2px;
+}
+
+.adventure-launch-rail-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+.adventure-launch-rail-step--active {
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+.adventure-launch-rail-step--done {
+  color: #cbd5e1;
+}
+
+.adventure-launch-rail-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.adventure-launch-rail-step--active .adventure-launch-rail-dot {
+  background: #38bdf8;
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.18);
+}
+
+.adventure-launch-rail-step--done .adventure-launch-rail-dot {
+  background: #22c55e;
+}
+
+.adventure-launch-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.adventure-launch-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.adventure-launch-suggestions .ghost {
+  font-size: 0.78rem !important;
+  text-align: left;
+}
+
+.adventure-launch-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.adventure-launch-prompt {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-left: 3px solid rgba(56, 189, 248, 0.55);
+  background: rgba(15, 23, 42, 0.55);
+  color: #e2e8f0;
+  font-style: italic;
+}
+
+.adventure-launch-generating {
+  color: #7dd3fc;
+  font-size: 0.88rem;
+}
+
+.adventure-launch-draft {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.adventure-launch-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.adventure-launch-metrics span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+.adventure-launch-story {
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.adventure-launch-clues {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.adventure-launch-clues li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.adventure-launch-clue-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.adventure-launch-clues small {
+  display: block;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.adventure-launch-rewards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.adventure-launch-reward-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.12);
+  color: #fde68a;
+  font-size: 0.78rem;
+}
+
+.adventure-launch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.adventure-launch-publish-card {
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.72);
+  margin: 12px 0;
+}
+
+.adventure-launch-publish-card p {
+  margin: 8px 0 0;
+  color: #cbd5e1;
+}
+
+@media (max-width: 720px) {
+  .adventure-launch-head {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .adventure-launch-advanced {
+    align-self: flex-start;
+  }
+}

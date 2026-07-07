@@ -282,6 +282,13 @@ import {
 } from './worldEventEngine';
 import { WorldEventAtmosphereOverlay, ActiveWorldEventBadge } from './WorldEventUI';
 import { ADVENTURE_TEMPLATES, SCALE_PRESETS, buildTemplateClues, buildTemplateRewards, buildTemplateStory, getTemplateMeta } from './templates';
+import { AdventureLaunchUI } from './AdventureLaunchUI';
+import {
+  LAUNCH_STEP_IDS,
+  launchDraftToSaveOverrides,
+  resolveLaunchStep,
+} from './adventureLaunchEngine';
+import './adventureLaunch.css';
 import {
   TemplatePicker,
   ScaleSelector,
@@ -494,6 +501,10 @@ function QuestoryApp() {
         marketplaceTab: options.marketplaceTab ?? s.marketplaceTab,
         marketplaceVenueId:
           'marketplaceVenueId' in options ? options.marketplaceVenueId : s.marketplaceVenueId,
+        launchStep: options.launchStep ?? s.launchStep,
+        launchPrompt: options.launchPrompt ?? s.launchPrompt,
+        createAdvanced:
+          'createAdvanced' in options ? options.createAdvanced : s.createAdvanced,
         vaultTab: options.tab ?? s.vaultTab,
       };
       if (screen === 'detail' && adventureId) {
@@ -1095,6 +1106,7 @@ function QuestoryApp() {
             <CreateAdventure
               state={state}
               setState={setState}
+              nav={nav}
               reset={resetPrototype}
               userId={user?.id}
               isSupabaseMode={isSupabaseMode}
@@ -2778,6 +2790,7 @@ function rewardsFromTemplates(templates) {
 function CreateAdventure({
   state,
   setState,
+  nav,
   reset,
   userId,
   isSupabaseMode,
@@ -2842,6 +2855,9 @@ function CreateAdventure({
   const [arTheme, setArTheme] = useState('none');
   const [mediaManifest, setMediaManifest] = useState([]);
   const [worldConfig, setWorldConfig] = useState(() => normalizeWorldConfig({}));
+  const [showAdvanced, setShowAdvanced] = useState(
+    () => Boolean(editingAdventureId) || Boolean(state.createAdvanced)
+  );
   const showArMode = meta.finderMode === FINDER_MODES.AR_ENHANCED;
   const editingAdventure = editingAdventureId
     ? state.adventures.find((a) => a.id === editingAdventureId)
@@ -3049,7 +3065,21 @@ function CreateAdventure({
     }
   }
 
-  async function saveAdventure() {
+  async function saveAdventure(overrides = null) {
+    const saveMeta = overrides?.meta ? { ...meta, ...overrides.meta } : meta;
+    const saveClues = overrides?.clues ?? clues;
+    const saveRewards = overrides?.rewards ?? rewards;
+    const saveAdventureTemplate = overrides?.adventureTemplate ?? adventureTemplate;
+    const saveAdventureScale = overrides?.adventureScale ?? adventureScale;
+    const saveExperienceSettings = overrides?.experienceSettings
+      ? { ...experienceSettings, ...overrides.experienceSettings }
+      : experienceSettings;
+    const saveArFinale = overrides?.arFinale ?? arFinale;
+    const saveArTheme = overrides?.arTheme ?? arTheme;
+    const saveWorldConfig = overrides?.worldConfig
+      ? normalizeWorldConfig(overrides.worldConfig)
+      : worldConfig;
+
     const createCheck = canCreateAdventure(state, {
       isAdmin: auth?.isAdmin,
       isSponsor: auth?.isSponsor,
@@ -3068,14 +3098,14 @@ function CreateAdventure({
       setState(slot.state);
     }
 
-    const title = meta.title.trim() || 'New QUESTORY Adventure';
-    const location = meta.location.trim() || 'Your City';
-    const sponsorName = meta.sponsorName.trim() || 'Local Sponsor';
-    const story = meta.story.trim() || 'A new trail awaits.';
-    const claimCode = (meta.claimCode.trim() || generateClaimCode()).toUpperCase();
+    const title = saveMeta.title.trim() || 'New QUESTORY Adventure';
+    const location = saveMeta.location.trim() || 'Your City';
+    const sponsorName = saveMeta.sponsorName.trim() || 'Local Sponsor';
+    const story = saveMeta.story.trim() || 'A new trail awaits.';
+    const claimCode = (saveMeta.claimCode.trim() || generateClaimCode()).toUpperCase();
 
     const claimFieldError = validateAdventureClaimFields({
-      ...meta,
+      ...saveMeta,
       claimCode,
     });
     if (claimFieldError) {
@@ -3083,21 +3113,21 @@ function CreateAdventure({
       return;
     }
 
-    const claimFields = buildAdventureClaimFields({ ...meta, claimCode });
+    const claimFields = buildAdventureClaimFields({ ...saveMeta, claimCode });
 
-    const clueError = validateClueForm(clues);
+    const clueError = validateClueForm(saveClues);
     if (clueError) {
       setFormError(clueError);
       return;
     }
 
-    const rewardError = validateRewards(rewards);
+    const rewardError = validateRewards(saveRewards);
     if (rewardError) {
       setFormError(rewardError);
       return;
     }
 
-    const savedClues = clues.map((c, i) => ({
+    const savedClues = saveClues.map((c, i) => ({
       id: c.id || `c${i + 1}`,
       title: c.title.trim(),
       text: c.text.trim(),
@@ -3115,7 +3145,7 @@ function CreateAdventure({
       arScene: normalizeArScene(c.arScene),
     }));
 
-    const enabledRewards = rewards.filter((r) => r.enabled);
+    const enabledRewards = saveRewards.filter((r) => r.enabled);
     const finalRewards = enabledRewards.map((r, index) => {
       const option = REWARD_TYPE_OPTIONS.find((o) => o.type === r.type);
       return {
@@ -3147,8 +3177,8 @@ function CreateAdventure({
       sponsor: sponsorName,
       sponsorInfo: {
         name: sponsorName,
-        logoUrl: meta.sponsorLogoUrl.trim(),
-        website: meta.sponsorWebsite.trim(),
+        logoUrl: saveMeta.sponsorLogoUrl.trim(),
+        website: saveMeta.sponsorWebsite.trim(),
       },
       distance: existing?.distance || 'New',
       prize: prizeLabels.length ? prizeLabels.join(' + ') : 'Custom Rewards',
@@ -3159,54 +3189,54 @@ function CreateAdventure({
       qrClaimValue: claimFields.qrClaimValue,
       physicalMedallionCode: claimFields.physicalMedallionCode,
       hintAfterTap: claimFields.hintAfterTap,
-      claimHint: meta.claimHint?.trim() || '',
-      finderSearchRadiusM: parseInt(meta.finderSearchRadiusM, 10) || 200,
-      finderCaptureBaseM: parseInt(meta.finderCaptureBaseM, 10) || 25,
-      adventureScale,
-      adventureTemplate,
+      claimHint: saveMeta.claimHint?.trim() || '',
+      finderSearchRadiusM: parseInt(saveMeta.finderSearchRadiusM, 10) || 200,
+      finderCaptureBaseM: parseInt(saveMeta.finderCaptureBaseM, 10) || 25,
+      adventureScale: saveAdventureScale,
+      adventureTemplate: saveAdventureTemplate,
       experienceSettings: {
-        ...experienceSettings,
-        backyardPrecision: experienceSettings.backyardPrecision ?? adventureScale === 'backyard',
-        dynamicHintsEnabled: experienceSettings.dynamicHintsEnabled !== false,
+        ...saveExperienceSettings,
+        backyardPrecision: saveExperienceSettings.backyardPrecision ?? saveAdventureScale === 'backyard',
+        dynamicHintsEnabled: saveExperienceSettings.dynamicHintsEnabled !== false,
       },
-      rewardCoins: meta.isFounderHunt ? 10000 : 25,
-      potEntries: meta.isFounderHunt ? 10 : 3,
-      collectionId: meta.collectionId.trim() || null,
-      collectionName: meta.collectionName.trim(),
-      collectionBadge: meta.collectionBadge.trim(),
-      collectionRewardCoins: parseInt(meta.collectionRewardCoins, 10) || 0,
-      collectionRewardMedallion: meta.collectionRewardMedallion.trim(),
-      isFounderHunt: Boolean(meta.isFounderHunt),
-      playMode: meta.playMode || 'both',
-      accessType: meta.accessType || 'hybrid',
-      playRadiusM: parseInt(meta.playRadiusM, 10) || null,
-      finderMode: meta.finderMode || FINDER_MODES.FINDER,
-      arAssetType: meta.arAssetType || 'ghost_lantern',
-      arFinale: normalizeArScene(arFinale),
-      arTheme: arTheme || 'none',
+      rewardCoins: saveMeta.isFounderHunt ? 10000 : 25,
+      potEntries: saveMeta.isFounderHunt ? 10 : 3,
+      collectionId: saveMeta.collectionId.trim() || null,
+      collectionName: saveMeta.collectionName.trim(),
+      collectionBadge: saveMeta.collectionBadge.trim(),
+      collectionRewardCoins: parseInt(saveMeta.collectionRewardCoins, 10) || 0,
+      collectionRewardMedallion: saveMeta.collectionRewardMedallion.trim(),
+      isFounderHunt: Boolean(saveMeta.isFounderHunt),
+      playMode: saveMeta.playMode || 'both',
+      accessType: saveMeta.accessType || 'hybrid',
+      playRadiusM: parseInt(saveMeta.playRadiusM, 10) || null,
+      finderMode: saveMeta.finderMode || FINDER_MODES.FINDER,
+      arAssetType: saveMeta.arAssetType || 'ghost_lantern',
+      arFinale: normalizeArScene(saveArFinale),
+      arTheme: saveArTheme || 'none',
       mediaManifest,
-      worldConfig: normalizeWorldConfig(worldConfig),
+      worldConfig: normalizeWorldConfig(saveWorldConfig),
       heatCategory: 'trending',
-      tier: meta.tier || 'standard',
-      premiumCoinCost: parseInt(meta.premiumCoinCost, 10) || 250,
-      couponQuantity: parseInt(meta.couponQuantity, 10) || null,
-      couponTerms: meta.couponTerms?.trim() || '',
-      couponExpirationDays: parseInt(meta.couponExpirationDays, 10) || 7,
+      tier: saveMeta.tier || 'standard',
+      premiumCoinCost: parseInt(saveMeta.premiumCoinCost, 10) || 250,
+      couponQuantity: parseInt(saveMeta.couponQuantity, 10) || null,
+      couponTerms: saveMeta.couponTerms?.trim() || '',
+      couponExpirationDays: parseInt(saveMeta.couponExpirationDays, 10) || 7,
       sponsorVerified: auth?.isSponsor || false,
-      city: meta.city.trim() || meta.location.split(',')[0]?.trim() || '',
-      state: meta.state.trim() || meta.location.split(',')[1]?.trim() || 'Kansas',
-      region: meta.state.trim() || 'Kansas',
-      estimatedMinutes: parseInt(meta.estimatedMinutes, 10) || 25,
+      city: saveMeta.city.trim() || saveMeta.location.split(',')[0]?.trim() || '',
+      state: saveMeta.state.trim() || saveMeta.location.split(',')[1]?.trim() || 'Kansas',
+      region: saveMeta.state.trim() || 'Kansas',
+      estimatedMinutes: parseInt(saveMeta.estimatedMinutes, 10) || 25,
       playersCompleted: existing?.playersCompleted ?? 0,
       firstFinderName: existing?.firstFinderName || '',
       story,
       clues: savedClues,
-      bonusFinds: buildBonusFinds(clues),
+      bonusFinds: buildBonusFinds(saveClues),
       finalRewards,
       creatorId: existing?.creatorId || userId || null,
-      endRule: meta.endRule || END_RULES.NO_END_DATE,
-      endsAt: meta.endsAt || null,
-      endsAfterTotalCompletions: meta.endsAfterTotalCompletions ?? null,
+      endRule: saveMeta.endRule || END_RULES.NO_END_DATE,
+      endsAt: saveMeta.endsAt || null,
+      endsAfterTotalCompletions: saveMeta.endsAfterTotalCompletions ?? null,
       totalCompletions: existing?.totalCompletions ?? 0,
     });
 
@@ -3284,15 +3314,67 @@ function CreateAdventure({
     setSaving(false);
   }
 
+  async function handleLaunchPublish(draft) {
+    const overrides = launchDraftToSaveOverrides(draft);
+    if (!overrides) {
+      setFormError('Generate an adventure before publishing.');
+      return;
+    }
+    applyDirectorDraft(draft);
+    await saveAdventure(overrides);
+  }
+
+  function handleLaunchStepChange(step) {
+    setState((s) => ({ ...s, launchStep: step }));
+  }
+
+  function handleLaunchOpenAdvanced() {
+    setShowAdvanced(true);
+    setState((s) => ({ ...s, createAdvanced: true }));
+  }
+
+  function handleLaunchPreviewMap(draft) {
+    if (!draft?.ok) return;
+    applyDirectorDraft(draft);
+    if (nav) nav('map');
+  }
+
+  const launchStep = resolveLaunchStep(state.launchStep, state);
+  const useLaunchExperience = !showAdvanced && !editingAdventure;
+
   return (
     <>
+      {useLaunchExperience ? (
+        <AdventureLaunchUI
+          state={state}
+          launchStep={launchStep}
+          onStepChange={handleLaunchStepChange}
+          onOpenAdvanced={handleLaunchOpenAdvanced}
+          onPreviewMap={handleLaunchPreviewMap}
+          onPublish={handleLaunchPublish}
+          saving={saving}
+        />
+      ) : (
+        <>
       <div className="section-head">
         <h2>{editingAdventure ? `Edit: ${editingAdventure.title}` : 'Create Adventure'}</h2>
         <p>
           {editingAdventure
             ? 'Update clues, AR scenes, rewards, and claim settings — then save.'
-            : 'Build adventures with sponsors, rewards, and GPS clues'}
+            : 'Advanced builder — full templates, clues, AR, and claim settings'}
         </p>
+        {!editingAdventure && (
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => {
+              setShowAdvanced(false);
+              setState((s) => ({ ...s, createAdvanced: false, launchStep: LAUNCH_STEP_IDS.DESCRIBE }));
+            }}
+          >
+            Back to Launch Experience
+          </button>
+        )}
       </div>
       {editingAdventure && (
         <div className="card edit-adventure-banner">
@@ -3752,6 +3834,8 @@ function CreateAdventure({
             : 'Drafts save locally · publish from Admin when ready'}
         </p>
       </div>
+        </>
+      )}
     </>
   );
 }
