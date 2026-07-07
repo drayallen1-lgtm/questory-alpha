@@ -1,24 +1,18 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { getLivingWorldSnapshot } from './livingWorldEngine';
 import { getLivingEarthSnapshot } from './livingEarthEngine';
 import { getMarketplaceSnapshot } from './marketplaceEngine';
 import { getFactionSnapshot } from './factionEngine';
 import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
-
-function hudCardLayerProps(layerSnapshot, cardKey) {
-  if (!layerSnapshot?.hudCards) return {};
-  const visible = layerSnapshot.hudCards[cardKey] !== false;
-  return {
-    'data-layer-id': cardKey,
-    'data-layer-hidden': visible ? 'false' : 'true',
-    'aria-hidden': !visible,
-    tabIndex: visible ? 0 : -1,
-  };
-}
+import { getLegendaryHuntSnapshot } from './legendaryHuntEngine';
+import { buildFloatingHudCards } from './floatingCardsEngine';
+import { FloatingCard } from './FloatingCard';
 
 export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null }) {
   const zoom = layerSnapshot?.zoom ?? 11;
   const now = Date.now();
+  const [expandedCardId, setExpandedCardId] = useState(null);
+  const hudRef = useRef(null);
 
   const livingWorld = useMemo(
     () => getLivingWorldSnapshot(adventures, { state, now }),
@@ -54,21 +48,33 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null 
     [state, adventures, now]
   );
 
-  const explorerCount = livingWorld.presence?.explorersNearby ?? livingWorld.explorerDots?.length ?? 0;
-  const timelinePreview = (livingWorld.timeline || []).slice(0, 3);
-  const liveMarketCount =
-    (marketplace.auctions?.length || 0) + (marketplace.stats?.totalListings || 0);
-  const activeWars = faction.wars?.length ?? faction.contestedCount ?? 0;
-  const earthPct =
-    worldDiscovery.worldRegion?.animatedDisplayPercent ??
-    worldDiscovery.worldRegion?.completionPercent ??
-    earth.worldDiscovery?.worldRegion?.animatedDisplayPercent ??
-    0;
+  const legendaryHunt = useMemo(
+    () => getLegendaryHuntSnapshot(state, adventures, { now }),
+    [state, adventures, now]
+  );
 
-  const showNotifications = layerSnapshot?.hudCards?.notifications !== false;
+  const hudSnapshot = useMemo(
+    () =>
+      buildFloatingHudCards({
+        livingWorld,
+        marketplace,
+        faction,
+        worldDiscovery,
+        earth,
+        legendaryHunt,
+        layerSnapshot,
+      }),
+    [livingWorld, marketplace, faction, worldDiscovery, earth, legendaryHunt, layerSnapshot]
+  );
+
+  const showNotifications =
+    layerSnapshot?.hudCards?.notifications !== false && !expandedCardId;
 
   const notifications = useMemo(() => {
     const items = [];
+    const timelinePreview = (livingWorld.timeline || []).slice(0, 1);
+    const activeWars = faction.wars?.length ?? faction.contestedCount ?? 0;
+
     if (timelinePreview[0] && layerSnapshot?.hudCards?.explorer !== false) {
       items.push({
         id: 'tl-0',
@@ -91,105 +97,86 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null 
       });
     }
     return items.slice(0, 2);
-  }, [timelinePreview, activeWars, marketplace.activityFeed, layerSnapshot]);
+  }, [livingWorld.timeline, faction, marketplace.activityFeed, layerSnapshot]);
+
+  useEffect(() => {
+    if (!expandedCardId) return undefined;
+
+    function handlePointerDown(event) {
+      if (hudRef.current?.contains(event.target)) return;
+      setExpandedCardId(null);
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') setExpandedCardId(null);
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [expandedCardId]);
+
+  function handleToggle(cardId) {
+    setExpandedCardId((current) => (current === cardId ? null : cardId));
+  }
+
+  function handleViewAll(card) {
+    setExpandedCardId(null);
+    if (!nav || !card.viewAllScreen) return;
+    nav(card.viewAllScreen, undefined, card.viewAllOptions || { adminPreview: false });
+  }
 
   return (
-    <div className="floating-hud" aria-label="World HUD">
-      {showNotifications && notifications.length > 0 && (
-        <div className="floating-notifications" aria-live="polite">
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              className={`floating-notification floating-notification--${n.tone}`}
-            >
-              {n.text}
-            </div>
-          ))}
-        </div>
+    <>
+      {expandedCardId && (
+        <button
+          type="button"
+          className="floating-hud-dismiss-scrim"
+          aria-label="Collapse card"
+          onClick={() => setExpandedCardId(null)}
+        />
       )}
 
-      <div className="floating-hud-grid">
-        <button
-          type="button"
-          className="floating-hud-card"
-          onClick={() => nav?.('social')}
-          {...hudCardLayerProps(layerSnapshot, 'explorer')}
-        >
-          <span className="floating-hud-card-head">👣 Explorer Activity</span>
-          <span className="floating-hud-card-metric">{explorerCount || timelinePreview.length}</span>
-          <span className="floating-hud-card-sub">nearby</span>
-        </button>
-
-        <button
-          type="button"
-          className="floating-hud-card"
-          onClick={() => nav?.('social', undefined, { adminTab: 'guild' })}
-          {...hudCardLayerProps(layerSnapshot, 'guild')}
-        >
-          <span className="floating-hud-card-head">⚔ Guild War</span>
-          <span className="floating-hud-card-metric">{activeWars}</span>
-          <span className="floating-hud-card-sub">active</span>
-        </button>
-
-        <button
-          type="button"
-          className="floating-hud-card"
-          onClick={() => nav?.('create')}
-          {...hudCardLayerProps(layerSnapshot, 'creator')}
-        >
-          <span className="floating-hud-card-head">✨ Creator Hunt</span>
-          <span className="floating-hud-card-sub">Launch adventure</span>
-          <span className="floating-hud-card-chevron">▼</span>
-        </button>
-
-        <button
-          type="button"
-          className="floating-hud-card"
-          onClick={() => nav?.('sponsor')}
-          {...hudCardLayerProps(layerSnapshot, 'sponsor')}
-        >
-          <span className="floating-hud-card-head">📣 Sponsor Event</span>
-          <span className="floating-hud-card-sub">Promote nearby</span>
-          <span className="floating-hud-card-chevron">▼</span>
-        </button>
-
-        <button
-          type="button"
-          className="floating-hud-card"
-          onClick={() => nav?.('marketplace')}
-          {...hudCardLayerProps(layerSnapshot, 'marketplace')}
-        >
-          <span className="floating-hud-card-head">🏪 Marketplace</span>
-          <span className="floating-hud-card-metric">{Math.min(liveMarketCount, 99)}</span>
-          <span className="floating-hud-card-sub">live listings</span>
-        </button>
-
-        <button
-          type="button"
-          className="floating-hud-card"
-          onClick={() => nav?.('legendary-hunt')}
-          {...hudCardLayerProps(layerSnapshot, 'liveHunt')}
-        >
-          <span className="floating-hud-card-head">🎯 Live Hunt</span>
-          <span className="floating-hud-card-sub">Legendary drops</span>
-          <span className="floating-hud-card-chevron">▼</span>
-        </button>
-
-        <button
-          type="button"
-          className="floating-hud-card floating-hud-card--earth"
-          onClick={() => nav?.('world')}
-          {...hudCardLayerProps(layerSnapshot, 'earth')}
-        >
-          <div>
-            <span className="floating-hud-card-head">🌍 Earth</span>
-            <span className="floating-hud-card-sub">Living planet progress</span>
+      <div className="floating-hud" aria-label="World HUD" ref={hudRef}>
+        {showNotifications && notifications.length > 0 && (
+          <div className="floating-notifications" aria-live="polite">
+            {notifications.map((n) => (
+              <div
+                key={n.id}
+                className={`floating-notification floating-notification--${n.tone}`}
+              >
+                {n.text}
+              </div>
+            ))}
           </div>
-          <span className="floating-hud-card-metric">
-            {Number(earthPct).toFixed(1)}%
-          </span>
-        </button>
+        )}
+
+        <div
+          className={`floating-hud-grid${
+            expandedCardId ? ' floating-hud-grid--has-expanded' : ''
+          }`}
+        >
+          {hudSnapshot.cards.map((card) => (
+            <FloatingCard
+              key={card.id}
+              id={card.id}
+              icon={card.icon}
+              title={card.title}
+              metric={card.metric}
+              metricLabel={card.metricLabel}
+              items={card.items}
+              wide={card.wide}
+              expanded={expandedCardId === card.id}
+              layerHidden={false}
+              onToggle={handleToggle}
+              onViewAll={() => handleViewAll(card)}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

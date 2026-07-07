@@ -64,7 +64,7 @@
 }
 
 /* HUD cards fade with their layer */
-.floating-hud-card[data-layer-hidden='true'] {
+.floating-card[data-layer-hidden='true'] {
   opacity: 0;
   max-height: 0;
   padding-top: 0;
@@ -79,7 +79,7 @@
     transform var(--layer-fade-duration) var(--layer-fade-ease);
 }
 
-.floating-hud-card[data-layer-id] {
+.floating-card[data-layer-id] {
   transition:
     opacity var(--layer-fade-duration) var(--layer-fade-ease),
     transform var(--layer-fade-duration) var(--layer-fade-ease);

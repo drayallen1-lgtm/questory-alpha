@@ -1,0 +1,227 @@
+/* Questory V2 — Expandable floating HUD cards */
+
+.floating-hud-grid--has-expanded {
+  gap: 10px;
+}
+
+.floating-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+  overflow: hidden;
+  transition:
+    border-color 0.22s ease,
+    background 0.22s ease,
+    box-shadow 0.22s ease,
+    grid-row 0.25s ease;
+}
+
+.floating-card--hidden {
+  display: none;
+}
+
+.floating-card--expanded {
+  grid-column: 1 / -1;
+  border-color: rgba(94, 234, 212, 0.32);
+  background: rgba(15, 23, 42, 0.88);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(94, 234, 212, 0.08);
+}
+
+.floating-card--wide.floating-card--expanded,
+.floating-card--wide:not(.floating-card--expanded) {
+  grid-column: 1 / -1;
+}
+
+.floating-card-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.floating-card-summary:hover,
+.floating-card-summary:focus-visible {
+  background: rgba(30, 41, 59, 0.45);
+  outline: none;
+}
+
+.floating-card-summary-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.floating-card--wide .floating-card-summary {
+  flex-direction: row;
+  align-items: center;
+}
+
+.floating-card--wide .floating-card-summary-main {
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.floating-card-metrics {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.floating-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.88);
+}
+
+.floating-card-metric {
+  font-size: 18px;
+  font-weight: 800;
+  color: #5eead4;
+  line-height: 1.1;
+}
+
+.floating-card-sub {
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.92);
+}
+
+.floating-card-chevron {
+  flex-shrink: 0;
+  font-size: 10px;
+  opacity: 0.55;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+  margin-top: 2px;
+}
+
+.floating-card-chevron--open {
+  transform: rotate(180deg);
+  opacity: 0.9;
+}
+
+.floating-card-body {
+  padding: 0 12px 10px;
+  animation: floating-card-body-in 0.28s ease;
+}
+
+.floating-card-body[hidden] {
+  display: none;
+}
+
+@keyframes floating-card-body-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.floating-card-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.floating-card-list-item {
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(226, 232, 240, 0.92);
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.floating-card-view-all {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(94, 234, 212, 0.28);
+  border-radius: 10px;
+  background: rgba(94, 234, 212, 0.1);
+  color: #99f6e4;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.floating-card-view-all:hover,
+.floating-card-view-all:focus-visible {
+  background: rgba(94, 234, 212, 0.18);
+  border-color: rgba(94, 234, 212, 0.45);
+  outline: none;
+}
+
+.floating-hud-dismiss-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 34;
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+/* Layer visibility (from progressive layers) */
+.floating-card[data-layer-hidden='true'] {
+  opacity: 0;
+  max-height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-width: 0;
+  transform: scale(0.96);
+  transition:
+    opacity 0.48s cubic-bezier(0.4, 0, 0.2, 1),
+    max-height 0.35s ease,
+    transform 0.48s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-card[data-layer-hidden='false'] {
+  transition:
+    opacity 0.48s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.48s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-height: 640px) {
+  .floating-card-summary {
+    padding: 8px 10px;
+  }
+
+  .floating-card-list-item {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+}
