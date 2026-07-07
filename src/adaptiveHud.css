@@ -1,0 +1,118 @@
+/* Questory V2 — Adaptive HUD */
+
+.floating-hud--walking .floating-hud-grid,
+.floating-hud--adventure .floating-hud-grid,
+.floating-hud--guildWar .floating-hud-grid,
+.floating-hud--driving .floating-hud-grid {
+  gap: 8px;
+}
+
+.floating-hud--driving .floating-card,
+.floating-hud--adventure .floating-card {
+  backdrop-filter: blur(12px);
+}
+
+.floating-hud--driving.floating-hud--simplified .floating-card:not(.floating-card--expanded) {
+  min-height: 52px;
+}
+
+.floating-hud--adventure .floating-hud-grid {
+  opacity: 0.88;
+}
+
+.adaptive-hud-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.adaptive-hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(8, 12, 22, 0.88);
+  color: #e2e8f0;
+  text-align: left;
+  cursor: default;
+}
+
+.adaptive-hud-strip--walking .adaptive-hud-chip,
+.adaptive-hud-strip--adventure .adaptive-hud-chip {
+  flex: 1 1 140px;
+}
+
+.adaptive-hud-strip--driving .adaptive-hud-chip {
+  flex: 1 1 180px;
+}
+
+.adaptive-hud-strip--guildWar .adaptive-hud-chip {
+  flex: 1 1 150px;
+  border-color: rgba(248, 113, 113, 0.28);
+}
+
+.adaptive-hud-chip-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.adaptive-hud-chip-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.adaptive-hud-chip-copy small {
+  color: #94a3b8;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.adaptive-hud-chip-copy strong {
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.adaptive-hud-chip-detail {
+  color: #cbd5e1;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-stage-hud-driving .questory-map-wrap {
+  --map-pin-scale: 1.18;
+}
+
+.map-stage-hud-driving .mapboxgl-marker,
+.map-stage-hud-driving .adventure-pin,
+.map-stage-hud-driving .map-market-venue {
+  transform-origin: center bottom;
+}
+
+@media (max-width: 720px) {
+  .adaptive-hud-strip {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .adaptive-hud-chip {
+    flex: 0 0 auto;
+    min-width: 148px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-hud[class*='floating-hud--'] .floating-hud-grid {
+    transition: none;
+  }
+}

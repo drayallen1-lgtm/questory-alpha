@@ -9,8 +9,10 @@ import { buildFloatingHudCards } from './floatingCardsEngine';
 import { FloatingCard } from './FloatingCard';
 import { getSmartNotificationSnapshot } from './smartNotificationEngine';
 import { SmartNotificationStack } from './SmartNotificationStack';
+import { getAdaptiveHudSnapshot } from './adaptiveHudEngine';
+import { AdaptiveHudStrip } from './AdaptiveHudStrip';
 
-export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null }) {
+export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null, hudContext = null }) {
   const zoom = layerSnapshot?.zoom ?? 11;
   const now = Date.now();
   const [expandedCardId, setExpandedCardId] = useState(null);
@@ -69,6 +71,38 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null 
     [livingWorld, marketplace, faction, worldDiscovery, earth, legendaryHunt, layerSnapshot]
   );
 
+  const adaptiveHudSnapshot = useMemo(
+    () =>
+      getAdaptiveHudSnapshot({
+        state,
+        adventures,
+        layerSnapshot,
+        hudContext: {
+          ...hudContext,
+          zoom: hudContext?.zoom ?? layerSnapshot?.zoom ?? zoom,
+        },
+        faction,
+        legendaryHunt,
+        livingWorld,
+        worldDiscovery,
+        cards: hudSnapshot.cards,
+      }),
+    [
+      state,
+      adventures,
+      layerSnapshot,
+      hudContext,
+      zoom,
+      faction,
+      legendaryHunt,
+      livingWorld,
+      worldDiscovery,
+      hudSnapshot.cards,
+    ]
+  );
+
+  const displayCards = adaptiveHudSnapshot.cards;
+
   const notificationSnapshot = useMemo(
     () =>
       getSmartNotificationSnapshot({
@@ -118,6 +152,22 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null 
     nav(card.viewAllScreen, undefined, card.viewAllOptions || { adminPreview: false });
   }
 
+  function handleStripAction(item) {
+    if (!nav) return;
+    if (item.id === 'treasure' && legendaryHunt.hasActiveBoss) {
+      nav('legendary-hunt');
+      return;
+    }
+    if (item.id === 'territory' || item.id === 'score' || adaptiveHudSnapshot.mode === 'guildWar') {
+      nav('social', undefined, { socialTab: 'guild', guildTab: 'wars' });
+      return;
+    }
+    if (item.id === 'clues' || item.id === 'progress' || item.id === 'timer') {
+      const adventureId = hudContext?.selectedAdventureId || state?.selectedAdventureId;
+      if (adventureId) nav('play', adventureId);
+    }
+  }
+
   return (
     <>
       {expandedCardId && (
@@ -129,7 +179,13 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null 
         />
       )}
 
-      <div className="floating-hud" aria-label="World HUD" ref={hudRef}>
+      <div
+        className={`floating-hud ${adaptiveHudSnapshot.className}${
+          adaptiveHudSnapshot.simplified ? ' floating-hud--simplified' : ''
+        }`}
+        aria-label="World HUD"
+        ref={hudRef}
+      >
         {showNotifications && (
           <SmartNotificationStack
             prominent={notificationSnapshot.prominent}
@@ -139,12 +195,14 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null 
           />
         )}
 
+        <AdaptiveHudStrip snapshot={adaptiveHudSnapshot} onItemAction={handleStripAction} />
+
         <div
           className={`floating-hud-grid${
             expandedCardId ? ' floating-hud-grid--has-expanded' : ''
           }`}
         >
-          {hudSnapshot.cards.map((card) => (
+          {displayCards.map((card) => (
             <FloatingCard
               key={card.id}
               id={card.id}

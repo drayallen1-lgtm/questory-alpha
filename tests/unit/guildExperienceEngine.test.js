@@ -24,9 +24,15 @@ describe('guildExperienceEngine', () => {
     expect(GUILD_TAB_ORDER).not.toContain('rankings');
   });
 
-  it('maps legacy hub tab to overview', () => {
-    expect(resolveGuildTab('hub')).toBe(GUILD_TAB_IDS.OVERVIEW);
-    expect(resolveGuildTab('rankings')).toBe(GUILD_TAB_IDS.OVERVIEW);
+  it('maps legacy hub tab to overview when guilded', () => {
+    const state = buildTestState({ faction: { memberFactionId: 'parsons-explorers' } });
+    expect(resolveGuildTab('hub', state)).toBe(GUILD_TAB_IDS.OVERVIEW);
+    expect(resolveGuildTab('rankings', state)).toBe(GUILD_TAB_IDS.OVERVIEW);
+  });
+
+  it('defaults legacy hub aliases to recruitment without a guild', () => {
+    expect(resolveGuildTab('hub')).toBe(GUILD_TAB_IDS.RECRUITMENT);
+    expect(resolveGuildTab('rankings')).toBe(GUILD_TAB_IDS.RECRUITMENT);
   });
 
   it('opens territories when a territory is focused', () => {

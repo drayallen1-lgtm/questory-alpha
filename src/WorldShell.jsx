@@ -15,6 +15,7 @@ export function WorldShell({
   isSponsor = false,
 }) {
   const [layerSnapshot, setLayerSnapshot] = useState(null);
+  const [hudContext, setHudContext] = useState(null);
 
   const hudAdventures = useMemo(() => adventures, [adventures]);
   const shellAnimationClass =
@@ -38,6 +39,7 @@ export function WorldShell({
           adventures={hudAdventures}
           nav={nav}
           layerSnapshot={layerSnapshot}
+          hudContext={hudContext}
         />
       </div>
 
@@ -51,6 +53,7 @@ export function WorldShell({
           userId={userId}
           shellMode
           onProgressiveLayersChange={setLayerSnapshot}
+          onHudContextChange={setHudContext}
         />
       </div>
 

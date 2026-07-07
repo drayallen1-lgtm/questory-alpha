@@ -76,6 +76,7 @@ import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 import { getLivingEarthSnapshot, EARTH_MODE_EXIT_ZOOM } from './livingEarthEngine';
 import { getProgressiveLayerSnapshot, WORLD_LAYER_IDS } from './progressiveWorldLayersEngine';
 import { getLivingWorldAnimationsSnapshot } from './livingWorldAnimationsEngine';
+import { getAdaptiveHudSnapshot } from './adaptiveHudEngine';
 import { ProgressiveLayer } from './ProgressiveLayer';
 import { getSmartNotificationSnapshot, normalizeSmartNotification } from './smartNotificationEngine';
 const LivingEarthOverlay = lazy(() =>
@@ -1145,6 +1146,7 @@ export function MapScreen({
   userId = null,
   shellMode = false,
   onProgressiveLayersChange = null,
+  onHudContextChange = null,
 }) {
   const [activeFilter, setActiveFilter] = useState(MAP_FILTERS.ALL);
   const [selectedMarker, setSelectedMarker] = useState(null);
@@ -1659,6 +1661,57 @@ export function MapScreen({
   }, [selectedAdventure, selectedMarker?.access, accessOptions]);
   const pinVisual = selectedAdventure ? resolvePinVisual(selectedAdventure, state) : null;
 
+  const adaptiveHudSnapshot = useMemo(
+    () =>
+      getAdaptiveHudSnapshot({
+        state,
+        adventures,
+        layerSnapshot: { ...layerSnapshot, zoom: mapZoom },
+        hudContext: {
+          zoom: mapZoom,
+          selectedAdventureId: selectedAdventure?.id ?? null,
+          selectedAdventureTitle: selectedAdventure?.title ?? null,
+          distanceM: selectedMarker?.distanceM ?? null,
+          adventureFocus: Boolean(selectedAdventure),
+        },
+        faction: factionSnapshot,
+        legendaryHunt: legendaryHuntSnapshot,
+        livingWorld,
+        worldDiscovery: worldDiscoverySnapshot,
+        cards: [],
+      }),
+    [
+      state,
+      adventures,
+      layerSnapshot,
+      mapZoom,
+      selectedAdventure,
+      selectedMarker?.distanceM,
+      factionSnapshot,
+      legendaryHuntSnapshot,
+      livingWorld,
+      worldDiscoverySnapshot,
+    ]
+  );
+
+  useEffect(() => {
+    if (!shellMode || !onHudContextChange) return;
+    onHudContextChange({
+      zoom: mapZoom,
+      selectedAdventureId: selectedAdventure?.id ?? null,
+      selectedAdventureTitle: selectedAdventure?.title ?? null,
+      distanceM: selectedMarker?.distanceM ?? null,
+      adventureFocus: Boolean(selectedAdventure),
+    });
+  }, [
+    shellMode,
+    onHudContextChange,
+    mapZoom,
+    selectedAdventure?.id,
+    selectedAdventure?.title,
+    selectedMarker?.distanceM,
+  ]);
+
   const clusterDistanceM =
     livingCluster?.coords && location?.latitude != null
       ? haversineDistanceMeters(
@@ -2060,7 +2113,7 @@ export function MapScreen({
       )}
 
       <div
-        className={`map-stage map-stage-has-discovery-hud${shellMode ? ' map-stage-world-shell map-stage-world-layers' : ''}${shellMode && layerSnapshot.className ? ` ${layerSnapshot.className}` : ''}${shellMode && worldAnimationsSnapshot.className ? ` ${worldAnimationsSnapshot.className}` : ''}${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
+        className={`map-stage map-stage-has-discovery-hud${shellMode ? ' map-stage-world-shell map-stage-world-layers' : ''}${shellMode && layerSnapshot.className ? ` ${layerSnapshot.className}` : ''}${shellMode && worldAnimationsSnapshot.className ? ` ${worldAnimationsSnapshot.className}` : ''}${shellMode && adaptiveHudSnapshot.mapClassName ? ` ${adaptiveHudSnapshot.mapClassName}` : ''}${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
         style={shellMode ? layerSnapshot.style : undefined}
       >
         <ProgressiveLayer layerId={WORLD_LAYER_IDS.DISCOVERY} layers={shellMode ? layerSnapshot.layers : null}>

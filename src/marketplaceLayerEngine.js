@@ -43,13 +43,20 @@ export function resolveMarketplaceVenue(venueId, state = null) {
 }
 
 export function resolveMarketplaceTab(tab, state = null, options = {}) {
-  const raw = tab || state?.marketplaceTab;
-  if (MARKETPLACE_TAB_ORDER.includes(raw)) return raw;
+  if (tab && MARKETPLACE_TAB_ORDER.includes(tab)) return tab;
 
   const venue =
     options.venue ||
     resolveMarketplaceVenue(options.venueId, state) ||
     resolveMarketplaceVenue(state?.marketplaceVenueId, state);
+
+  const venueId = options.venueId ?? state?.marketplaceVenueId ?? null;
+  if (venueId && venue?.kind && VENUE_KIND_TABS[venue.kind]) {
+    return VENUE_KIND_TABS[venue.kind];
+  }
+
+  const stateTab = state?.marketplaceTab;
+  if (stateTab && MARKETPLACE_TAB_ORDER.includes(stateTab)) return stateTab;
 
   if (venue?.kind && VENUE_KIND_TABS[venue.kind]) {
     return VENUE_KIND_TABS[venue.kind];
