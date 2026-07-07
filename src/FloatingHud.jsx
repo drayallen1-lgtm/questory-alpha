@@ -5,7 +5,19 @@ import { getMarketplaceSnapshot } from './marketplaceEngine';
 import { getFactionSnapshot } from './factionEngine';
 import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 
-export function FloatingHud({ state, adventures = [], nav }) {
+function hudCardLayerProps(layerSnapshot, cardKey) {
+  if (!layerSnapshot?.hudCards) return {};
+  const visible = layerSnapshot.hudCards[cardKey] !== false;
+  return {
+    'data-layer-id': cardKey,
+    'data-layer-hidden': visible ? 'false' : 'true',
+    'aria-hidden': !visible,
+    tabIndex: visible ? 0 : -1,
+  };
+}
+
+export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null }) {
+  const zoom = layerSnapshot?.zoom ?? 11;
   const now = Date.now();
 
   const livingWorld = useMemo(
@@ -14,19 +26,22 @@ export function FloatingHud({ state, adventures = [], nav }) {
   );
 
   const worldDiscovery = useMemo(
-    () => getWorldDiscoverySnapshot({ state, adventures, now }),
-    [state, adventures, now]
+    () => getWorldDiscoverySnapshot({ zoom, state, adventures, now }),
+    [zoom, state, adventures, now]
   );
 
   const earth = useMemo(
     () =>
       getLivingEarthSnapshot({
+        zoom,
         state,
         adventures,
         now,
         worldDiscovery,
+        earthOverlayVisible: layerSnapshot?.earthOverlayVisible,
+        fullEarth: layerSnapshot?.fullEarth,
       }),
-    [state, adventures, now, worldDiscovery]
+    [zoom, state, adventures, now, worldDiscovery, layerSnapshot]
   );
 
   const marketplace = useMemo(
@@ -50,23 +65,25 @@ export function FloatingHud({ state, adventures = [], nav }) {
     earth.worldDiscovery?.worldRegion?.animatedDisplayPercent ??
     0;
 
+  const showNotifications = layerSnapshot?.hudCards?.notifications !== false;
+
   const notifications = useMemo(() => {
     const items = [];
-    if (timelinePreview[0]) {
+    if (timelinePreview[0] && layerSnapshot?.hudCards?.explorer !== false) {
       items.push({
         id: 'tl-0',
         tone: 'adventure',
         text: timelinePreview[0].text || timelinePreview[0].label || 'Explorer activity nearby',
       });
     }
-    if (activeWars > 0) {
+    if (activeWars > 0 && layerSnapshot?.hudCards?.guild !== false) {
       items.push({
         id: 'war',
         tone: 'nearby',
         text: `${activeWars} guild war${activeWars === 1 ? '' : 's'} active on the map`,
       });
     }
-    if (marketplace.activityFeed?.[0]) {
+    if (marketplace.activityFeed?.[0] && layerSnapshot?.hudCards?.marketplace !== false) {
       items.push({
         id: 'market',
         tone: 'background',
@@ -74,11 +91,11 @@ export function FloatingHud({ state, adventures = [], nav }) {
       });
     }
     return items.slice(0, 2);
-  }, [timelinePreview, activeWars, marketplace.activityFeed]);
+  }, [timelinePreview, activeWars, marketplace.activityFeed, layerSnapshot]);
 
   return (
     <div className="floating-hud" aria-label="World HUD">
-      {notifications.length > 0 && (
+      {showNotifications && notifications.length > 0 && (
         <div className="floating-notifications" aria-live="polite">
           {notifications.map((n) => (
             <div
@@ -96,6 +113,7 @@ export function FloatingHud({ state, adventures = [], nav }) {
           type="button"
           className="floating-hud-card"
           onClick={() => nav?.('social')}
+          {...hudCardLayerProps(layerSnapshot, 'explorer')}
         >
           <span className="floating-hud-card-head">👣 Explorer Activity</span>
           <span className="floating-hud-card-metric">{explorerCount || timelinePreview.length}</span>
@@ -106,6 +124,7 @@ export function FloatingHud({ state, adventures = [], nav }) {
           type="button"
           className="floating-hud-card"
           onClick={() => nav?.('social', undefined, { adminTab: 'guild' })}
+          {...hudCardLayerProps(layerSnapshot, 'guild')}
         >
           <span className="floating-hud-card-head">⚔ Guild War</span>
           <span className="floating-hud-card-metric">{activeWars}</span>
@@ -116,6 +135,7 @@ export function FloatingHud({ state, adventures = [], nav }) {
           type="button"
           className="floating-hud-card"
           onClick={() => nav?.('create')}
+          {...hudCardLayerProps(layerSnapshot, 'creator')}
         >
           <span className="floating-hud-card-head">✨ Creator Hunt</span>
           <span className="floating-hud-card-sub">Launch adventure</span>
@@ -126,6 +146,7 @@ export function FloatingHud({ state, adventures = [], nav }) {
           type="button"
           className="floating-hud-card"
           onClick={() => nav?.('sponsor')}
+          {...hudCardLayerProps(layerSnapshot, 'sponsor')}
         >
           <span className="floating-hud-card-head">📣 Sponsor Event</span>
           <span className="floating-hud-card-sub">Promote nearby</span>
@@ -136,6 +157,7 @@ export function FloatingHud({ state, adventures = [], nav }) {
           type="button"
           className="floating-hud-card"
           onClick={() => nav?.('marketplace')}
+          {...hudCardLayerProps(layerSnapshot, 'marketplace')}
         >
           <span className="floating-hud-card-head">🏪 Marketplace</span>
           <span className="floating-hud-card-metric">{Math.min(liveMarketCount, 99)}</span>
@@ -146,6 +168,7 @@ export function FloatingHud({ state, adventures = [], nav }) {
           type="button"
           className="floating-hud-card"
           onClick={() => nav?.('legendary-hunt')}
+          {...hudCardLayerProps(layerSnapshot, 'liveHunt')}
         >
           <span className="floating-hud-card-head">🎯 Live Hunt</span>
           <span className="floating-hud-card-sub">Legendary drops</span>
@@ -156,6 +179,7 @@ export function FloatingHud({ state, adventures = [], nav }) {
           type="button"
           className="floating-hud-card floating-hud-card--earth"
           onClick={() => nav?.('world')}
+          {...hudCardLayerProps(layerSnapshot, 'earth')}
         >
           <div>
             <span className="floating-hud-card-head">🌍 Earth</span>

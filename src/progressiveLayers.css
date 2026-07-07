@@ -1,0 +1,113 @@
+/* Questory V2 — Progressive World Layers */
+
+.map-stage-world-layers {
+  --layer-fade-duration: 0.48s;
+  --layer-fade-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.world-progressive-layer {
+  opacity: var(--layer-opacity, 1);
+  transition:
+    opacity var(--layer-fade-duration) var(--layer-fade-ease),
+    transform var(--layer-fade-duration) var(--layer-fade-ease);
+  pointer-events: none;
+}
+
+.world-progressive-layer--visible {
+  pointer-events: auto;
+}
+
+.world-progressive-layer--visible > * {
+  pointer-events: auto;
+}
+
+.world-progressive-layer--cities,
+.world-progressive-layer--discovery,
+.world-progressive-layer--explorer,
+.world-progressive-layer--guild,
+.world-progressive-layer--npc {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.world-progressive-layer--discovery {
+  z-index: 3;
+}
+
+.world-progressive-layer--explorer {
+  z-index: 4;
+}
+
+.world-progressive-layer--guild {
+  z-index: 5;
+}
+
+.world-progressive-layer--npc {
+  z-index: 6;
+}
+
+.world-progressive-layer--marketplace {
+  z-index: 14;
+}
+
+.world-progressive-layer--earth {
+  z-index: 8;
+}
+
+.world-progressive-layer:not(.world-progressive-layer--visible) {
+  transform: translateY(4px);
+}
+
+.world-progressive-layer--visible {
+  transform: translateY(0);
+}
+
+/* HUD cards fade with their layer */
+.floating-hud-card[data-layer-hidden='true'] {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: scale(0.96);
+  transition:
+    opacity var(--layer-fade-duration) var(--layer-fade-ease),
+    max-height 0.35s ease,
+    transform var(--layer-fade-duration) var(--layer-fade-ease);
+}
+
+.floating-hud-card[data-layer-id] {
+  transition:
+    opacity var(--layer-fade-duration) var(--layer-fade-ease),
+    transform var(--layer-fade-duration) var(--layer-fade-ease);
+}
+
+.floating-notifications[data-layer-hidden='true'] {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Map stage tint by dominant layer */
+.map-stage-world-layers.world-layer-earth-on .mapboxgl-canvas {
+  transition: opacity 0.55s ease;
+}
+
+.map-stage-world-layers.world-layer-guild-on:not(.world-layer-cities-on) .questory-map-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(88, 28, 135, 0.12) 100%);
+  opacity: var(--world-layer-guild-opacity, 0);
+  transition: opacity 0.5s ease;
+}
+
+.map-stage-world-layers.world-layer-discovery-on .discovery-hud {
+  transition: opacity 0.4s ease;
+}

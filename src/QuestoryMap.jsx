@@ -74,6 +74,8 @@ import { CityDiscoveryRingLayer } from './CityDiscoveryRingLayer';
 import { DiscoveredWorldPanel, DiscoveryCeremonyToast } from './DiscoveredWorldPanel';
 import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 import { getLivingEarthSnapshot, EARTH_MODE_EXIT_ZOOM } from './livingEarthEngine';
+import { getProgressiveLayerSnapshot, WORLD_LAYER_IDS } from './progressiveWorldLayersEngine';
+import { ProgressiveLayer } from './ProgressiveLayer';
 const LivingEarthOverlay = lazy(() =>
   import('./LivingEarthUI').then((m) => ({ default: m.LivingEarthOverlay }))
 );
@@ -338,6 +340,7 @@ export function QuestoryMap({
   onMapFlyReady,
   isAdmin = false,
   userId = null,
+  progressiveLayers = null,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -1048,40 +1051,50 @@ export function QuestoryMap({
       <div ref={containerRef} className={`questory-map ${mini ? 'mini' : ''}`} />
       {!mini && mapReady && mapRef.current && livingWorld && (
         <>
-          <LivingWorldLayer
-            map={mapRef.current}
-            explorerDots={livingWorld.explorerDots}
-            heatZones={livingWorld.heatZones}
-            atmosphereClass={livingWorld.atmosphereClass}
-            revealedCount={livingWorld.revealedCount}
-            fogDecayLevel={livingWorld.fogDecayLevel}
-            nightMode={livingWorld.nightMode}
-          />
-          {socialDiscovery?.territoryOverlays?.length > 0 && (
-            <TerritoryLayer
+          <ProgressiveLayer layerId={WORLD_LAYER_IDS.EXPLORER} layers={progressiveLayers}>
+            <LivingWorldLayer
               map={mapRef.current}
-              overlays={socialDiscovery.territoryOverlays}
-              onTerritorySelect={onTerritorySelect}
+              explorerDots={livingWorld.explorerDots}
+              heatZones={livingWorld.heatZones}
+              atmosphereClass={livingWorld.atmosphereClass}
+              revealedCount={livingWorld.revealedCount}
+              fogDecayLevel={livingWorld.fogDecayLevel}
+              nightMode={livingWorld.nightMode}
             />
-          )}
-          {socialDiscovery?.raceMarkers?.length > 0 && (
-            <SocialRaceLayer map={mapRef.current} markers={socialDiscovery.raceMarkers} />
-          )}
-          {questoryIdentity?.bossMarker && (
-            <WorldBossLayer map={mapRef.current} marker={questoryIdentity.bossMarker} />
-          )}
-          {questoryIdentity?.arMarkers?.length > 0 && (
-            <ArTreasureLayer map={mapRef.current} markers={questoryIdentity.arMarkers} />
-          )}
-          {worldDiscovery?.cityRings?.length > 0 && (
-            <CityDiscoveryRingLayer
-              map={mapRef.current}
-              rings={worldDiscovery.cityRings}
-              minZoom={8}
-            />
-          )}
-          <DiscoveryTrailLayer map={mapRef.current} trail={livingWorld.discoveryTrail} />
-          <MapDiscoveryPulse map={mapRef.current} pulses={livingWorld.pulses} />
+          </ProgressiveLayer>
+          <ProgressiveLayer layerId={WORLD_LAYER_IDS.GUILD} layers={progressiveLayers}>
+            {socialDiscovery?.territoryOverlays?.length > 0 && (
+              <TerritoryLayer
+                map={mapRef.current}
+                overlays={socialDiscovery.territoryOverlays}
+                onTerritorySelect={onTerritorySelect}
+              />
+            )}
+            {socialDiscovery?.raceMarkers?.length > 0 && (
+              <SocialRaceLayer map={mapRef.current} markers={socialDiscovery.raceMarkers} />
+            )}
+          </ProgressiveLayer>
+          <ProgressiveLayer layerId={WORLD_LAYER_IDS.NPC} layers={progressiveLayers}>
+            {questoryIdentity?.bossMarker && (
+              <WorldBossLayer map={mapRef.current} marker={questoryIdentity.bossMarker} />
+            )}
+            {questoryIdentity?.arMarkers?.length > 0 && (
+              <ArTreasureLayer map={mapRef.current} markers={questoryIdentity.arMarkers} />
+            )}
+          </ProgressiveLayer>
+          <ProgressiveLayer layerId={WORLD_LAYER_IDS.CITIES} layers={progressiveLayers}>
+            {worldDiscovery?.cityRings?.length > 0 && (
+              <CityDiscoveryRingLayer
+                map={mapRef.current}
+                rings={worldDiscovery.cityRings}
+                minZoom={8}
+              />
+            )}
+          </ProgressiveLayer>
+          <ProgressiveLayer layerId={WORLD_LAYER_IDS.DISCOVERY} layers={progressiveLayers}>
+            <DiscoveryTrailLayer map={mapRef.current} trail={livingWorld.discoveryTrail} />
+            <MapDiscoveryPulse map={mapRef.current} pulses={livingWorld.pulses} />
+          </ProgressiveLayer>
         </>
       )}
       {!mini && mapReady && livingCluster && !livingCluster.overflowOpen && mapRef.current && (
@@ -1113,6 +1126,7 @@ export function MapScreen({
   isAdmin = false,
   userId = null,
   shellMode = false,
+  onProgressiveLayersChange = null,
 }) {
   const [activeFilter, setActiveFilter] = useState(MAP_FILTERS.ALL);
   const [selectedMarker, setSelectedMarker] = useState(null);
@@ -1290,6 +1304,21 @@ export function MapScreen({
   }, [mapZoom]);
 
   const earthOverlayVisible = livingEarthSnapshot.overlayVisible ?? livingEarthSnapshot.earthMode;
+
+  const layerSnapshot = useMemo(
+    () =>
+      getProgressiveLayerSnapshot({
+        zoom: mapZoom,
+        earthOverlayVisible,
+        fullEarth: livingEarthSnapshot.fullEarth,
+        shellMode,
+      }),
+    [mapZoom, earthOverlayVisible, livingEarthSnapshot.fullEarth, shellMode]
+  );
+
+  useEffect(() => {
+    onProgressiveLayersChange?.(layerSnapshot);
+  }, [layerSnapshot, onProgressiveLayersChange]);
 
   useEffect(() => {
     if (worldDiscoverySnapshot.milestones?.length) {
@@ -1905,28 +1934,33 @@ export function MapScreen({
       )}
 
       <div
-        className={`map-stage map-stage-has-discovery-hud${shellMode ? ' map-stage-world-shell' : ''}${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
+        className={`map-stage map-stage-has-discovery-hud${shellMode ? ' map-stage-world-shell map-stage-world-layers' : ''}${shellMode && layerSnapshot.className ? ` ${layerSnapshot.className}` : ''}${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
+        style={shellMode ? layerSnapshot.style : undefined}
       >
-        {!earthOverlayVisible && <LegendaryHuntMapHud snapshot={legendaryHuntSnapshot} />}
-        {!earthOverlayVisible && (
-          <DiscoveryHud
-            snapshot={worldDiscoverySnapshot}
-            compact={Boolean(livingCluster || selectedAdventure)}
-          />
-        )}
+        <ProgressiveLayer layerId={WORLD_LAYER_IDS.DISCOVERY} layers={shellMode ? layerSnapshot.layers : null}>
+          {!earthOverlayVisible && <LegendaryHuntMapHud snapshot={legendaryHuntSnapshot} />}
+          {!earthOverlayVisible && (
+            <DiscoveryHud
+              snapshot={worldDiscoverySnapshot}
+              compact={Boolean(livingCluster || selectedAdventure)}
+            />
+          )}
+        </ProgressiveLayer>
         {!ceremonyDismissed && worldDiscoverySnapshot.ceremony && (
           <DiscoveryCeremonyToast
             ceremony={worldDiscoverySnapshot.ceremony}
             onDismiss={() => setCeremonyDismissed(true)}
           />
         )}
-        {!earthOverlayVisible && (
-          <LivingWorldActivityFeed
-            banners={activityBanners}
-            paused={Boolean(livingCluster || selectedAdventure)}
-          />
-        )}
-        <LivingWorldNotifications notifications={mapNotifications} />
+        <ProgressiveLayer layerId={WORLD_LAYER_IDS.EXPLORER} layers={shellMode ? layerSnapshot.layers : null}>
+          {!earthOverlayVisible && (
+            <LivingWorldActivityFeed
+              banners={activityBanners}
+              paused={Boolean(livingCluster || selectedAdventure)}
+            />
+          )}
+          <LivingWorldNotifications notifications={mapNotifications} />
+        </ProgressiveLayer>
 
         <QuestoryMap
           adventureMarkers={focusedAdventure ? [] : adventureMarkers}
@@ -1960,21 +1994,26 @@ export function MapScreen({
           onVisiblePinCountChange={setVisiblePinCount}
           onPinHoverChange={setHoveredPinId}
           onSpatialStatsChange={setSpatialStats}
+          progressiveLayers={shellMode ? layerSnapshot.layers : null}
         />
 
-        <Suspense fallback={null}>
-          <LivingEarthOverlay
-            snapshot={livingEarthSnapshot}
-            onFlyTo={handleEarthFlyTo}
-            onReturnToMap={handleReturnToMap}
-            setState={setState}
-            showDiscoveryPanel={!livingCluster && !selectedAdventure}
-          />
-        </Suspense>
+        <ProgressiveLayer layerId={WORLD_LAYER_IDS.EARTH} layers={shellMode ? layerSnapshot.layers : null}>
+          <Suspense fallback={null}>
+            <LivingEarthOverlay
+              snapshot={livingEarthSnapshot}
+              onFlyTo={handleEarthFlyTo}
+              onReturnToMap={handleReturnToMap}
+              setState={setState}
+              showDiscoveryPanel={!livingCluster && !selectedAdventure}
+            />
+          </Suspense>
+        </ProgressiveLayer>
 
-        {nav && !earthOverlayVisible && (
-          <MarketplaceMapHud snapshot={marketplaceSnapshot} nav={nav} />
-        )}
+        <ProgressiveLayer layerId={WORLD_LAYER_IDS.MARKETPLACE} layers={shellMode ? layerSnapshot.layers : null}>
+          {nav && !earthOverlayVisible && (
+            <MarketplaceMapHud snapshot={marketplaceSnapshot} nav={nav} />
+          )}
+        </ProgressiveLayer>
 
         {showPinDebugLine && (
           <p className="map-pin-debug-line">
