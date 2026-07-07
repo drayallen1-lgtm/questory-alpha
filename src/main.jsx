@@ -154,7 +154,6 @@ import {
   CollectionProgressCard,
 } from './SweepUI';
 import {
-  SponsorDashboard,
   CreatorProfileScreen,
   CoinShopPanel,
   PremiumGate,
@@ -162,6 +161,8 @@ import {
   CreationFeeBanner,
   VerifiedSponsorBadge,
 } from './EconomyUI';
+import { SponsorExperienceUI, SponsorLaunchPanel } from './SponsorExperienceUI';
+import './sponsorExperience.css';
 const CreatorDashboard = lazy(() =>
   import('./CreatorEconomyUI').then((m) => ({ default: m.CreatorDashboard }))
 );
@@ -344,7 +345,6 @@ import {
   QuickCreateWizard,
   InvitePlayersPanel,
   FirstCompletionCelebration,
-  SponsorExpressPanel,
   KidModeCreator,
   InvitationHomeBanner,
 } from './InvitationUI';
@@ -505,6 +505,8 @@ function QuestoryApp() {
         launchPrompt: options.launchPrompt ?? s.launchPrompt,
         createAdvanced:
           'createAdvanced' in options ? options.createAdvanced : s.createAdvanced,
+        sponsorTab: options.sponsorTab ?? (options.quickSponsor ? 'launch' : s.sponsorTab),
+        sponsorCampaignType: options.sponsorCampaignType ?? s.sponsorCampaignType,
         vaultTab: options.tab ?? s.vaultTab,
       };
       if (screen === 'detail' && adventureId) {
@@ -976,12 +978,14 @@ function QuestoryApp() {
           (isSupabaseMode && !user ? (
             <SignInPrompt onLogin={() => setShowLogin(true)} />
           ) : (
-            <SponsorDashboard
+            <SponsorExperienceUI
               state={state}
               adventures={state.adventures}
               auth={auth}
               setState={setState}
               nav={nav}
+              userId={user?.id}
+              isSupabaseMode={isSupabaseMode}
             />
           ))}
         {state.screen === 'creator' && state.selectedCreatorId && (
@@ -3409,11 +3413,13 @@ function CreateAdventure({
         />
       )}
       {(state.quickSponsor || auth?.isSponsor || auth?.isAdmin) && (
-        <SponsorExpressPanel
+        <SponsorLaunchPanel
           state={state}
           setState={setState}
           userId={userId}
           isSupabaseMode={isSupabaseMode}
+          campaignType={state.sponsorCampaignType}
+          compact
         />
       )}
       <CreationFeeBanner state={state} auth={auth} />

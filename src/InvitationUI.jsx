@@ -27,7 +27,6 @@ import {
   buildInviteLink,
   buildInviteMessage,
   buildQuickCreateAdventure,
-  buildSponsorExpressAdventureSync,
   completeJourneyChoice,
   completeWelcome,
   completePlayerGuide,
@@ -40,6 +39,7 @@ import {
 } from './invitation';
 import { copyShareText } from './share';
 import { upsertAdventure } from './supabase/dataService';
+import { SponsorLaunchPanel } from './SponsorExperienceUI';
 
 export function WelcomeOnboarding({ state, setState, onDone }) {
   const [index, setIndex] = useState(state.onboarding?.slideIndex || 0);
@@ -159,7 +159,7 @@ export function ChooseYourJourney({ state, setState, nav }) {
               onClick={() => {
                 setState((s) => completeJourneyChoice(s, choice.id));
                 if (choice.sponsor) {
-                  nav('create', null, { quickSponsor: true });
+                  nav('create', null, { quickSponsor: true, sponsorTab: 'launch' });
                 } else {
                   nav(choice.nav);
                 }
@@ -410,72 +410,8 @@ export function KidModeCreator({ state, setState, onClose, userId, isSupabaseMod
   );
 }
 
-export function SponsorExpressPanel({ state, setState, userId, isSupabaseMode }) {
-  const [form, setForm] = useState({
-    businessName: '',
-    couponValue: 'Free item',
-    durationDays: '14',
-    city: '',
-  });
-  const [launching, setLaunching] = useState(false);
-
-  async function launch() {
-    if (!form.businessName.trim()) {
-      window.alert('Enter your business name.');
-      return;
-    }
-    setLaunching(true);
-    try {
-      const adventure = buildSponsorExpressAdventureSync(form, { userId });
-      if (isSupabaseMode && userId) {
-        await upsertAdventure(adventure, userId);
-      }
-      setState((s) =>
-        markPersonaTested(
-          trackCreatePublished(publishQuickAdventure(s, adventure, { goToInvite: true })),
-          'sponsor'
-        )
-      );
-    } catch (err) {
-      window.alert(formatUserErrorMessage(err) || 'Could not launch campaign.');
-    } finally {
-      setLaunching(false);
-    }
-  }
-
-  return (
-    <div className="card sponsor-express-panel">
-      <h3>🏪 Sponsor Express</h3>
-      <p>Launch a coupon hunt in under 2 minutes. No calls required.</p>
-      <label>Business name</label>
-      <input
-        value={form.businessName}
-        onChange={(e) => setForm((f) => ({ ...f, businessName: e.target.value }))}
-        placeholder="Main Street Coffee"
-      />
-      <label>Coupon value</label>
-      <input
-        value={form.couponValue}
-        onChange={(e) => setForm((f) => ({ ...f, couponValue: e.target.value }))}
-        placeholder="Free drink"
-      />
-      <label>Duration (days)</label>
-      <input
-        type="number"
-        value={form.durationDays}
-        onChange={(e) => setForm((f) => ({ ...f, durationDays: e.target.value }))}
-      />
-      <label>City</label>
-      <input
-        value={form.city}
-        onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-        placeholder="Parsons"
-      />
-      <button type="button" onClick={launch} disabled={launching}>
-        {launching ? 'Launching…' : 'Launch Promotion'}
-      </button>
-    </div>
-  );
+export function SponsorExpressPanel(props) {
+  return <SponsorLaunchPanel {...props} compact />;
 }
 
 export function InvitePlayersPanel({ adventure, state, setState, onClose }) {

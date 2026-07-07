@@ -41,7 +41,9 @@ export function LivingCityPanel({
     if (pulse.action === 'guild') nav('social', undefined, { socialTab: 'guild', guildTab: 'wars' });
     if (pulse.action === 'director') nav('ai-director');
     if (pulse.action === 'create') nav('create', undefined, { launchStep: 'describe' });
-    if (pulse.action === 'sponsor') nav('sponsor');
+    if (pulse.action === 'sponsor') {
+      nav('sponsor', undefined, { sponsorTab: 'launch', sponsorCampaignType: 'launch_promotion' });
+    }
     if (pulse.action === 'marketplace') {
       nav('map', undefined, {
         marketplaceVenueId: pulse.venueId || 'downtown-market',

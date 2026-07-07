@@ -96,13 +96,14 @@ export function buildFloatingHudCards(options = {}) {
       id: 'sponsor',
       layerKey: 'sponsor',
       icon: '📣',
-      title: 'Sponsor Event',
-      metricLabel: 'Promote nearby',
+      title: 'Launch Promotion',
+      metricLabel: 'Light up downtown',
       items: [
-        { id: 's1', text: 'Launch a promotion that lights up downtown' },
-        { id: 's2', text: 'Turn foot traffic into a customer hunt' },
+        { id: 's1', text: 'Turn foot traffic into a customer hunt' },
+        { id: 's2', text: 'Reward every explorer who visits in person' },
       ],
       viewAllScreen: 'sponsor',
+      viewAllOptions: { sponsorTab: 'launch', sponsorCampaignType: 'launch_promotion' },
       expandable: true,
     },
     {

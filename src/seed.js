@@ -107,6 +107,8 @@ export const defaultState = {
   launchStep: 'describe',
   launchPrompt: '',
   createAdvanced: false,
+  sponsorTab: 'overview',
+  sponsorCampaignType: 'launch_promotion',
   pendingInviteAdventureId: null,
   editingAdventureId: null,
   quickSponsor: false,

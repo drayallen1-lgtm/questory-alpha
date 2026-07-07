@@ -16,7 +16,7 @@ export const PERSONA_TESTS = [
   { id: 'grandma', label: 'Grandma Mode', desc: 'Large text, high contrast, simplified UI' },
   { id: 'kid', label: 'Kid Mode', desc: 'Kid-friendly creator and play flow' },
   { id: 'friend', label: 'Friend Invite', desc: 'Referral link + quest code join' },
-  { id: 'sponsor', label: 'Sponsor Express', desc: 'Quick campaign launch flow' },
+  { id: 'sponsor', label: 'Sponsor Home', desc: 'Outcome-focused campaign launch flow' },
 ];
 
 export const DEFAULT_LAUNCH_FUNNEL = {
