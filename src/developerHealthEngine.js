@@ -22,6 +22,11 @@ import { getPaymentSnapshot } from './paymentEngine.js';
 import { getComplianceSnapshot } from './complianceEngine.js';
 import { getRiskSnapshot } from './riskEngine.js';
 import { getPartnerSnapshot } from './partnerOperationsEngine.js';
+import { getPlatformApiSnapshot } from './platformApiEngine.js';
+import { getEventBusSnapshot } from './eventBusEngine.js';
+import { getWebhookSnapshot } from './webhookEngine.js';
+import { getWhiteLabelSnapshot } from './whiteLabelEngine.js';
+import { getEnterpriseSnapshot } from './enterpriseEngine.js';
 import { validateClaimAttempt } from './claimSystem.js';
 import {
   measureEngineSnapshot,
@@ -67,6 +72,11 @@ function summarizeSample(id, result) {
   if (id === 'compliance') return { kyc: result.kycStatus, reviews: result.stats?.openReviews };
   if (id === 'risk') return { level: result.overallLevel, alerts: result.alerts?.length };
   if (id === 'partners') return { count: result.stats?.partnerCount, campaigns: result.stats?.activeCampaignCount };
+  if (id === 'platform-api') return { ns: result.stats?.namespaceCount, keys: result.stats?.apiKeyCount };
+  if (id === 'event-bus') return { events: result.stats?.total };
+  if (id === 'webhooks') return { endpoints: result.stats?.endpointCount };
+  if (id === 'white-label') return { brands: result.stats?.brandCount, ext: result.stats?.extensionCount };
+  if (id === 'enterprise') return { orgs: result.stats?.orgCount };
   return null;
 }
 
@@ -96,6 +106,7 @@ export function buildStateInspector(state, adventures = []) {
     directorSignals: getAiDirectorSnapshot(state, adventures).signalCount,
     pendingPayouts: getPaymentSnapshot(state, adventures).stats?.pendingPayoutCount ?? 0,
     riskLevel: getRiskSnapshot(state).overallLevel,
+    platformNamespaces: getPlatformApiSnapshot(state, adventures).stats?.namespaceCount ?? 0,
     worldDiscoveryPct: discovery.overallPct ?? discovery.cityPct ?? discovery.completionPercent ?? 0,
     marketplaceListingCount: getMarketplaceSnapshot(state, adventures).stats?.totalListings ?? 0,
     creatorFollows: getCreatorEconomySnapshot(state, adventures).followedCreatorIds?.length
@@ -164,6 +175,13 @@ export function runDeveloperHealthCheck(state, adventures = [], options = {}) {
     runCheck('partners', 'Partner Operations', () =>
       getPartnerSnapshot(state, adventures, { now })
     ),
+    runCheck('platform-api', 'Platform API', () =>
+      getPlatformApiSnapshot(state, adventures, { now })
+    ),
+    runCheck('event-bus', 'Event Bus', () => getEventBusSnapshot(state)),
+    runCheck('webhooks', 'Webhooks', () => getWebhookSnapshot(state)),
+    runCheck('white-label', 'White Label', () => getWhiteLabelSnapshot(state)),
+    runCheck('enterprise', 'Enterprise', () => getEnterpriseSnapshot(state)),
     runCheck('claim-flow', 'Claim Flow', () => {
       const adventure = adventures.find((a) => a.id === 'union-depot-ghost');
       const progress = state?.progress?.['union-depot-ghost'] || { step: 2, claimed: false };
