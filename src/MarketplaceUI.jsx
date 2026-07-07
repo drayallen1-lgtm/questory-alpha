@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   acceptOffer,
   acceptTrade,
@@ -15,6 +15,7 @@ import {
   rejectOffer,
   removeFromWishlist,
 } from './marketplaceEngine';
+import { resolveMarketplaceTab } from './marketplaceLayerEngine';
 
 const TABS = [
   ['featured', 'Featured'],
@@ -53,10 +54,15 @@ function ListingCard({ listing, onBuy, onWishlist, wished, onOffer }) {
 }
 
 export function MarketplaceScreen({ state, setState, adventures, nav }) {
-  const [tab, setTab] = useState('featured');
+  const initialTab = resolveMarketplaceTab(state.marketplaceTab, state);
+  const [tab, setTab] = useState(initialTab);
   const [msg, setMsg] = useState('');
   const [listPrice, setListPrice] = useState('250');
   const [selectedInstance, setSelectedInstance] = useState('');
+
+  useEffect(() => {
+    setTab(resolveMarketplaceTab(state.marketplaceTab, state));
+  }, [state.marketplaceTab, state.marketplaceVenueId]);
 
   const snapshot = useMemo(
     () => getMarketplaceSnapshot(state, adventures),
@@ -380,12 +386,27 @@ export function MarketplaceScreen({ state, setState, adventures, nav }) {
   );
 }
 
-export function MarketplaceMapHud({ snapshot, nav }) {
-  if (!snapshot?.venues?.length) return null;
+export function MarketplaceMapHud({ snapshot, nav, onVenueSelect = null }) {
+  const venues = snapshot?.venues || snapshot?.marketplace?.venues || [];
+  if (!venues.length) return null;
   return (
     <div className="marketplace-map-hud" role="navigation" aria-label="Market venues">
-      {snapshot.venues.slice(0, 4).map((v) => (
-        <button key={v.id} type="button" className="ghost marketplace-map-venue-btn" onClick={() => nav('marketplace')}>
+      {venues.slice(0, 4).map((v) => (
+        <button
+          key={v.id}
+          type="button"
+          className="ghost marketplace-map-venue-btn"
+          onClick={() => {
+            if (onVenueSelect) {
+              onVenueSelect(v.id);
+              return;
+            }
+            nav('marketplace', undefined, {
+              marketplaceVenueId: v.id,
+              marketplaceTab: v.tab,
+            });
+          }}
+        >
           {v.icon} {v.label}
         </button>
       ))}

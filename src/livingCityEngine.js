@@ -152,6 +152,8 @@ export function buildCityPulseLines(options = {}) {
       text: `${personality.merchantDistrict || 'Downtown'} merchants active`,
       tone: 'commerce',
       priority: 74,
+      action: 'marketplace',
+      venueId: 'downtown-market',
     });
   }
 

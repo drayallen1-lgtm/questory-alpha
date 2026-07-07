@@ -42,6 +42,12 @@ export function LivingCityPanel({
     if (pulse.action === 'director') nav('ai-director');
     if (pulse.action === 'create') nav('create');
     if (pulse.action === 'sponsor') nav('sponsor');
+    if (pulse.action === 'marketplace') {
+      nav('map', undefined, {
+        marketplaceVenueId: pulse.venueId || 'downtown-market',
+        marketplaceTab: 'featured',
+      });
+    }
   }
 
   return (

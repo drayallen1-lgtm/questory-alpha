@@ -116,6 +116,7 @@ export function buildFloatingHudCards(options = {}) {
         'Market prices updated downtown'
       ),
       viewAllScreen: 'marketplace',
+      viewAllOptions: { marketplaceVenueId: 'downtown-market', marketplaceTab: 'featured' },
       expandable: true,
     },
     {

@@ -82,9 +82,12 @@ const LivingEarthOverlay = lazy(() =>
 );
 import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
 import { getMarketplaceSnapshot } from './marketplaceEngine';
+import { getMarketplaceLayerSnapshot } from './marketplaceLayerEngine';
+import { MarketVenueCard } from './MarketVenueCard';
 import { getAiNpcSnapshot } from './aiNpcEngine';
 import { getDynamicStorySnapshot } from './dynamicStoryEngine';
 import { MarketplaceMapHud } from './MarketplaceUI';
+import { MarketVenueLayer } from './MarketVenueLayer';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -337,6 +340,9 @@ export function QuestoryMap({
   questoryIdentity = null,
   worldDiscovery = null,
   onTerritorySelect = null,
+  marketVenues = null,
+  selectedMarketVenueId = null,
+  onMarketVenueSelect = null,
   onMapZoomChange,
   onMapFlyReady,
   isAdmin = false,
@@ -1096,6 +1102,16 @@ export function QuestoryMap({
             <DiscoveryTrailLayer map={mapRef.current} trail={livingWorld.discoveryTrail} />
             <MapDiscoveryPulse map={mapRef.current} pulses={livingWorld.pulses} />
           </ProgressiveLayer>
+          <ProgressiveLayer layerId={WORLD_LAYER_IDS.MARKETPLACE} layers={progressiveLayers}>
+            {marketVenues?.length > 0 && (
+              <MarketVenueLayer
+                map={mapRef.current}
+                venues={marketVenues}
+                selectedVenueId={selectedMarketVenueId}
+                onVenueSelect={onMarketVenueSelect}
+              />
+            )}
+          </ProgressiveLayer>
         </>
       )}
       {!mini && mapReady && livingCluster && !livingCluster.overflowOpen && mapRef.current && (
@@ -1145,6 +1161,8 @@ export function MapScreen({
   const [visiblePinCount, setVisiblePinCount] = useState(null);
   const [hoveredPinId, setHoveredPinId] = useState(null);
   const [spatialStats, setSpatialStats] = useState(null);
+  const [selectedMarketVenueId, setSelectedMarketVenueId] = useState(null);
+  const [venueCardEntering, setVenueCardEntering] = useState(false);
   const { location } = usePlayerLocation();
   const visibility = state?.social?.visibility || VISIBILITY_MODES.TEAM;
   const follows = state?.economy?.follows || [];
@@ -1153,6 +1171,14 @@ export function MapScreen({
     const tick = window.setInterval(() => setWorldNow(Date.now()), 60000);
     return () => window.clearInterval(tick);
   }, []);
+
+  useEffect(() => {
+    if (!state?.marketplaceVenueId) return undefined;
+    setSelectedMarketVenueId(state.marketplaceVenueId);
+    setVenueCardEntering(true);
+    const timer = window.setTimeout(() => setVenueCardEntering(false), 240);
+    return () => window.clearTimeout(timer);
+  }, [state?.marketplaceVenueId]);
 
   const accessOptions = {
     userLatitude: location?.latitude,
@@ -1256,6 +1282,31 @@ export function MapScreen({
     [setState]
   );
 
+  const handleMarketVenueSelect = useCallback((venueId) => {
+    setSelectedMarketVenueId(venueId);
+    setSelectedMarker(null);
+    setLivingCluster(null);
+    setVenueCardEntering(true);
+    window.setTimeout(() => setVenueCardEntering(false), 240);
+  }, []);
+
+  const handleMarketVenueClose = useCallback(() => {
+    setSelectedMarketVenueId(null);
+    setVenueCardEntering(false);
+  }, []);
+
+  const handleMarketVenueBrowse = useCallback(
+    (venue) => {
+      if (!nav || !venue) return;
+      nav('marketplace', undefined, {
+        marketplaceVenueId: venue.id,
+        marketplaceTab: venue.tab,
+      });
+      setSelectedMarketVenueId(null);
+    },
+    [nav]
+  );
+
   const worldDiscoverySnapshot = useMemo(
     () =>
       getWorldDiscoverySnapshot({
@@ -1341,6 +1392,17 @@ export function MapScreen({
   const marketplaceSnapshot = useMemo(
     () => getMarketplaceSnapshot(state, adventures, { now: worldNow }),
     [state, adventures, worldNow]
+  );
+
+  const marketplaceLayerSnapshot = useMemo(
+    () =>
+      getMarketplaceLayerSnapshot(state, adventures, {
+        now: worldNow,
+        marketplace: marketplaceSnapshot,
+        venueId: selectedMarketVenueId,
+        primaryOnly: true,
+      }),
+    [state, adventures, worldNow, marketplaceSnapshot, selectedMarketVenueId]
   );
 
   const aiNpcSnapshot = useMemo(
@@ -1593,6 +1655,12 @@ export function MapScreen({
     setSelectedMarker(null);
     setHoveredPinId(null);
     setCardEntering(false);
+    setSelectedMarketVenueId(null);
+    setVenueCardEntering(false);
+  }
+
+  function handleMapBackgroundClick() {
+    handleLivingClusterCollapse();
   }
 
   function handleClusterDiscover(payload) {
@@ -1788,10 +1856,6 @@ export function MapScreen({
     }, DISCOVERY_BLOOM_TIMING.CARD_OPEN);
   }
 
-  function handleMapBackgroundClick() {
-    handleLivingClusterCollapse();
-  }
-
   const filterCounts = useMemo(() => {
     const counts = { all: adventures.length };
     [
@@ -1815,6 +1879,7 @@ export function MapScreen({
   }, [adventures, state, location, follows]);
 
   function handleAdventureClick(adventure, marker) {
+    setSelectedMarketVenueId(null);
     setHoveredPinId(null);
     setSelectedMarker(marker || { adventure, id: adventure.id });
     setFocusedAdventure(null);
@@ -1830,11 +1895,11 @@ export function MapScreen({
   useEffect(() => {
     function onKeyDown(e) {
       if (e.key !== 'Escape') return;
-      if (selectedMarker || livingCluster) handleLivingClusterCollapse();
+      if (selectedMarker || livingCluster || selectedMarketVenueId) handleLivingClusterCollapse();
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedMarker, livingCluster]);
+  }, [selectedMarker, livingCluster, selectedMarketVenueId]);
 
   function handleViewClues(adventure, access) {
     if (!adventure?.id || !nav) return;
@@ -2001,6 +2066,9 @@ export function MapScreen({
           questoryIdentity={questoryIdentitySnapshot}
           worldDiscovery={worldDiscoverySnapshot}
           onTerritorySelect={handleTerritorySelect}
+          marketVenues={shellMode ? marketplaceLayerSnapshot.venues : null}
+          selectedMarketVenueId={selectedMarketVenueId}
+          onMarketVenueSelect={shellMode ? handleMarketVenueSelect : null}
           onMapZoomChange={setMapZoom}
           onMapFlyReady={(api) => {
             earthFlyRef.current = api;
@@ -2033,8 +2101,12 @@ export function MapScreen({
         </ProgressiveLayer>
 
         <ProgressiveLayer layerId={WORLD_LAYER_IDS.MARKETPLACE} layers={shellMode ? layerSnapshot.layers : null}>
-          {nav && !earthOverlayVisible && (
-            <MarketplaceMapHud snapshot={marketplaceSnapshot} nav={nav} />
+          {nav && !earthOverlayVisible && shellMode && (
+            <MarketplaceMapHud
+              snapshot={marketplaceLayerSnapshot}
+              nav={nav}
+              onVenueSelect={handleMarketVenueSelect}
+            />
           )}
         </ProgressiveLayer>
 
@@ -2079,6 +2151,15 @@ export function MapScreen({
             onPlay={handleMapCardPlay}
             onPreview={handleMapCardPreview}
             onViewClues={handleViewClues}
+          />
+        )}
+
+        {marketplaceLayerSnapshot.selectedVenue && !selectedAdventure && (
+          <MarketVenueCard
+            venue={marketplaceLayerSnapshot.selectedVenue}
+            entering={venueCardEntering}
+            onClose={handleMarketVenueClose}
+            onBrowse={handleMarketVenueBrowse}
           />
         )}
       </div>

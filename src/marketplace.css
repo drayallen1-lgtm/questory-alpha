@@ -130,16 +130,168 @@
 
 .map-market-venue {
   position: absolute;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -100%);
   z-index: 9;
-  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
   border-radius: 999px;
-  font-size: 0.65rem;
-  background: rgba(6, 10, 18, 0.88);
+  font-size: 0.68rem;
+  background: rgba(6, 10, 18, 0.9);
   border: 1px solid rgba(251, 191, 36, 0.35);
   color: #fde68a;
   pointer-events: auto;
   cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.map-market-venue:hover,
+.map-market-venue--selected {
+  border-color: rgba(252, 211, 77, 0.75);
+  box-shadow: 0 10px 28px rgba(251, 191, 36, 0.18);
+}
+
+.map-market-venue-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.map-market-venue-label {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.map-market-venue-count {
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.18);
+  color: #fef3c7;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.market-venue-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.market-venue-card {
+  position: absolute;
+  left: 50%;
+  bottom: 88px;
+  transform: translateX(-50%);
+  width: min(420px, calc(100% - 24px));
+  z-index: 24;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(8, 12, 22, 0.94);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+}
+
+.market-venue-card--entering {
+  animation: marketVenueCardIn 0.22s ease;
+}
+
+@keyframes marketVenueCardIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.market-venue-card-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.market-venue-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-right: 28px;
+}
+
+.market-venue-card-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.market-venue-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.market-venue-card-status {
+  margin: 2px 0 0;
+  color: #cbd5e1;
+  font-size: 0.82rem;
+}
+
+.market-venue-card-live {
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.14);
+  color: #fde68a;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.market-venue-card-items {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.market-venue-card-items li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.market-venue-card-item-icon {
+  font-size: 1.1rem;
+}
+
+.market-venue-card-item-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.market-venue-card-item-copy strong {
+  font-size: 0.86rem;
+}
+
+.market-venue-card-item-copy small {
+  color: #94a3b8;
+  font-size: 0.74rem;
+}
+
+.market-venue-card-cta {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .marketplace-map-hud {

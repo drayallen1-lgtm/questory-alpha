@@ -102,6 +102,8 @@ export const defaultState = {
   growthTab: 'referrals',
   socialTab: 'friends',
   guildTab: 'overview',
+  marketplaceTab: 'featured',
+  marketplaceVenueId: null,
   pendingInviteAdventureId: null,
   editingAdventureId: null,
   quickSponsor: false,

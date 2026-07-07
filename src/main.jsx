@@ -491,6 +491,9 @@ function QuestoryApp() {
           (options.socialTab === 'guild' && options.adminTab === 'guild'
             ? 'territories'
             : s.guildTab),
+        marketplaceTab: options.marketplaceTab ?? s.marketplaceTab,
+        marketplaceVenueId:
+          'marketplaceVenueId' in options ? options.marketplaceVenueId : s.marketplaceVenueId,
         vaultTab: options.tab ?? s.vaultTab,
       };
       if (screen === 'detail' && adventureId) {
