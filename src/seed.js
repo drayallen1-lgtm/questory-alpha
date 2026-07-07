@@ -62,6 +62,11 @@ import { DEFAULT_PAYMENT, normalizePayment } from './paymentEngine';
 import { DEFAULT_PARTNER_OPS, normalizePartnerOps } from './partnerOperationsEngine';
 import { DEFAULT_COMPLIANCE, normalizeCompliance } from './complianceEngine';
 import { DEFAULT_RISK, normalizeRisk } from './riskEngine';
+import { DEFAULT_PLATFORM, normalizePlatform } from './platformApiEngine';
+import { DEFAULT_EVENT_BUS, normalizeEventBus } from './eventBusEngine';
+import { DEFAULT_WEBHOOKS, normalizeWebhooks } from './webhookEngine';
+import { DEFAULT_WHITE_LABEL, normalizeWhiteLabel } from './whiteLabelEngine';
+import { DEFAULT_ENTERPRISE, normalizeEnterprise } from './enterpriseEngine';
 
 export { CLAIM_METHOD, CLAIM_METHOD_OPTIONS, normalizeClaimMethod, usesFinderMode };
 
@@ -115,6 +120,11 @@ export const defaultState = {
   partnerOps: { ...DEFAULT_PARTNER_OPS },
   compliance: { ...DEFAULT_COMPLIANCE },
   risk: { ...DEFAULT_RISK },
+  platform: { ...DEFAULT_PLATFORM },
+  eventBus: { ...DEFAULT_EVENT_BUS },
+  webhooks: { ...DEFAULT_WEBHOOKS },
+  whiteLabel: { ...DEFAULT_WHITE_LABEL },
+  enterprise: { ...DEFAULT_ENTERPRISE },
   vaultTab: 'passport',
   adventures: ensureDemoAdventure([
     {
@@ -812,6 +822,11 @@ export function loadState() {
       partnerOps: normalizePartnerOps(saved.partnerOps),
       compliance: normalizeCompliance(saved.compliance),
       risk: normalizeRisk(saved.risk),
+      platform: normalizePlatform(saved.platform),
+      eventBus: normalizeEventBus(saved.eventBus),
+      webhooks: normalizeWebhooks(saved.webhooks),
+      whiteLabel: normalizeWhiteLabel(saved.whiteLabel),
+      enterprise: normalizeEnterprise(saved.enterprise),
       vaultTab: saved.vaultTab || 'passport',
       growthTab: saved.growthTab || 'referrals',
       pendingInviteAdventureId: saved.pendingInviteAdventureId || null,
