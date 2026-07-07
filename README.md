@@ -37,7 +37,7 @@ React panels + Map layers
 claimFlow.js (victory orchestrator)
 ```
 
-**Platform pillars:** Living World · Social Discovery · Questory Identity · Codex · Economy · Progression · Crafting · Living Earth · Creator Economy · Marketplace · AI NPCs · Dynamic Story · **Factions & Territories** · **AI Director** · **Payments & Partners**
+**Platform pillars:** Living World · Social Discovery · Questory Identity · Codex · Economy · Progression · Crafting · Living Earth · Creator Economy · Marketplace · AI NPCs · Dynamic Story · **Factions & Territories** · **AI Director** · **Payments & Partners** · **Open Platform**
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full engine map.
 
@@ -66,6 +66,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full engine map.
 | 15 — Factions, Guilds & Territory Wars | ✓ Complete |
 | 16 — Questory AI Director | ✓ Complete |
 | 17 — Real Economy, Payments & Partners | ✓ Complete |
+| 18 — Open Questory Platform | ✓ Complete |
 
 Full roadmap: [ROADMAP.md](./ROADMAP.md)
 

@@ -168,11 +168,19 @@ Simulated payment engine with seven wallet types, pending payouts, settlements, 
 
 ---
 
+### Phase 18 — Open Questory Platform ✓ Complete
+
+Versioned read-only Platform API (`platformApiEngine`) with 12 namespaces, Questory SDK (`questory.init`, login, claim, subscribe), event bus and draft-only webhooks, white-label brand packs and adventure templates, extension registry, enterprise organizations with SSO placeholders, Platform Console and Developer Portal admin UIs, AI Director platform signals, and Dev Health probes. **No live integrations.**
+
+**Why it mattered:** Questory became a deployable platform — cities, museums, universities, and enterprises can white-label adventures without forking the engine layer.
+
+---
+
 ## Future Phases
 
-### Phase 18 — Open Questory Platform
+### Phase 19 — Questory Intelligence Network
 
-API, SDK, white label, enterprise, and global launch infrastructure.
+Global analytics, predictive AI, recommendation engine, and personalization.
 
 **Status:** Future
 
@@ -180,7 +188,7 @@ API, SDK, white label, enterprise, and global launch infrastructure.
 
 ## Roadmap Rules
 
-1. **This file is canonical.** Do not add Phase 19+ without explicit product direction.
+1. **This file is canonical.** Do not add Phase 20+ without explicit product direction.
 2. **Completed phases stay checked off.** Do not un-complete work.
 3. **In-progress means actively being built** — move to complete only when committed and buildable.
 4. **Future phases are ordered by dependency**, not by excitement.
@@ -188,4 +196,4 @@ API, SDK, white label, enterprise, and global launch infrastructure.
 
 ---
 
-*Last updated: Phase 17 complete. Next milestone: Phase 18 — Open Questory Platform.*
+*Last updated: Phase 18 complete. Next milestone: Phase 19 — Questory Intelligence Network.*

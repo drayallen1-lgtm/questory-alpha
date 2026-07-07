@@ -394,6 +394,72 @@ Each entry lists:
 
 ---
 
+### platformApiEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Versioned read-only Platform API — 12 namespaces, normalized snapshots, no mutations |
+| **Primary exports** | `getPlatformApiSnapshot`, `getApiNamespace`, `createApiKey`, `buildApiSchema`, `API_NAMESPACES` |
+| **Dependencies** | Major engine snapshots (payment, faction, marketplace, living world, etc.) |
+| **Consumers** | `questorySdk.js`, `PlatformConsoleUI.jsx`, `DeveloperPortalUI.jsx`, Dev Dashboard |
+
+---
+
+### questorySdk.js
+
+| | |
+|---|---|
+| **Purpose** | Client SDK — init, login, getAdventure, claim, subscribe, events (future-ready) |
+| **Primary exports** | `Questory` default export |
+| **Dependencies** | `platformApiEngine`, `eventBusEngine` |
+| **Consumers** | `DeveloperPortalUI.jsx`, external embeds |
+
+---
+
+### eventBusEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Central publish/subscribe for platform events |
+| **Primary exports** | `publishEvent`, `getEventBusSnapshot`, `subscribeToEvents`, `EVENT_TYPES` |
+| **Dependencies** | `engineSnapshotUtils` |
+| **Consumers** | `questorySdk.js`, `webhookEngine.js`, Dev Dashboard |
+
+---
+
+### webhookEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Draft-only outgoing webhook templates (Stripe, Discord, Slack, Zapier, Teams) |
+| **Primary exports** | `getWebhookSnapshot`, `draftWebhookEndpoint`, `buildWebhookPayload` |
+| **Dependencies** | `eventBusEngine`, `engineSnapshotUtils` |
+| **Consumers** | `PlatformConsoleUI.jsx`, `DeveloperPortalUI.jsx` |
+
+---
+
+### whiteLabelEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Brand packs, themes, terminology, feature toggles, adventure templates, extension registry |
+| **Primary exports** | `getWhiteLabelSnapshot`, `applyBrandPack`, `installExtension`, `ADVENTURE_TEMPLATES` |
+| **Dependencies** | `engineSnapshotUtils` |
+| **Consumers** | `PlatformConsoleUI.jsx`, Dev Dashboard |
+
+---
+
+### enterpriseEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Organizations, teams, departments, SSO placeholders, audit logs |
+| **Primary exports** | `getEnterpriseSnapshot`, `createOrganization`, `recordAuditEvent`, `ENTERPRISE_ROLES` |
+| **Dependencies** | `engineSnapshotUtils` |
+| **Consumers** | `PlatformConsoleUI.jsx`, Dev Dashboard |
+
+---
+
 ### seasonEngine.js
 
 | | |

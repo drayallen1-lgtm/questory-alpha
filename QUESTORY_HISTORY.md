@@ -210,6 +210,14 @@ Simulated payment engine with wallets, payouts, settlements, partner campaigns, 
 
 ---
 
+### Open Questory Platform (Phase 18)
+
+Versioned Platform API, Questory SDK, event bus, draft webhooks, white-label brand packs, adventure templates, extension registry, enterprise orgs, Platform Console, and Developer Portal. No live integrations.
+
+**Why it mattered:** Questory can power white-label city, museum, and enterprise apps from one engine stack.
+
+---
+
 ## Timeline Summary
 
 | Era | Milestone | Phase |
@@ -235,7 +243,8 @@ Simulated payment engine with wallets, payouts, settlements, partner campaigns, 
 | 2.0 | Dynamic factions, guilds & territory wars | 15 |
 | 2.0 | Questory AI Director | 16 |
 | 2.0 | Real economy, payments & partner operations | 17 |
-| Next | Open Questory Platform | 18 |
+| 2.0 | Open Questory Platform | 18 |
+| Next | Questory Intelligence Network | 19 |
 
 ---
 

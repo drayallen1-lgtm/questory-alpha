@@ -84,6 +84,7 @@ These are the integration points every new feature must touch:
 | Payments & Treasury | `paymentEngine` | `PaymentsAdminUI`, Passport Wallet tab, Creator/Marketplace dashboards |
 | Partner Operations | `partnerOperationsEngine` | `PartnerDashboard`, Admin → Partner Ops |
 | Compliance & Risk | `complianceEngine`, `riskEngine` | Payments Admin, Dev Health probes |
+| Open Platform | `platformApiEngine`, `questorySdk`, `eventBusEngine`, `webhookEngine`, `whiteLabelEngine`, `enterpriseEngine` | Platform Console, Developer Portal, Admin → Platform |
 
 ---
 

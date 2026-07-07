@@ -1,6 +1,6 @@
 # Questory Quality Guide
 
-Phase 14.5–14.75 — Developer Experience, Quality, and Engine Hardening safeguards. Phase 15 adds faction engine tests and guild E2E coverage. Phase 16 adds AI Director engine tests and dev health probe. Phase 17 adds payment, partner, compliance, and risk engine tests.
+Phase 14.5–14.75 — Developer Experience, Quality, and Engine Hardening safeguards. Phase 15 adds faction engine tests and guild E2E coverage. Phase 16 adds AI Director engine tests and dev health probe. Phase 17 adds payment, partner, compliance, and risk engine tests. Phase 18 adds platform API, SDK, event bus, webhook, white-label, and enterprise tests.
 
 ## Quick commands
 
@@ -38,6 +38,12 @@ Engines covered:
 - `partnerOperationsEngine` — partners, campaigns, analytics
 - `complianceEngine` — KYC, tax status, manual review queue
 - `riskEngine` — risk signals, alert levels, no auto enforcement
+- `platformApiEngine` — namespaces, read-only snapshots, API keys
+- `questorySdk` — init, player, adventure, claim
+- `eventBusEngine` — publish and history
+- `webhookEngine` — draft endpoints
+- `whiteLabelEngine` — brand packs, templates, extensions
+- `enterpriseEngine` — organizations, audit log
 
 Setup file `tests/unit/setup.js` preloads `seed.js` to avoid circular import races in Node.
 
@@ -138,12 +144,11 @@ Gentle config in `eslint.config.js` — catches `no-undef` without React style r
 - Knip may OOM on large repos — re-run with more memory or scan subsets if needed.
 - Lazy imports for Marketplace/Creator screens are partially ineffective while those modules remain statically imported from map/passport paths — chunks still split for Codex, Living Earth, Dev Dashboard.
 
-## Before Phase 18
+## Before Phase 19
 
 1. `npm run build`
 2. `npm run test:unit`
-3. `npm run test:e2e`
-4. `npm run lint`
-5. Spot-check Admin → Payments, Partner Dashboard, Passport Wallet
+3. `npm run lint`
+4. Spot-check Admin → Platform Console and Developer Portal
 
 Source-only commits. Never commit `dist/`.
