@@ -174,6 +174,8 @@ const DeveloperDashboard = lazy(() =>
 import { AiDirectorPanel } from './AiDirectorUI';
 import { PaymentsAdminPanel } from './PaymentsAdminUI';
 import { PartnerDashboard } from './PartnerDashboard';
+import { PlatformConsole } from './PlatformConsoleUI';
+import { DeveloperPortal } from './DeveloperPortalUI';
 import { isDev } from './config/env';
 import './style.css';
 import './discoveryBloom.css';
@@ -194,6 +196,7 @@ import './aiNpc.css';
 import './factionGuild.css';
 import './aiDirector.css';
 import './payments.css';
+import './platformConsole.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';
@@ -1112,6 +1115,23 @@ function QuestoryApp() {
             adventures={state.adventures}
             nav={nav}
             partnerId={state.selectedPartnerId || 'parsons-tourism'}
+          />
+        )}
+        {state.screen === 'platform-console' && (
+          <PlatformConsole
+            state={state}
+            setState={setState}
+            adventures={state.adventures}
+            nav={nav}
+            isAdmin={isAdmin}
+          />
+        )}
+        {state.screen === 'developer-portal' && (
+          <DeveloperPortal
+            state={state}
+            adventures={state.adventures}
+            nav={nav}
+            isAdmin={isAdmin}
           />
         )}
         {state.screen === 'admin' && (
@@ -3765,6 +3785,16 @@ function AdminReview({
         {(isDev || isAdmin) && (
           <button type="button" className="ghost dev-health-link" onClick={() => nav('partner')}>
             Partner Ops
+          </button>
+        )}
+        {(isDev || isAdmin) && (
+          <button type="button" className="ghost dev-health-link" onClick={() => nav('platform-console')}>
+            Platform
+          </button>
+        )}
+        {(isDev || isAdmin) && (
+          <button type="button" className="ghost dev-health-link" onClick={() => nav('developer-portal')}>
+            Developers
           </button>
         )}
         {(isDev || isAdmin) && (

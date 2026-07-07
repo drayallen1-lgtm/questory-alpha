@@ -1,0 +1,35 @@
+.platform-console,
+.developer-portal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.platform-ns-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.platform-ns-card {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.platform-api-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  background: rgba(108, 92, 231, 0.12);
+  color: #6c5ce7;
+}
+
+.developer-portal pre {
+  overflow-x: auto;
+  font-size: 0.8rem;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 6px;
+}

@@ -15,6 +15,10 @@ import { getWorldDiscoverySnapshot } from './worldDiscoveryEngine';
 import { getQuestoryIdentitySnapshot } from './questoryIdentityEngine';
 import { getPaymentSnapshot } from './paymentEngine';
 import { getPartnerSnapshot } from './partnerOperationsEngine';
+import { normalizePlatform } from './platformApiEngine';
+import { getEventBusSnapshot } from './eventBusEngine';
+import { normalizeWhiteLabel } from './whiteLabelEngine';
+import { getEnterpriseSnapshot } from './enterpriseEngine';
 
 export const DIRECTOR_LIMITS = {
   MAX_DRAFTS: 20,
@@ -293,6 +297,52 @@ export function evaluateDirectorSignals(state, adventures = [], now = Date.now()
       strength: 48,
       label: 'Treasury reserves tightening',
       detail: `${treasury.platformReserved} reserved (simulated)`,
+    });
+  }
+
+  const platformStored = normalizePlatform(state?.platform);
+  const apiKeyCount = platformStored.apiKeys.length > 0 ? platformStored.apiKeys.length : 2;
+  if (apiKeyCount > 0) {
+    signals.push({
+      id: 'platform-api-active',
+      kind: 'platform',
+      strength: 55,
+      label: 'Platform API in use',
+      detail: `12 namespaces · ${apiKeyCount} keys`,
+    });
+  }
+
+  const whiteLabelStored = normalizeWhiteLabel(state?.whiteLabel);
+  const extensionCount = whiteLabelStored.installedExtensions?.length || 0;
+  if (extensionCount >= 3) {
+    signals.push({
+      id: 'extension-opportunity',
+      kind: 'platform',
+      strength: 50,
+      label: 'Extension bundle opportunity',
+      detail: `${extensionCount} modules installed`,
+    });
+  }
+
+  const enterprise = getEnterpriseSnapshot(state);
+  if (enterprise.stats.orgCount > 0) {
+    signals.push({
+      id: 'partner-automation',
+      kind: 'platform',
+      strength: 48,
+      label: 'Enterprise partner automation ready',
+      detail: `${enterprise.stats.orgCount} organizations`,
+    });
+  }
+
+  const eventBus = getEventBusSnapshot(state);
+  if (eventBus.stats.total > 5) {
+    signals.push({
+      id: 'platform-health-events',
+      kind: 'platform',
+      strength: 42,
+      label: 'Platform event volume healthy',
+      detail: `${eventBus.stats.total} bus events`,
     });
   }
 
