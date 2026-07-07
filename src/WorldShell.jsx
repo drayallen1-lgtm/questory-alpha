@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { MapScreen } from './QuestoryMap';
 import { FloatingHud } from './FloatingHud';
 import { FloatingDock } from './FloatingDock';
+import { LivingCityPanel } from './LivingCityPanel';
 
 export function WorldShell({
   adventures,
@@ -23,12 +24,20 @@ export function WorldShell({
         <h1 className="world-shell-title">Questory World</h1>
       </header>
 
-      <FloatingHud
-        state={state}
-        adventures={hudAdventures}
-        nav={nav}
-        layerSnapshot={layerSnapshot}
-      />
+      <div className="world-shell-hud-stack">
+        <LivingCityPanel
+          state={state}
+          adventures={hudAdventures}
+          layerSnapshot={layerSnapshot}
+          nav={nav}
+        />
+        <FloatingHud
+          state={state}
+          adventures={hudAdventures}
+          nav={nav}
+          layerSnapshot={layerSnapshot}
+        />
+      </div>
 
       <div className="world-map-frame">
         <MapScreen

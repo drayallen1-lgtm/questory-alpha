@@ -89,14 +89,31 @@
   display: none;
 }
 
-/* Floating HUD */
+/* Floating HUD stack (living city + cards) */
 
-.floating-hud {
+.world-shell-hud-stack {
   position: absolute;
   top: 40px;
   left: 0;
   right: 0;
   z-index: 35;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  pointer-events: none;
+}
+
+.world-shell-hud-stack > * {
+  pointer-events: auto;
+}
+
+.floating-hud {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -280,9 +297,13 @@
     padding: 48px 20px 96px;
   }
 
-  .floating-hud {
+  .world-shell-hud-stack {
     top: 44px;
     padding: 0 20px;
+  }
+
+  .floating-hud {
+    padding: 0;
   }
 
   .floating-hud-grid {

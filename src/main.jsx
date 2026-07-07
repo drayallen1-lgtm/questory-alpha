@@ -200,6 +200,7 @@ import './platformConsole.css';
 import './WorldLayout.css';
 import './progressiveLayers.css';
 import './floatingCards.css';
+import './livingCity.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';

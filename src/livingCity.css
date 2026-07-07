@@ -1,0 +1,180 @@
+/* Questory V2 — Living City panel */
+
+.living-city-panel {
+  position: relative;
+  z-index: 36;
+  margin: 0 12px 8px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(
+    145deg,
+    rgba(15, 23, 42, 0.82) 0%,
+    rgba(30, 41, 59, 0.72) 100%
+  );
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  pointer-events: auto;
+  animation: living-city-in 0.45s ease;
+}
+
+@keyframes living-city-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.living-city-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.living-city-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #f8fafc;
+}
+
+.living-city-tagline {
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.living-city-alive-badge {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #042f2e;
+  background: linear-gradient(135deg, #5eead4, #2dd4bf);
+  box-shadow: 0 0 16px rgba(94, 234, 212, 0.35);
+  animation: living-city-pulse-badge 2.4s ease-in-out infinite;
+}
+
+@keyframes living-city-pulse-badge {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.88;
+    transform: scale(0.97);
+  }
+}
+
+.living-city-pulse-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.living-city-pulse {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+  color: rgba(226, 232, 240, 0.94);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.living-city-pulse:hover,
+.living-city-pulse:focus-visible {
+  border-color: rgba(94, 234, 212, 0.28);
+  background: rgba(30, 41, 59, 0.72);
+  outline: none;
+}
+
+.living-city-pulse--active {
+  border-color: rgba(94, 234, 212, 0.35);
+  background: rgba(30, 41, 59, 0.82);
+}
+
+.living-city-pulse-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.living-city-pulse-text {
+  min-width: 0;
+}
+
+.living-city-spotlight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  font-size: 12px;
+  font-weight: 600;
+  color: #99f6e4;
+  animation: living-city-spotlight-in 0.35s ease;
+}
+
+.living-city-spotlight-icon {
+  font-size: 14px;
+}
+
+@keyframes living-city-spotlight-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 768px) {
+  .living-city-panel {
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (max-height: 640px) {
+  .living-city-panel {
+    padding: 10px 12px;
+  }
+
+  .living-city-pulse-feed {
+    display: none;
+  }
+
+  .living-city-spotlight {
+    margin-top: 6px;
+    padding-top: 0;
+    border-top: none;
+  }
+}
