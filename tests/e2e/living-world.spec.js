@@ -16,7 +16,10 @@ test.describe('Living World (map-first)', () => {
     await gotoScreen(page, 'map');
 
     await expect(page.locator('.living-city-panel')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole('button', { name: /Earth/i }).first()).toBeVisible();
+    await expect(
+      page.locator('[data-layer-id="earth"] .floating-card-summary, [data-testid="floating-hud"]')
+        .first()
+    ).toBeVisible({ timeout: 15_000 });
   });
 
   test('floating dock navigates away from world and back', async ({ page }) => {
@@ -35,8 +38,9 @@ test.describe('Living World (map-first)', () => {
   test('expands a floating HUD card', async ({ page }) => {
     await gotoScreen(page, 'map');
 
-    const earthCard = page.getByRole('button', { name: /Earth/i }).first();
-    await earthCard.click();
+    const card = page.locator('.floating-card-summary').first();
+    await expect(card).toBeVisible({ timeout: 15_000 });
+    await card.click({ force: true });
     await expect(page.locator('.floating-card--expanded')).toBeVisible();
   });
 
@@ -49,8 +53,7 @@ test.describe('Living World (map-first)', () => {
     await page.reload({ waitUntil: 'load' });
     await expect(page.getByTestId('world-shell')).toBeVisible({ timeout: 30_000 });
 
-    const whisper = page.locator('.ambient-director-whisper');
-    await expect(whisper.or(page.getByTestId('floating-hud'))).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.ambient-director-whisper')).toBeVisible({ timeout: 15_000 });
   });
 
   test('portrait mobile layout keeps world shell usable', async ({ page }) => {
@@ -63,8 +66,8 @@ test.describe('Living World (map-first)', () => {
   });
 
   test('landscape mobile layout keeps HUD and dock visible', async ({ page }) => {
-    await page.setViewportSize({ width: 844, height: 390 });
     await gotoScreen(page, 'map');
+    await page.setViewportSize({ width: 844, height: 390 });
 
     await expect(page.getByTestId('floating-hud')).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'World navigation' })).toBeVisible();

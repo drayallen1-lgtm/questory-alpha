@@ -59,6 +59,28 @@ export function ErrorRecoveryBanner({ message, onRetry, onDismiss }) {
   );
 }
 
+export function WorldRecoveryBanner({ message, onRetry, onContinueOffline }) {
+  if (!message) return null;
+  return (
+    <div className="world-recovery-banner" role="alert" data-testid="world-recovery-banner">
+      <AlertTriangle size={18} aria-hidden />
+      <p>{message}</p>
+      <div className="stability-error-actions">
+        {onRetry && (
+          <button type="button" className="ghost world-touch-target" onClick={onRetry}>
+            <RefreshCw size={14} aria-hidden /> Retry
+          </button>
+        )}
+        {onContinueOffline && (
+          <button type="button" className="ghost world-touch-target" onClick={onContinueOffline}>
+            Continue Offline
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function LaunchFunnelCard({ state }) {
   const steps = getLaunchFunnelProgress(state);
   const done = steps.filter((s) => s.completed).length;

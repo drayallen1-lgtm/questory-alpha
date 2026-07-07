@@ -1,0 +1,111 @@
+/* Questory V2 — Design tokens (8px scale, glass, elevation, typography) */
+
+.world-shell,
+.app-world-mode {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  --font-micro: 0.62rem;
+  --font-caption: 0.72rem;
+  --font-body: 0.82rem;
+  --font-title: 0.95rem;
+  --font-display: 1.1rem;
+  --weight-medium: 600;
+  --weight-bold: 700;
+  --weight-heavy: 800;
+  --letter-wide: 0.08em;
+  --letter-shell: 0.22em;
+
+  --glass-bg: rgba(15, 23, 42, 0.72);
+  --glass-bg-strong: rgba(15, 23, 42, 0.88);
+  --glass-border: rgba(148, 163, 184, 0.18);
+  --glass-blur: 18px;
+
+  --elev-low: 0 8px 20px rgba(0, 0, 0, 0.28);
+  --elev-medium: 0 14px 36px rgba(0, 0, 0, 0.42);
+  --elev-high: 0 24px 64px rgba(0, 0, 0, 0.55);
+  --elev-modal: 0 32px 80px rgba(0, 0, 0, 0.62);
+
+  --world-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --world-ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --world-ease-bounce: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --world-transition-fast: 0.18s var(--world-ease-soft);
+  --world-transition-medium: 0.32s var(--world-ease-out);
+}
+
+.world-glass-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--elev-medium);
+}
+
+.world-elev-low {
+  box-shadow: var(--elev-low);
+}
+
+.world-elev-medium {
+  box-shadow: var(--elev-medium);
+}
+
+.world-elev-high {
+  box-shadow: var(--elev-high);
+}
+
+.world-shell-title {
+  font-size: var(--font-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--letter-shell);
+}
+
+.world-type-section {
+  font-size: var(--font-micro);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--letter-wide);
+  text-transform: uppercase;
+}
+
+.world-touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.world-shell .floating-card,
+.world-shell .living-city-panel,
+.world-shell .ambient-director-whisper-body,
+.world-shell .adaptive-hud-chip,
+.world-shell .floating-dock,
+.world-shell .smart-notification-stack button {
+  border-radius: var(--radius-md);
+}
+
+.world-shell .floating-dock {
+  border-radius: var(--radius-xl);
+}
+
+.world-shell .floating-card-summary,
+.world-shell .living-city-pulse,
+.world-shell .ambient-director-whisper-body,
+.world-shell .floating-dock button {
+  min-height: 44px;
+}
+
+.world-colorblind-safe .floating-card-metric,
+.world-colorblind-safe .adaptive-hud-chip-copy strong {
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}

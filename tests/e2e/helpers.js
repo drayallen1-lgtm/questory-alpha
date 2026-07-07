@@ -123,6 +123,7 @@ export async function primeAppState(page, patch = {}) {
 
   try {
     await reloadApp(page);
+    await dismissWelcomeOnboarding(page);
   } catch (err) {
     const bodyText = await page.locator('body').innerText().catch(() => '');
     throw new Error(
@@ -163,6 +164,30 @@ export async function openPassportAfterClaim(page) {
   await page.getByRole('button', { name: /Open Passport/i }).click();
 }
 
+export async function dismissWelcomeOnboarding(page) {
+  const overlays = page.locator(
+    '.invitation-overlay.welcome-onboarding, .invitation-overlay.journey-picker, .invitation-overlay.player-guide-onboarding, .welcome-onboarding, .journey-picker, .player-guide-onboarding'
+  );
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const overlay = overlays.first();
+    if (!(await overlay.isVisible().catch(() => false))) return;
+    const skip = overlay.getByRole('button', { name: /Skip|Continue|Got it|Explore|Start|Done/i }).first();
+    const next = overlay.getByRole('button', { name: /Next/i }).first();
+    const ghost = overlay.locator('button.ghost').first();
+    if (await skip.isVisible().catch(() => false)) {
+      await skip.click({ force: true });
+    } else if (await next.isVisible().catch(() => false)) {
+      await next.click({ force: true });
+    } else if (await ghost.isVisible().catch(() => false)) {
+      await ghost.click({ force: true });
+    } else {
+      break;
+    }
+    await page.waitForTimeout(300);
+  }
+  await overlays.first().waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
+}
+
 export async function gotoScreen(page, screen) {
   const screenAliases = { home: 'map', world: 'map' };
   const target = screenAliases[screen] || screen;
@@ -170,7 +195,15 @@ export async function gotoScreen(page, screen) {
   await primeAppState(page, target === 'map' ? { screen: 'map' } : { screen: target });
 
   if (target === 'map') {
-    await expect(page.getByTestId('world-shell')).toBeVisible({ timeout: 30_000 });
+    await dismissWelcomeOnboarding(page);
+    const shell = page.getByTestId('world-shell');
+    if (!(await shell.isVisible().catch(() => false))) {
+      const nav = page.locator(
+        'nav.floating-dock, nav.bottom-nav-6, nav.bottom-nav-7, nav.bottom-nav-8'
+      );
+      await nav.getByRole('button', { name: 'World', exact: true }).click({ force: true });
+    }
+    await expect(shell).toBeVisible({ timeout: 30_000 });
     return;
   }
 
@@ -191,5 +224,6 @@ export async function gotoScreen(page, screen) {
   const nav = page.locator(
     'nav.floating-dock, nav.bottom-nav-6, nav.bottom-nav-7, nav.bottom-nav-8'
   );
+  await dismissWelcomeOnboarding(page);
   await nav.getByRole('button', { name: label, exact: true }).click();
 }

@@ -12,8 +12,22 @@ import { getSmartNotificationSnapshot } from './smartNotificationEngine';
 import { SmartNotificationStack } from './SmartNotificationStack';
 import { getAdaptiveHudSnapshot } from './adaptiveHudEngine';
 import { AdaptiveHudStrip } from './AdaptiveHudStrip';
+import {
+  WORLD_ANALYTICS_EVENTS,
+  WORLD_AUDIO_EVENTS,
+  enrichCardsWithEmptyStates,
+  emitWorldAudio,
+  trackWorldEvent,
+} from './worldExperienceEngine';
 
-export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null, hudContext = null }) {
+export function FloatingHud({
+  state,
+  adventures = [],
+  nav,
+  setState,
+  layerSnapshot = null,
+  hudContext = null,
+}) {
   const zoom = layerSnapshot?.zoom ?? 11;
   const now = Date.now();
   const [expandedCardId, setExpandedCardId] = useState(null);
@@ -116,7 +130,10 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null,
     ]
   );
 
-  const displayCards = adaptiveHudSnapshot.cards;
+  const displayCards = useMemo(() => {
+    const hasGuild = Boolean(faction?.memberFactionId);
+    return enrichCardsWithEmptyStates(adaptiveHudSnapshot.cards, { hasGuild });
+  }, [adaptiveHudSnapshot.cards, faction?.memberFactionId]);
 
   const notificationSnapshot = useMemo(
     () =>
@@ -134,6 +151,14 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null,
 
   function handleNotificationAction(notification) {
     if (!nav || !notification?.action) return;
+    if (setState) {
+      setState((current) =>
+        trackWorldEvent(current, WORLD_ANALYTICS_EVENTS.NOTIFICATION_OPEN, {
+          id: notification.id,
+        })
+      );
+    }
+    emitWorldAudio(WORLD_AUDIO_EVENTS.NOTIFICATION, { id: notification.id });
     nav(notification.action, undefined, { adminPreview: false });
   }
 
@@ -158,12 +183,39 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null,
   }, [expandedCardId]);
 
   function handleToggle(cardId) {
-    setExpandedCardId((current) => (current === cardId ? null : cardId));
+    const next = expandedCardId === cardId ? null : cardId;
+    setExpandedCardId(next);
+    if (next && setState) {
+      setState((s) =>
+        trackWorldEvent(s, WORLD_ANALYTICS_EVENTS.CARD_EXPAND, { cardId: next })
+      );
+    }
+    if (next === 'earth') emitWorldAudio(WORLD_AUDIO_EVENTS.EARTH_PULSE);
+    if (next === 'guild') emitWorldAudio(WORLD_AUDIO_EVENTS.GUILD_WAR);
+    if (next === 'marketplace') emitWorldAudio(WORLD_AUDIO_EVENTS.MARKETPLACE);
+  }
+
+  function handleCardItemAction(item) {
+    if (!nav || !item?.action) return;
+    nav(item.action, undefined, item.actionOptions || { adminPreview: false });
   }
 
   function handleViewAll(card) {
     setExpandedCardId(null);
     if (!nav || !card.viewAllScreen) return;
+    if (setState) {
+      setState((current) => {
+        let next = trackWorldEvent(current, WORLD_ANALYTICS_EVENTS.CARD_VIEW_ALL, {
+          cardId: card.id,
+        });
+        if (card.id === 'marketplace') {
+          next = trackWorldEvent(next, WORLD_ANALYTICS_EVENTS.MARKETPLACE_VISIT, {
+            source: 'hud',
+          });
+        }
+        return next;
+      });
+    }
     nav(card.viewAllScreen, undefined, card.viewAllOptions || { adminPreview: false });
   }
 
@@ -232,6 +284,7 @@ export function FloatingHud({ state, adventures = [], nav, layerSnapshot = null,
               layerHidden={false}
               onToggle={handleToggle}
               onViewAll={() => handleViewAll(card)}
+              onItemAction={handleCardItemAction}
             />
           ))}
         </div>

@@ -1,9 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   dismissAmbientWhisper,
   getAmbientWorldDirectorSnapshot,
-  markAmbientWhisperSeen,
 } from './ambientWorldDirectorEngine';
+import {
+  WORLD_ANALYTICS_EVENTS,
+  WORLD_AUDIO_EVENTS,
+  emitWorldAudio,
+  trackWorldEvent,
+} from './worldExperienceEngine';
 
 export function AmbientDirectorWhisper({
   state,
@@ -37,13 +42,20 @@ export function AmbientDirectorWhisper({
     return () => window.clearInterval(timer);
   }, [snapshot.visible, snapshot.whisperCount, snapshot.rotationMs]);
 
+  const impressedWhisperIds = useRef(new Set());
+
   useEffect(() => {
-    if (!snapshot.activeWhisper?.id || !setState) return;
-    setState((current) => {
-      if (current.ambientDirector?.lastWhisperId === snapshot.activeWhisper.id) return current;
-      return markAmbientWhisperSeen(current, snapshot.activeWhisper.id);
-    });
-  }, [snapshot.activeWhisper?.id, setState]);
+    const whisperId = snapshot.activeWhisper?.id;
+    if (!whisperId || !snapshot.visible) return;
+    if (impressedWhisperIds.current.has(whisperId)) return;
+    impressedWhisperIds.current.add(whisperId);
+    if (setState) {
+      setState((current) =>
+        trackWorldEvent(current, WORLD_ANALYTICS_EVENTS.DIRECTOR_WHISPER, { whisperId })
+      );
+    }
+    emitWorldAudio(WORLD_AUDIO_EVENTS.DIRECTOR_WHISPER, { whisperId });
+  }, [snapshot.activeWhisper?.id, snapshot.visible, setState]);
 
   if (!snapshot.visible || !snapshot.activeWhisper) return null;
 
@@ -51,6 +63,15 @@ export function AmbientDirectorWhisper({
 
   function handleAction() {
     if (!nav) return;
+    if (setState) {
+      setState((current) =>
+        trackWorldEvent(current, WORLD_ANALYTICS_EVENTS.DIRECTOR_WHISPER_CLICK, {
+          whisperId: whisper.id,
+          action: whisper.action,
+        })
+      );
+    }
+    emitWorldAudio(WORLD_AUDIO_EVENTS.DIRECTOR_WHISPER, { whisperId: whisper.id });
     if (whisper.action === 'play' && whisper.adventureId) {
       nav('play', whisper.adventureId);
       return;

@@ -35,6 +35,7 @@ import {
   KNOWN_IMPORT_CYCLE_COUNT,
 } from './engineSnapshotUtils.js';
 import { STORAGE_KEY } from './seed.js';
+import { getWorldPerformanceSnapshot } from './worldExperienceEngine.js';
 
 function countItems(value) {
   if (value == null) return 0;
@@ -77,6 +78,15 @@ function summarizeSample(id, result) {
   if (id === 'webhooks') return { endpoints: result.stats?.endpointCount };
   if (id === 'white-label') return { brands: result.stats?.brandCount, ext: result.stats?.extensionCount };
   if (id === 'enterprise') return { orgs: result.stats?.orgCount };
+  if (id === 'world-performance') {
+    return {
+      healthy: result.healthy,
+      warnings: result.warnings?.length || 0,
+      hudCards: result.hudCardCount,
+      layers: result.visibleLayerCount,
+      animations: result.animationCount,
+    };
+  }
   return null;
 }
 
@@ -125,6 +135,13 @@ export function buildStateInspector(state, adventures = []) {
 export function runDeveloperHealthCheck(state, adventures = [], options = {}) {
   const now = options.now || Date.now();
   const fog = { revealed: state?.mapExploration?.revealed || [] };
+  const worldPerformance = getWorldPerformanceSnapshot({
+    layerSnapshot: options.layerSnapshot || null,
+    hudCardCount: options.hudCardCount ?? 6,
+    hudRefreshMs: options.hudRefreshMs ?? 0,
+    mapRenderMs: options.mapRenderMs ?? 0,
+    worldUpdateMs: options.worldUpdateMs ?? 0,
+  });
 
   const engines = [
     runCheck('living-world', 'Living World', () =>
@@ -193,6 +210,7 @@ export function runDeveloperHealthCheck(state, adventures = [], options = {}) {
       const paths = adventure.paths || adventure.branchPaths || [];
       return { ok: Array.isArray(paths) && paths.length > 0 };
     }),
+    runCheck('world-performance', 'World Performance', () => worldPerformance),
   ];
 
   const stateSize = assessStateSize(approximateStateSizeBytes(state));
@@ -210,12 +228,16 @@ export function runDeveloperHealthCheck(state, adventures = [], options = {}) {
     },
     activeErrors,
     launchErrors,
+    worldPerformance,
     summary: {
       total: engines.length,
       healthy: engines.filter((e) => e.snapshotOk && !e.error).length,
       failed: engines.filter((e) => e.error || !e.snapshotOk).length,
       totalTimingMs: engines.reduce((sum, e) => sum + (e.timingMs || 0), 0),
       stateSizeWarning: stateSize.warning,
+      worldPerformanceWarning: worldPerformance.warnings?.length
+        ? worldPerformance.warnings.join(' · ')
+        : null,
     },
   };
 }

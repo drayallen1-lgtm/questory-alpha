@@ -12,6 +12,7 @@ export function FloatingCard({
   layerHidden = false,
   onToggle,
   onViewAll,
+  onItemAction,
 }) {
   if (layerHidden) {
     return (
@@ -66,7 +67,17 @@ export function FloatingCard({
         <ul className="floating-card-list">
           {items.map((item) => (
             <li key={item.id} className="floating-card-list-item">
-              {item.text}
+              {item.action && onItemAction ? (
+                <button
+                  type="button"
+                  className="floating-card-story-cta world-touch-target"
+                  onClick={() => onItemAction(item)}
+                >
+                  {item.text}
+                </button>
+              ) : (
+                item.text
+              )}
             </li>
           ))}
         </ul>

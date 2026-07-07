@@ -204,3 +204,33 @@
     border-color: rgba(226, 232, 240, 0.45);
   }
 }
+
+.world-shell .floating-card-summary:hover,
+.world-shell .floating-card-story-cta:hover,
+.world-shell .ambient-director-whisper-body:hover,
+.world-shell .floating-dock button:hover {
+  transform: translateY(-1px);
+}
+
+.world-shell .floating-card-story-cta {
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border-radius: var(--radius-sm, 10px);
+  border: 1px solid rgba(94, 234, 212, 0.28);
+  background: rgba(15, 118, 110, 0.18);
+  color: #ccfbf1;
+  font-size: var(--font-body, 0.82rem);
+  cursor: pointer;
+  transition: transform var(--world-transition-fast), border-color var(--world-transition-fast);
+}
+
+.world-high-contrast .floating-card,
+.world-high-contrast .living-city-panel,
+.world-high-contrast .floating-dock {
+  border-width: 2px;
+}
+
+.world-reduced-motion .floating-hud-grid {
+  animation: none !important;
+}

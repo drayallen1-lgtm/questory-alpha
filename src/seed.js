@@ -62,6 +62,12 @@ import {
   DEFAULT_AMBIENT_DIRECTOR,
   normalizeAmbientDirector,
 } from './ambientWorldDirectorEngine';
+import {
+  DEFAULT_WORLD_ANALYTICS,
+  DEFAULT_WORLD_EXPERIENCE,
+  normalizeWorldAnalytics,
+  normalizeWorldExperience,
+} from './worldExperienceEngine';
 import { DEFAULT_PAYMENT, normalizePayment } from './paymentEngine';
 import { DEFAULT_PARTNER_OPS, normalizePartnerOps } from './partnerOperationsEngine';
 import { DEFAULT_COMPLIANCE, normalizeCompliance } from './complianceEngine';
@@ -130,6 +136,8 @@ export const defaultState = {
   faction: { ...DEFAULT_FACTION },
   aiDirector: { ...DEFAULT_AI_DIRECTOR },
   ambientDirector: { ...DEFAULT_AMBIENT_DIRECTOR },
+  worldAnalytics: { ...DEFAULT_WORLD_ANALYTICS },
+  worldExperience: { ...DEFAULT_WORLD_EXPERIENCE },
   payment: { ...DEFAULT_PAYMENT },
   partnerOps: { ...DEFAULT_PARTNER_OPS },
   compliance: { ...DEFAULT_COMPLIANCE },
@@ -835,6 +843,8 @@ export function loadState() {
       faction: normalizeFaction(saved.faction),
       aiDirector: normalizeAiDirector(saved.aiDirector),
       ambientDirector: normalizeAmbientDirector(saved.ambientDirector),
+      worldAnalytics: normalizeWorldAnalytics(saved.worldAnalytics),
+      worldExperience: normalizeWorldExperience(saved.worldExperience),
       payment: normalizePayment(saved.payment),
       partnerOps: normalizePartnerOps(saved.partnerOps),
       compliance: normalizeCompliance(saved.compliance),

@@ -83,6 +83,33 @@ export function DeveloperDashboard({ state, adventures = [], nav, isAdmin = fals
         </div>
       )}
 
+      {active?.summary?.worldPerformanceWarning && (
+        <div className="card dev-warning-card" data-testid="world-performance-warning">
+          <AlertTriangle size={16} />
+          <p>{active.summary.worldPerformanceWarning}</p>
+        </div>
+      )}
+
+      {active?.worldPerformance?.warnings?.length > 0 && (
+        <div className="card dev-inspector-card">
+          <h3>World Performance</h3>
+          <div className="dev-inspector-grid">
+            <div className="dev-inspector-item">
+              <small>hudCards</small>
+              <strong>{active.worldPerformance.hudCardCount}</strong>
+            </div>
+            <div className="dev-inspector-item">
+              <small>visibleLayers</small>
+              <strong>{active.worldPerformance.visibleLayerCount}</strong>
+            </div>
+            <div className="dev-inspector-item">
+              <small>animations</small>
+              <strong>{active.worldPerformance.animationCount}</strong>
+            </div>
+          </div>
+        </div>
+      )}
+
       {(active?.activeErrors?.length > 0 || active?.launchErrors?.length > 0) && (
         <div className="card dev-errors-card">
           <h3>Active Errors</h3>
