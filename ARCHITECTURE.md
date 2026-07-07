@@ -81,6 +81,9 @@ These are the integration points every new feature must touch:
 | Legendary Hunts | `legendaryHuntEngine` | `LegendaryHuntUI`, map HUD, `WorldBossLayer` |
 | Factions & Territories | `factionEngine` | `FactionGuildUI`, `TerritoryLayer`, Social → Guilds |
 | AI Director | `questoryAiDirectorEngine` | `AiDirectorUI`, Admin → AI Director, Living World / Earth timelines |
+| Payments & Treasury | `paymentEngine` | `PaymentsAdminUI`, Passport Wallet tab, Creator/Marketplace dashboards |
+| Partner Operations | `partnerOperationsEngine` | `PartnerDashboard`, Admin → Partner Ops |
+| Compliance & Risk | `complianceEngine`, `riskEngine` | Payments Admin, Dev Health probes |
 
 ---
 

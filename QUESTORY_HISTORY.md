@@ -202,6 +202,14 @@ Deterministic director engine observing all major world systems; ranks opportuni
 
 ---
 
+### Real Economy, Payments & Partner Operations (Phase 17)
+
+Simulated payment engine with wallets, payouts, settlements, partner campaigns, compliance, and risk detection. Stripe Connect readiness without live transfers. Admin Payments, Partner Dashboard, Passport Wallet tab.
+
+**Why it mattered:** Questory is architecturally ready for real commerce — creators, partners, and sponsors can be onboarded when Stripe goes live.
+
+---
+
 ## Timeline Summary
 
 | Era | Milestone | Phase |
@@ -226,7 +234,8 @@ Deterministic director engine observing all major world systems; ranks opportuni
 | 2.0 | Engine hardening & stabilization | 14.75 |
 | 2.0 | Dynamic factions, guilds & territory wars | 15 |
 | 2.0 | Questory AI Director | 16 |
-| Next | Real economy, payments & partner operations | 17 |
+| 2.0 | Real economy, payments & partner operations | 17 |
+| Next | Open Questory Platform | 18 |
 
 ---
 

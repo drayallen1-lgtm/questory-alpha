@@ -266,7 +266,7 @@ Each entry lists:
 |---|---|
 | **Purpose** | Map heat, explorer simulation, timeline pulses, heat zones |
 | **Primary exports** | `getLivingWorldSnapshot`, `HEAT_LEVELS`, `LIVING_WORLD_LIMITS` |
-| **Dependencies** | `livingWorldEventsEngine`, `mapDiscovery`, `social.js`, `worldEventEngine`, `factionEngine`, `questoryAiDirectorEngine` |
+| **Dependencies** | `livingWorldEventsEngine`, `mapDiscovery`, `social.js`, `worldEventEngine`, `factionEngine`, `questoryAiDirectorEngine`, `paymentEngine` |
 | **Consumers** | `LivingWorldLayer.jsx`, `QuestoryMap.jsx`, `LivingWorldTimeline.jsx`, `livingEarthEngine.js` |
 
 ---
@@ -345,8 +345,52 @@ Each entry lists:
 |---|---|
 | **Purpose** | Deterministic world director — observes engines, ranks opportunities, drafts events, timeline/Earth pulses, NPC suggestions, future AI payloads (no auto mutation) |
 | **Primary exports** | `getAiDirectorSnapshot`, `evaluateDirectorSignals`, `rankDirectorOpportunities`, `generateDirectorRecommendations`, `draftDirectorEvent`, `buildDirectorTimeline`, `buildDirectorEarthPulses`, `buildDirectorPromptPayload`, `getDirectorNpcSuggestions` |
-| **Dependencies** | `factionEngine`, `legendaryHuntEngine`, `marketplaceEngine`, `creatorEconomyEngine`, `dynamicStoryEngine`, `playerProgressionEngine`, `worldDiscoveryEngine`, `questoryIdentityEngine`, `engineSnapshotUtils` |
+| **Dependencies** | `factionEngine`, `legendaryHuntEngine`, `marketplaceEngine`, `creatorEconomyEngine`, `dynamicStoryEngine`, `playerProgressionEngine`, `worldDiscoveryEngine`, `questoryIdentityEngine`, `paymentEngine`, `partnerOperationsEngine`, `engineSnapshotUtils` |
 | **Consumers** | `AiDirectorUI.jsx`, `livingWorldEngine.js`, `livingEarthEngine.js`, `aiNpcEngine.js`, Dev Dashboard |
+
+---
+
+### paymentEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Simulated payment ledger — wallets, payouts, settlements, refunds, Stripe Connect readiness (no live money) |
+| **Primary exports** | `getPaymentSnapshot`, `getWalletSummary`, `createPendingPayment`, `recordPayment`, `recordRefund`, `recordSettlement`, `recordCreatorPayout`, `recordSponsorPayment`, `recordPartnerRevenue`, `buildPaymentTimeline`, `buildMarketplaceWalletFields` |
+| **Dependencies** | `dateUtils`, `engineSnapshotUtils` |
+| **Consumers** | `PaymentsAdminUI.jsx`, `PartnerDashboard.jsx`, `SweepUI.jsx`, `CreatorEconomyUI.jsx`, `marketplaceEngine.js`, `livingWorldEngine.js`, `questoryAiDirectorEngine.js`, Dev Dashboard |
+
+---
+
+### partnerOperationsEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Partner registry, campaigns, analytics, invoices — cities, museums, sponsors, creators |
+| **Primary exports** | `getPartnerSnapshot`, `createPartner`, `verifyPartner`, `recordPartnerCampaign`, `recordPartnerRevenueEntry`, `buildPartnerSettlementHistory` |
+| **Dependencies** | `paymentEngine`, `dateUtils`, `engineSnapshotUtils` |
+| **Consumers** | `PartnerDashboard.jsx`, `PaymentsAdminUI.jsx`, `questoryAiDirectorEngine.js`, Dev Dashboard |
+
+---
+
+### complianceEngine.js
+
+| | |
+|---|---|
+| **Purpose** | KYC, tax status, identity/business verification, manual review queue (ready mode) |
+| **Primary exports** | `getComplianceSnapshot`, `queueManualReview`, `updateKycStatus`, `blockAccount` |
+| **Dependencies** | `engineSnapshotUtils` |
+| **Consumers** | `PaymentsAdminUI.jsx`, `CreatorEconomyUI.jsx`, Dev Dashboard |
+
+---
+
+### riskEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Fraud/abuse detection — duplicate claims, GPS, listings, refunds (advisory only) |
+| **Primary exports** | `getRiskSnapshot`, `evaluateRiskSignals`, `recordRiskAlert`, `RISK_LEVELS` |
+| **Dependencies** | `engineSnapshotUtils` |
+| **Consumers** | `PaymentsAdminUI.jsx`, Dev Dashboard |
 
 ---
 

@@ -160,11 +160,19 @@ Deterministic world-director engine that observes progression, factions, hunts, 
 
 ---
 
+### Phase 17 — Real Economy, Payments & Partner Operations ✓ Complete
+
+Simulated payment engine with seven wallet types, pending payouts, settlements, refunds, Stripe Connect readiness hooks, partner operations (cities, museums, sponsors, creators), compliance (KYC, tax, manual review), and risk engine (fraud signals, advisory only). Admin **Payments** panel, **Partner Dashboard**, Creator revenue/payout UI, Marketplace seller wallet, Passport **Wallet** tab, Living World payment timeline, AI Director payment signals, and Dev Health probes. Unit and E2E tests. **No live money movement.**
+
+**Why it mattered:** Questory became production-ready for commercial operations — every payment path is architected for Stripe/Connect later while remaining fully simulated in alpha.
+
+---
+
 ## Future Phases
 
-### Phase 17 — Real Economy, Payments & Partner Operations
+### Phase 18 — Open Questory Platform
 
-Stripe-ready payments, partner revenue splits, sponsor billing, and operational tooling for creators and venues.
+API, SDK, white label, enterprise, and global launch infrastructure.
 
 **Status:** Future
 
@@ -172,7 +180,7 @@ Stripe-ready payments, partner revenue splits, sponsor billing, and operational 
 
 ## Roadmap Rules
 
-1. **This file is canonical.** Do not add Phase 18+ without explicit product direction.
+1. **This file is canonical.** Do not add Phase 19+ without explicit product direction.
 2. **Completed phases stay checked off.** Do not un-complete work.
 3. **In-progress means actively being built** — move to complete only when committed and buildable.
 4. **Future phases are ordered by dependency**, not by excitement.
@@ -180,4 +188,4 @@ Stripe-ready payments, partner revenue splits, sponsor billing, and operational 
 
 ---
 
-*Last updated: Phase 16 complete. Next milestone: Phase 17 — Real Economy, Payments & Partner Operations.*
+*Last updated: Phase 17 complete. Next milestone: Phase 18 — Open Questory Platform.*

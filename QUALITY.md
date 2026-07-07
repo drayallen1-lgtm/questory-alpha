@@ -1,6 +1,6 @@
 # Questory Quality Guide
 
-Phase 14.5–14.75 — Developer Experience, Quality, and Engine Hardening safeguards. Phase 15 adds faction engine tests and guild E2E coverage. Phase 16 adds AI Director engine tests and dev health probe.
+Phase 14.5–14.75 — Developer Experience, Quality, and Engine Hardening safeguards. Phase 15 adds faction engine tests and guild E2E coverage. Phase 16 adds AI Director engine tests and dev health probe. Phase 17 adds payment, partner, compliance, and risk engine tests.
 
 ## Quick commands
 
@@ -34,6 +34,10 @@ Engines covered:
 - `legendaryHuntEngine` — snapshot shape and boss fields
 - `factionEngine` — snapshot, territory owner, contributions, rewards, deterministic activity
 - `questoryAiDirectorEngine` — snapshot, signals, opportunity ranking, draft safety, prompt payload sanitization
+- `paymentEngine` — snapshot, wallets, pending payments, refunds, settlements
+- `partnerOperationsEngine` — partners, campaigns, analytics
+- `complianceEngine` — KYC, tax status, manual review queue
+- `riskEngine` — risk signals, alert levels, no auto enforcement
 
 Setup file `tests/unit/setup.js` preloads `seed.js` to avoid circular import races in Node.
 
@@ -134,12 +138,12 @@ Gentle config in `eslint.config.js` — catches `no-undef` without React style r
 - Knip may OOM on large repos — re-run with more memory or scan subsets if needed.
 - Lazy imports for Marketplace/Creator screens are partially ineffective while those modules remain statically imported from map/passport paths — chunks still split for Codex, Living Earth, Dev Dashboard.
 
-## Before Phase 17
+## Before Phase 18
 
 1. `npm run build`
 2. `npm run test:unit`
 3. `npm run test:e2e`
 4. `npm run lint`
-5. Spot-check Dev Health and AI Director in Admin
+5. Spot-check Admin → Payments, Partner Dashboard, Passport Wallet
 
 Source-only commits. Never commit `dist/`.
