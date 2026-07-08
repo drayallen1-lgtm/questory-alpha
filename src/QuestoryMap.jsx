@@ -90,6 +90,17 @@ import { MarketVenueCard } from './MarketVenueCard';
 import { getAiNpcSnapshot } from './aiNpcEngine';
 import { getDynamicStorySnapshot } from './dynamicStoryEngine';
 import { MarketVenueLayer } from './MarketVenueLayer';
+import { GeographyLayer } from './GeographyLayer';
+import { BuildingActivityLayer } from './BuildingActivityLayer';
+import {
+  buildCameraRememberPatch,
+  resolveInitialCamera,
+  WORLD_CAMERA_ZOOM,
+} from './worldCameraEngine';
+import { getGeographyLayerSnapshot } from './geographyLayerEngine';
+import { getBuildingActivitySnapshot } from './buildingActivityEngine';
+import { getLivingStreetsSnapshot } from './livingStreetsEngine';
+import { getImmersiveAudioSnapshot } from './immersiveAudioFrameworkEngine';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
 
@@ -346,6 +357,13 @@ export function QuestoryMap({
   selectedMarketVenueId = null,
   onMarketVenueSelect = null,
   marketVenueLabels = false,
+  initialCamera = null,
+  geographySnapshot = null,
+  buildingSnapshot = null,
+  livingStreetsSnapshot = null,
+  livingAtlas = false,
+  onCameraChange = null,
+  onBuildingSelect = null,
   onMapZoomChange,
   onMapFlyReady,
   isAdmin = false,
@@ -379,6 +397,8 @@ export function QuestoryMap({
   const onSpatialStatsChangeRef = useRef(onSpatialStatsChange);
   const onMapZoomChangeRef = useRef(onMapZoomChange);
   onMapZoomChangeRef.current = onMapZoomChange;
+  const onCameraChangeRef = useRef(onCameraChange);
+  onCameraChangeRef.current = onCameraChange;
   const requestCameraMoveRef = useRef(null);
   const [mapInitFailed, setMapInitFailed] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -776,10 +796,13 @@ export function QuestoryMap({
     let cancelled = false;
 
     mapboxgl.accessToken = token;
-    const initialCenter =
-      userLocation?.longitude != null
-        ? [userLocation.longitude, userLocation.latitude]
-        : [-95.261, 37.3392];
+    const camera = initialCamera || {
+      latitude: 37.3392,
+      longitude: -95.261,
+      zoom: WORLD_CAMERA_ZOOM.STREET_BLOCKS,
+    };
+    const initialCenter = [camera.longitude, camera.latitude];
+    const initialZoom = camera.zoom ?? WORLD_CAMERA_ZOOM.STREET_BLOCKS;
 
     if (userLocation?.latitude != null) {
       cameraRef.current.state.initialUserCentered = true;
@@ -791,7 +814,7 @@ export function QuestoryMap({
         container: containerRef.current,
         style: 'mapbox://styles/mapbox/dark-v11',
         center: initialCenter,
-        zoom: userLocation ? 13 : 11,
+        zoom: initialZoom,
         attributionControl: true,
         failIfMajorPerformanceCaveat: false,
       });
@@ -901,7 +924,16 @@ export function QuestoryMap({
       map.on('moveend', syncHtmlMarkers);
       map.on('zoomend', () => {
         syncHtmlMarkers();
-        onMapZoomChangeRef.current?.(map.getZoom());
+        const zoom = map.getZoom();
+        onMapZoomChangeRef.current?.(zoom);
+        const center = map.getCenter();
+        onCameraChangeRef.current?.({
+          latitude: center.lat,
+          longitude: center.lng,
+          zoom,
+          bearing: map.getBearing(),
+          pitch: map.getPitch(),
+        });
       });
       map.on('sourcedata', (e) => {
         if (e.sourceId === ADVENTURE_SOURCE && e.isSourceLoaded) syncHtmlMarkers();
@@ -1106,6 +1138,16 @@ export function QuestoryMap({
             <MapDiscoveryPulse map={mapRef.current} pulses={livingWorld.pulses} />
           </ProgressiveLayer>
           <ProgressiveLayer layerId={WORLD_LAYER_IDS.MARKETPLACE} layers={progressiveLayers}>
+            {geographySnapshot && (
+              <GeographyLayer map={mapRef.current} snapshot={geographySnapshot} />
+            )}
+            {buildingSnapshot && (
+              <BuildingActivityLayer
+                map={mapRef.current}
+                snapshot={buildingSnapshot}
+                onBuildingSelect={onBuildingSelect}
+              />
+            )}
             {marketVenues?.length > 0 && (
               <MarketVenueLayer
                 map={mapRef.current}
@@ -1157,7 +1199,7 @@ export function MapScreen({
   const [cardEntering, setCardEntering] = useState(false);
   const [pulseTrigger, setPulseTrigger] = useState(null);
   const [worldNow, setWorldNow] = useState(() => Date.now());
-  const [mapZoom, setMapZoom] = useState(11);
+  const [mapZoom, setMapZoom] = useState(WORLD_CAMERA_ZOOM.STREET_BLOCKS);
   const [ceremonyDismissed, setCeremonyDismissed] = useState(false);
   const milestonesSeenRef = useRef([]);
   const earthFlyRef = useRef(null);
@@ -1464,6 +1506,95 @@ export function MapScreen({
         primaryOnly: true,
       }),
     [state, adventures, worldNow, marketplaceSnapshot, selectedMarketVenueId]
+  );
+
+  const initialCamera = useMemo(
+    () =>
+      resolveInitialCamera({
+        userLocation: location,
+        state,
+        adventures,
+        remembered: state?.worldCamera,
+      }),
+    [location, state, adventures]
+  );
+
+  const geographySnapshot = useMemo(
+    () => (shellMode ? getGeographyLayerSnapshot({ zoom: mapZoom }) : null),
+    [shellMode, mapZoom]
+  );
+
+  const buildingActivitySnapshot = useMemo(
+    () =>
+      shellMode
+        ? getBuildingActivitySnapshot({
+            zoom: mapZoom,
+            adventures: filteredAdventures,
+            marketplace: marketplaceSnapshot,
+            faction: factionSnapshot,
+            legendaryHunt: legendaryHuntSnapshot,
+            venues: marketplaceLayerSnapshot.venues,
+          })
+        : null,
+    [
+      shellMode,
+      mapZoom,
+      filteredAdventures,
+      marketplaceSnapshot,
+      factionSnapshot,
+      legendaryHuntSnapshot,
+      marketplaceLayerSnapshot.venues,
+    ]
+  );
+
+  const livingStreetsSnapshot = useMemo(
+    () =>
+      shellMode
+        ? getLivingStreetsSnapshot({
+            zoom: mapZoom,
+            livingWorld,
+            faction: factionSnapshot,
+            now: worldNow,
+          })
+        : null,
+    [shellMode, mapZoom, livingWorld, factionSnapshot, worldNow]
+  );
+
+  const immersiveAudioSnapshot = useMemo(
+    () =>
+      shellMode
+        ? getImmersiveAudioSnapshot({
+            zoom: mapZoom,
+            muted: true,
+            buildings: buildingActivitySnapshot?.buildings || [],
+            geography: geographySnapshot,
+          })
+        : null,
+    [shellMode, mapZoom, buildingActivitySnapshot, geographySnapshot]
+  );
+
+  const handleCameraChange = useCallback(
+    (camera) => {
+      if (!setState || !shellMode) return;
+      setState((current) => ({
+        ...current,
+        worldCamera: buildCameraRememberPatch(camera),
+      }));
+    },
+    [setState, shellMode]
+  );
+
+  const handleBuildingSelect = useCallback(
+    (building) => {
+      if (building.venueId) {
+        handleMarketVenueSelect(building.venueId);
+        return;
+      }
+      if (building.adventureId && nav) {
+        nav('detail', building.adventureId, { adminPreview: false });
+      }
+    },
+    [handleMarketVenueSelect, nav]
   );
 
   const worldAnimationsSnapshot = useMemo(
@@ -2165,7 +2296,8 @@ export function MapScreen({
       )}
 
       <div
-        className={`map-stage map-stage-has-discovery-hud${shellMode ? ' map-stage-world-shell map-stage-world-layers' : ''}${shellMode && layerSnapshot.className ? ` ${layerSnapshot.className}` : ''}${shellMode && worldAnimationsSnapshot.className ? ` ${worldAnimationsSnapshot.className}` : ''}${shellMode && adaptiveHudSnapshot.mapClassName ? ` ${adaptiveHudSnapshot.mapClassName}` : ''}${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
+        className={`map-stage map-stage-has-discovery-hud${shellMode ? ' map-stage-world-shell map-stage-world-layers map-stage-living-atlas' : ''}${shellMode && livingStreetsSnapshot?.className ? ` ${livingStreetsSnapshot.className}` : ''}${shellMode && layerSnapshot.className ? ` ${layerSnapshot.className}` : ''}${shellMode && worldAnimationsSnapshot.className ? ` ${worldAnimationsSnapshot.className}` : ''}${shellMode && adaptiveHudSnapshot.mapClassName ? ` ${adaptiveHudSnapshot.mapClassName}` : ''}${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
+        data-audio-zones={immersiveAudioSnapshot?.zones?.length || 0}
         style={shellMode ? layerSnapshot.style : undefined}
       >
         <ProgressiveLayer layerId={WORLD_LAYER_IDS.DISCOVERY} layers={shellMode ? layerSnapshot.layers : null}>
@@ -2213,6 +2345,13 @@ export function MapScreen({
           selectedMarketVenueId={selectedMarketVenueId}
           onMarketVenueSelect={shellMode ? handleMarketVenueSelect : null}
           marketVenueLabels={mapZoom >= 13}
+          initialCamera={shellMode ? initialCamera : null}
+          geographySnapshot={geographySnapshot}
+          buildingSnapshot={buildingActivitySnapshot}
+          livingStreetsSnapshot={livingStreetsSnapshot}
+          livingAtlas={shellMode}
+          onCameraChange={shellMode ? handleCameraChange : null}
+          onBuildingSelect={shellMode ? handleBuildingSelect : null}
           onMapZoomChange={setMapZoom}
           onMapFlyReady={(api) => {
             earthFlyRef.current = api;

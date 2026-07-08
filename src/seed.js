@@ -68,6 +68,7 @@ import {
   normalizeWorldAnalytics,
   normalizeWorldExperience,
 } from './worldExperienceEngine';
+import { DEFAULT_WORLD_CAMERA, normalizeWorldCamera } from './worldCameraEngine';
 import { DEFAULT_PAYMENT, normalizePayment } from './paymentEngine';
 import { DEFAULT_PARTNER_OPS, normalizePartnerOps } from './partnerOperationsEngine';
 import { DEFAULT_COMPLIANCE, normalizeCompliance } from './complianceEngine';
@@ -138,6 +139,7 @@ export const defaultState = {
   ambientDirector: { ...DEFAULT_AMBIENT_DIRECTOR },
   worldAnalytics: { ...DEFAULT_WORLD_ANALYTICS },
   worldExperience: { ...DEFAULT_WORLD_EXPERIENCE },
+  worldCamera: { ...DEFAULT_WORLD_CAMERA },
   payment: { ...DEFAULT_PAYMENT },
   partnerOps: { ...DEFAULT_PARTNER_OPS },
   compliance: { ...DEFAULT_COMPLIANCE },
@@ -845,6 +847,7 @@ export function loadState() {
       ambientDirector: normalizeAmbientDirector(saved.ambientDirector),
       worldAnalytics: normalizeWorldAnalytics(saved.worldAnalytics),
       worldExperience: normalizeWorldExperience(saved.worldExperience),
+      worldCamera: normalizeWorldCamera(saved.worldCamera),
       payment: normalizePayment(saved.payment),
       partnerOps: normalizePartnerOps(saved.partnerOps),
       compliance: normalizeCompliance(saved.compliance),
