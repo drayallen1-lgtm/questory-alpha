@@ -1,19 +1,23 @@
 # HUD Guide
 
-The floating HUD (`FloatingHud` + `AdaptiveHudStrip` + `FloatingCard`) is the primary world interface on the map screen.
+The floating HUD (`FloatingHud` + `AdaptiveHudStrip` + `MicroHudStrip` + `WorldRadialMenu`) is the primary world interface on the map screen.
 
-## Structure
+## Structure (Living Atlas)
 
 ```
 FloatingHud
-├── SmartNotificationStack   (inline one-line; market notifs focus the venue pin)
-├── AdaptiveHudStrip           (single focus chip: walking, driving, guild war, adventure)
-├── map-first-market-chip      (compact "🏪 Market nearby" when activity is near)
-└── floating-hud-grid          (collapsed behind "Layers" by default)
-    └── FloatingCard × N       (explorer, guild, earth, … — never marketplace)
+├── MicroHudStrip              (compact chips: ⚠ legendary, 💎 drop, 🔨 auction — auto-hide, expand on tap)
+├── AmbientDirectorWhisper     (single drifting whisper; no stacked banners)
+├── AdaptiveHudStrip           (context: walking, driving, adventure)
+├── map-first-market-chip      (compact "🏪 Market nearby")
+├── WorldRadialMenu            (🌎 bloom → Treasure, Market, Guild, Earth, Layers, Compass)
+└── floating-hud-grid          (Layers deck — collapsed by default)
+    └── FloatingCard × N
 ```
 
-> **Marketplace is a world layer, not a permanent HUD stack.** It surfaces as map pins (`MarketVenueLayer`) + a venue preview card (`MarketVenueCard`) + the compact "Market nearby" chip. `filterCardsForMapFirst` removes the marketplace deck card in map-first mode.
+> **No "World" dock tab.** Opening Questory lands on the map. The dock is Feed · Passport · Social · Create · Admin.
+
+> **Marketplace is a world layer, not a permanent HUD stack.** Map pins + venue card + compact chip. Giant notification banners are hidden in atlas mode.
 
 ## Adaptive modes
 
@@ -54,4 +58,6 @@ Dev Health warns when HUD card count or refresh time exceeds thresholds (`worldE
 | `floatingCardsEngine.js` | Card data from engine snapshots |
 | `adaptiveHudEngine.js` | Mode + strip + card priority |
 | `FloatingCard.jsx` | Presentational card |
-| `adaptiveHud.css` | Strip styling |
+| `MicroHudStrip.jsx` | Compact atlas chips |
+| `WorldRadialMenu.jsx` | Bloom radial for world actions |
+| `livingAtlas.css` | Atlas layout + geography/building animations |

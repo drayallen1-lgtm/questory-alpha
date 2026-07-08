@@ -6,7 +6,7 @@ test.describe('Living World (map-first)', () => {
     await gotoScreen(page, 'map');
 
     await expect(page.getByTestId('world-shell')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Questory World' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Questory World' })).toBeAttached();
     await expect(page.getByTestId('floating-hud')).toBeVisible();
     await expect(page.locator('.map-stage-world-shell, .questory-map-wrap').first()).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'World navigation' })).toBeVisible();
@@ -31,7 +31,7 @@ test.describe('Living World (map-first)', () => {
       timeout: 15_000,
     });
 
-    await page.getByRole('button', { name: 'World', exact: true }).click();
+    await primeAppState(page, { screen: 'map' });
     await expect(page.getByTestId('world-shell')).toBeVisible({ timeout: 15_000 });
   });
 

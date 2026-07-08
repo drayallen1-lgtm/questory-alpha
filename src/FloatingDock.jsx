@@ -1,7 +1,6 @@
 import React from 'react';
 
 const DOCK_ICONS = {
-  map: { icon: '🗺', label: 'World' },
   feed: { icon: '🏠', label: 'Feed' },
   vault: { icon: '🎒', label: 'Passport' },
   social: { icon: '👥', label: 'Social' },
@@ -26,12 +25,12 @@ function isDockActive(screen, tabId, adminPreview) {
 
 export function FloatingDock({ screen, nav, adminPreview, isSponsor }) {
   const itemIds = isSponsor
-    ? ['map', 'feed', 'vault', 'social', 'sponsor', 'create', 'admin']
-    : ['map', 'feed', 'vault', 'social', 'create', 'admin'];
+    ? ['feed', 'vault', 'social', 'sponsor', 'create', 'admin']
+    : ['feed', 'vault', 'social', 'create', 'admin'];
 
   return (
     <div className="floating-dock-wrap" role="navigation" aria-label="World navigation">
-      <nav className="floating-dock floating-dock--icon">
+      <nav className="floating-dock floating-dock--icon floating-dock--no-world">
         {itemIds.map((id) => {
           const meta = DOCK_ICONS[id];
           return (

@@ -198,10 +198,7 @@ export async function gotoScreen(page, screen) {
     await dismissWelcomeOnboarding(page);
     const shell = page.getByTestId('world-shell');
     if (!(await shell.isVisible().catch(() => false))) {
-      const nav = page.locator(
-        'nav.floating-dock, nav.bottom-nav-6, nav.bottom-nav-7, nav.bottom-nav-8'
-      );
-      await nav.getByRole('button', { name: 'World', exact: true }).click({ force: true });
+      await primeAppState(page, { screen: 'map' });
     }
     await expect(shell).toBeVisible({ timeout: 30_000 });
     return;
@@ -209,7 +206,6 @@ export async function gotoScreen(page, screen) {
 
   const labelMap = {
     feed: 'Feed',
-    map: 'World',
     vault: 'Passport',
     social: 'Social',
     create: 'Create',

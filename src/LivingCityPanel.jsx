@@ -57,7 +57,7 @@ export function LivingCityPanel({
 
   if (!expanded) {
     return (
-      <section className="living-city-panel living-city-panel--compact" aria-label={`${snapshot.cityName} is alive`}>
+      <section className="living-city-panel living-city-panel--compact living-city-panel--atlas" aria-label={`${snapshot.cityName} is alive`}>
         <button
           type="button"
           className="living-city-compact-chip"

@@ -2,6 +2,18 @@
 
 Questory V2 treats the **map as the operating system**. Every feature — marketplace, guild, earth, sponsor, passport — surfaces as contextual layers around the map, not separate apps.
 
+## Living Atlas (V3)
+
+Questory opens **inside** the world — not on a dashboard.
+
+- **True world camera** — `worldCameraEngine` opens at street-block zoom (~6–10 blocks), centered on the player, adventure start, or downtown; remembers last position.
+- **Geography first** — `geographyLayerEngine` fades in districts, landmarks, parks, rails, and trails by zoom.
+- **Buildings are the world** — `buildingActivityEngine` attaches lanterns, pulses, and quest anchors to structures.
+- **Micro HUD** — `microHudEngine` replaces giant banners with auto-hiding chips (⚠ Forgotten Miner, 💎 Drop, 🔨 Auction).
+- **Radial world menu** — `WorldRadialMenu` bloom replaces scattered Layers/Market/Compass buttons.
+- **No "World" dock tab** — opening Questory *is* the world; dock is Feed · Passport · Social · Create · Admin.
+- **Immersive audio framework** — `immersiveAudioFrameworkEngine` (muted by default, no sounds yet).
+
 ## Principles
 
 1. **Map-first** — The map fills ~94% of the viewport. HUD overlays are minimal and anchored to corners.

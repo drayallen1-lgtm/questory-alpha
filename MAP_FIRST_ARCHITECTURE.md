@@ -34,6 +34,18 @@ Make the map the home screen. Wrap features in a **world shell** with floating H
 | 14 | Ambient Director | `ambientWorldDirectorEngine`, map whispers |
 | 15 | World Polish | `worldPolish.css`, E2E, docs |
 
+### V3 Living Atlas (15-commit immersion pass)
+
+| # | Focus | Key modules |
+|---|--------|-------------|
+| 1 | True World Camera | `worldCameraEngine`, remembered `state.worldCamera` |
+| 2 | Geography First | `geographyLayerEngine`, `GeographyLayer` |
+| 3 | Buildings Are the World | `buildingActivityEngine`, `BuildingActivityLayer` |
+| 4 | Micro HUD | `microHudEngine`, `MicroHudStrip` |
+| 5 | Radial World Menu | `WorldRadialMenu` |
+| 6 | City Identity | `LivingCityPanel` atlas chip |
+| 7–15 | Whispers, context, streets, discovery, audio | `livingStreetsEngine`, `immersiveAudioFrameworkEngine`, `livingAtlas.css` |
+
 ---
 
 ## Data Flow
@@ -66,7 +78,7 @@ nav(screen, id, options) → deep-linked tabs
 
 | User action | Route |
 |-------------|-------|
-| Open app | `screen: 'map'` → WorldShell |
+| Open app | `screen: 'map'` → WorldShell (street-block zoom, no World dock tab) |
 | Tap Earth card | `nav('world')` or zoom earth mode |
 | Tap guild card | `nav('social', { guildTab: 'wars' })` |
 | Tap marketplace venue pin | opens venue preview card (`selectedMarketVenueId`) |

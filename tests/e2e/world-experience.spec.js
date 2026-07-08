@@ -23,10 +23,7 @@ test.describe('World experience polish', () => {
     });
     await dismissWelcomeOnboarding(page);
     if (!(await page.getByTestId('world-shell').isVisible().catch(() => false))) {
-      await page
-        .getByRole('navigation', { name: 'World navigation' })
-        .getByRole('button', { name: 'World', exact: true })
-        .click({ force: true });
+      await primeAppState(page, { screen: 'map' });
     }
     await expect(page.getByTestId('world-recovery-banner')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();

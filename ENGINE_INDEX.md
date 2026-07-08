@@ -493,6 +493,72 @@ Each entry lists:
 
 ---
 
+### buildingActivityEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Living Atlas building roles, animation classes, and map interaction anchors |
+| **Primary exports** | `getBuildingActivitySnapshot`, `BUILDING_ROLES`, `BUILDING_ANIMATIONS` |
+| **Dependencies** | `marketplaceEngine`, `worldCameraEngine` |
+| **Consumers** | `BuildingActivityLayer.jsx`, `QuestoryMap.jsx` |
+
+---
+
+### geographyLayerEngine.js
+
+| | |
+|---|---|
+| **Purpose** | District labels, landmarks, roads, parks, rails — zoom-threshold visibility |
+| **Primary exports** | `getGeographyLayerSnapshot` |
+| **Dependencies** | `worldCameraEngine` |
+| **Consumers** | `GeographyLayer.jsx`, `QuestoryMap.jsx` |
+
+---
+
+### immersiveAudioFrameworkEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Zone-based immersive audio framework (muted by default; no playback yet) |
+| **Primary exports** | `getImmersiveAudioSnapshot`, `AUDIO_ZONE_TYPES` |
+| **Dependencies** | Geography / world context |
+| **Consumers** | `QuestoryMap.jsx` (`data-audio-zones`) |
+
+---
+
+### livingStreetsEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Ambient street life metadata — patrols, wagons, fog, fireflies, weather hints |
+| **Primary exports** | `getLivingStreetsSnapshot` |
+| **Dependencies** | World / faction context |
+| **Consumers** | `QuestoryMap.jsx`, `livingAtlas.css` |
+
+---
+
+### microHudEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Compact auto-hiding HUD chips (legendary, auction, guild, market, whisper) |
+| **Primary exports** | `resolveMicroHudChips` |
+| **Dependencies** | Legendary hunt, marketplace, faction engines |
+| **Consumers** | `MicroHudStrip.jsx`, `FloatingHud.jsx` |
+
+---
+
+### worldCameraEngine.js
+
+| | |
+|---|---|
+| **Purpose** | Living Atlas camera — street-block open zoom, remember position, fly-to easing |
+| **Primary exports** | `resolveInitialCamera`, `buildCameraRememberPatch`, `resolveWorldScaleLevel`, `WORLD_CAMERA_ZOOM` |
+| **Dependencies** | `engineSnapshotUtils` |
+| **Consumers** | `QuestoryMap.jsx`, `seed.js` |
+
+---
+
 ### worldDiscoveryEngine.js
 
 | | |

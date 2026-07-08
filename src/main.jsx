@@ -211,6 +211,7 @@ import './worldPolish.css';
 import './worldDesignTokens.css';
 import './worldMotion.css';
 import './mapFirstHud.css';
+import './livingAtlas.css';
 import { LegendaryHuntPanel } from './LegendaryHuntUI';
 import { getInitialState, persistState } from './persistence';
 import { applyLegendaryHuntOnMapReveal } from './legendaryHuntEngine';

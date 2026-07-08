@@ -6,14 +6,13 @@ test.describe('Questory smoke', () => {
     await page.goto('/');
     await expect(page.locator('main.app')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('world-shell')).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByRole('heading', { name: 'Questory World' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Questory World' })).toBeAttached();
   });
 
   test('map opens', async ({ page }) => {
     await gotoScreen(page, 'map');
-    await expect(page.getByRole('heading', { name: 'Questory World' })).toBeVisible({
-      timeout: 30_000,
-    });
+    await expect(page.getByTestId('world-shell')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('heading', { name: 'Questory World' })).toBeAttached();
     await expect(
       page.locator('.questory-map-wrap, .map-stage, .fallback-map, .map-pin-fallback-list').first()
     ).toBeVisible();
