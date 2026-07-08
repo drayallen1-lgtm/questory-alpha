@@ -51,7 +51,9 @@ export function WorldRadialMenu({ open, onToggle, onAction }) {
               <span className="world-radial-item-icon" aria-hidden>
                 {item.icon}
               </span>
-              <span className="world-radial-item-label">{item.label}</span>
+              <span className="world-radial-item-label" aria-hidden={!open}>
+                {item.label}
+              </span>
             </button>
           ))}
         </div>

@@ -6,6 +6,7 @@ export function LivingCityPanel({
   adventures = [],
   layerSnapshot = null,
   nav,
+  atlasMode = false,
 }) {
   const zoom = layerSnapshot?.zoom ?? 11;
   const now = Date.now();
@@ -57,10 +58,10 @@ export function LivingCityPanel({
 
   if (!expanded) {
     return (
-      <section className="living-city-panel living-city-panel--compact living-city-panel--atlas" aria-label={`${snapshot.cityName} is alive`}>
+      <section className="living-city-panel living-city-panel--compact living-city-panel--atlas" aria-label={`${snapshot.cityName} is alive`} data-testid="living-city-chip">
         <button
           type="button"
-          className="living-city-compact-chip"
+          className="living-city-compact-chip long-pill"
           onClick={() => setExpanded(true)}
           aria-expanded="false"
         >

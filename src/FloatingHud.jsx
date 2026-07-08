@@ -31,6 +31,7 @@ export function FloatingHud({
   setState,
   layerSnapshot = null,
   hudContext = null,
+  atlasMode = false,
 }) {
   const zoom = layerSnapshot?.zoom ?? 11;
   const [expandedCardId, setExpandedCardId] = useState(null);
@@ -173,7 +174,7 @@ export function FloatingHud({
   );
 
   const showNotifications =
-    notificationSnapshot.visible && !expandedCardId && !deckOpen && !radialOpen;
+    !atlasMode && notificationSnapshot.visible && !expandedCardId && !deckOpen && !radialOpen;
 
   const microHudSnapshot = useMemo(
     () =>
@@ -188,6 +189,11 @@ export function FloatingHud({
   );
 
   const useMicroHud = microHudSnapshot.visible && !deckOpen && !expandedCardId;
+
+  const showAtlasDeck = atlasMode && deckOpen;
+  const showAdaptiveStrip = !atlasMode && !useMicroHud;
+  const showMarketChip = !atlasMode && mapFirstLayout.marketChipVisible && !useMicroHud;
+  const showDeckToggle = !atlasMode && mapFirstLayout.showDeckToggle && !radialOpen;
 
   function handleNotificationAction(notification) {
     if (!nav || !notification?.action) return;
@@ -232,7 +238,7 @@ export function FloatingHud({
   function handleRadialAction(item) {
     if (!nav && item.action !== 'layers' && item.action !== 'compass') return;
     if (item.action === 'layers') {
-      setDeckOpen(true);
+      window.setTimeout(() => setDeckOpen(true), 0);
       return;
     }
     if (item.action === 'compass') {
@@ -267,17 +273,22 @@ export function FloatingHud({
   }
 
   useEffect(() => {
-    if (!expandedCardId) return undefined;
+    if (!expandedCardId && !deckOpen && !compassOpen) return undefined;
 
     function handlePointerDown(event) {
       if (hudRef.current?.contains(event.target)) return;
+      if (event.target.closest?.('.world-radial-menu')) return;
       setExpandedCardId(null);
+      setDeckOpen(false);
+      setCompassOpen(false);
     }
 
     function handleKeyDown(event) {
       if (event.key === 'Escape') {
         setExpandedCardId(null);
         setDeckOpen(false);
+        setCompassOpen(false);
+        setRadialOpen(false);
       }
     }
 
@@ -287,7 +298,7 @@ export function FloatingHud({
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [expandedCardId]);
+  }, [expandedCardId, deckOpen, compassOpen]);
 
   function handleToggle(cardId) {
     const next = expandedCardId === cardId ? null : cardId;
@@ -354,7 +365,7 @@ export function FloatingHud({
 
   return (
     <>
-      {expandedCardId && (
+      {(expandedCardId || (!atlasMode && deckOpen)) && (
         <button
           type="button"
           className="floating-hud-dismiss-scrim"
@@ -362,6 +373,7 @@ export function FloatingHud({
           onClick={() => {
             setExpandedCardId(null);
             setDeckOpen(false);
+            setCompassOpen(false);
           }}
         />
       )}
@@ -369,33 +381,40 @@ export function FloatingHud({
       <div
         className={`floating-hud ${adaptiveHudSnapshot.className}${
           adaptiveHudSnapshot.simplified ? ' floating-hud--simplified' : ''
-        }${mapFirstLayout.showCardDeck ? ' floating-hud--deck-open' : ' floating-hud--deck-collapsed'}`}
+        }${atlasMode ? ' floating-hud--atlas-mode' : ''}${
+          showAtlasDeck || (!atlasMode && mapFirstLayout.showCardDeck)
+            ? ' floating-hud--deck-open'
+            : ' floating-hud--deck-collapsed'
+        }`}
         aria-label="World HUD"
         data-testid="floating-hud"
+        data-atlas-mode={atlasMode ? 'true' : 'false'}
         ref={hudRef}
       >
-        {useMicroHud ? (
+        {useMicroHud && (
           <MicroHudStrip snapshot={microHudSnapshot} onChipAction={handleMicroChip} />
-        ) : (
-          showNotifications && (
-            <SmartNotificationStack
-              prominent={notificationSnapshot.prominent}
-              stacked={notificationSnapshot.stacked}
-              stackCount={notificationSnapshot.stackCount}
-              onAction={handleNotificationAction}
-              compact
-              inline
-            />
-          )
         )}
 
-        <AdaptiveHudStrip
-          snapshot={focusSnapshot}
-          onItemAction={handleStripAction}
-          singleFocus
-        />
+        {!useMicroHud && showNotifications && (
+          <SmartNotificationStack
+            prominent={notificationSnapshot.prominent}
+            stacked={notificationSnapshot.stacked}
+            stackCount={notificationSnapshot.stackCount}
+            onAction={handleNotificationAction}
+            compact
+            inline
+          />
+        )}
 
-        {mapFirstLayout.marketChipVisible && !useMicroHud && (
+        {showAdaptiveStrip && (
+          <AdaptiveHudStrip
+            snapshot={focusSnapshot}
+            onItemAction={handleStripAction}
+            singleFocus
+          />
+        )}
+
+        {showMarketChip && (
           <button
             type="button"
             className="map-first-market-chip"
@@ -414,7 +433,7 @@ export function FloatingHud({
           </button>
         )}
 
-        {mapFirstLayout.showDeckToggle && !radialOpen && (
+        {showDeckToggle && (
           <button
             type="button"
             className="floating-hud-deck-toggle"
@@ -426,7 +445,33 @@ export function FloatingHud({
           </button>
         )}
 
-        {mapFirstLayout.showCardDeck && (
+        {showAtlasDeck && (
+          <div
+            className={`floating-hud-grid floating-hud-grid--atlas-open${
+              expandedCardId ? ' floating-hud-grid--has-expanded' : ''
+            }`}
+          >
+            {displayCards.map((card) => (
+              <FloatingCard
+                key={card.id}
+                id={card.id}
+                icon={card.icon}
+                title={card.title}
+                metric={card.metric}
+                metricLabel={card.metricLabel}
+                items={card.items}
+                wide={card.wide}
+                expanded={expandedCardId === card.id}
+                layerHidden={false}
+                onToggle={handleToggle}
+                onViewAll={() => handleViewAll(card)}
+                onItemAction={handleCardItemAction}
+              />
+            ))}
+          </div>
+        )}
+
+        {!atlasMode && mapFirstLayout.showCardDeck && (
           <div
             className={`floating-hud-grid${
               expandedCardId ? ' floating-hud-grid--has-expanded' : ''
@@ -465,12 +510,14 @@ export function FloatingHud({
           <span className="map-first-compass-float-icon" aria-hidden>
             {mapFirstLayout.compassFloat.icon}
           </span>
-          <span className="map-first-compass-float-copy">
-            <strong>{mapFirstLayout.compassFloat.label}</strong>
-            {mapFirstLayout.compassFloat.detail && (
-              <small>{mapFirstLayout.compassFloat.detail}</small>
-            )}
-          </span>
+          {!atlasMode && (
+            <span className="map-first-compass-float-copy">
+              <strong>{mapFirstLayout.compassFloat.label}</strong>
+              {mapFirstLayout.compassFloat.detail && (
+                <small>{mapFirstLayout.compassFloat.detail}</small>
+              )}
+            </span>
+          )}
         </button>
       )}
     </>

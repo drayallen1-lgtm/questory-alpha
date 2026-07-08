@@ -32,12 +32,9 @@ test.describe('World experience polish', () => {
 
   test('explorer deck stays story-driven when layers open', async ({ page }) => {
     await gotoScreen(page, 'map');
-    const layers = page.getByTestId('floating-hud-deck-toggle');
-    if (!(await layers.isVisible().catch(() => false))) {
-      test.skip();
-      return;
-    }
-    await layers.click();
+    const radial = page.getByTestId('world-radial-menu');
+    await radial.getByRole('button', { name: 'Open world menu' }).click();
+    await radial.locator('.world-radial-item').nth(4).click();
     const explorer = page.locator('[data-layer-id="explorer"]');
     if (await explorer.isVisible().catch(() => false)) {
       await expect(explorer).not.toContainText(/No [Dd]ata/);

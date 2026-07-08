@@ -94,6 +94,8 @@ import { GeographyLayer } from './GeographyLayer';
 import { BuildingActivityLayer } from './BuildingActivityLayer';
 import {
   buildCameraRememberPatch,
+  buildFlyToOptions,
+  MIN_ATLAS_OPEN_ZOOM,
   resolveInitialCamera,
   WORLD_CAMERA_ZOOM,
 } from './worldCameraEngine';
@@ -261,13 +263,33 @@ function FallbackMap({
   mini = false,
   className = '',
   notice = MAPBOX_FALLBACK_MESSAGE,
+  livingAtlas = false,
 }) {
   const allMarkers = [...adventureMarkers, ...clueMarkers];
   const bounds = getMapBounds(allMarkers);
 
   return (
-    <div className={`fallback-map ${mini ? 'mini' : ''} ${className}`}>
+    <div className={`fallback-map ${mini ? 'mini' : ''} ${className}${livingAtlas ? ' fallback-map--atlas' : ''}`}>
       <div className="fallback-map-grid" />
+      {livingAtlas && (
+        <div className="fallback-geography-layer" aria-hidden>
+          <span className="fallback-geography-label" style={{ left: '48%', top: '44%' }}>
+            Downtown Parsons
+          </span>
+          <span className="fallback-geography-label" style={{ left: '52%', top: '48%' }}>
+            Union Depot
+          </span>
+          <span className="fallback-geography-label" style={{ left: '44%', top: '50%' }}>
+            Main Street
+          </span>
+          <span className="fallback-geography-label fallback-geography-label--water" style={{ left: '62%', top: '36%' }}>
+            Lake Parsons
+          </span>
+          <span className="fallback-geography-label" style={{ left: '38%', top: '58%' }}>
+            River District
+          </span>
+        </div>
+      )}
       <div className="fallback-map-body">
         {!mini && <p className="fallback-map-notice">{notice}</p>}
         {mini && <p className="fallback-map-notice mini-notice">{notice}</p>}
@@ -402,6 +424,7 @@ export function QuestoryMap({
   const requestCameraMoveRef = useRef(null);
   const [mapInitFailed, setMapInitFailed] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const atlasZoomCorrectedRef = useRef(false);
   adventureMarkersRef.current = adventureMarkers;
   mapStateRef.current = mapState;
   heatZonesRef.current = livingWorld?.heatZones || [];
@@ -941,6 +964,24 @@ export function QuestoryMap({
 
       syncHtmlMarkers();
       onMapZoomChangeRef.current?.(map.getZoom());
+
+      if (livingAtlas && !atlasZoomCorrectedRef.current && map.getZoom() < MIN_ATLAS_OPEN_ZOOM) {
+        atlasZoomCorrectedRef.current = true;
+        const center = map.getCenter();
+        map.flyTo(
+          buildFlyToOptions(
+            {
+              latitude: center.lat,
+              longitude: center.lng,
+              zoom: WORLD_CAMERA_ZOOM.STREET_BLOCKS,
+            },
+            { durationMs: 1400 }
+          )
+        );
+      } else if (livingAtlas) {
+        atlasZoomCorrectedRef.current = true;
+      }
+
       setMapReady(true);
     });
 
@@ -1083,6 +1124,7 @@ export function QuestoryMap({
         onClueClick={onClueClick}
         mini={mini}
         className={className}
+        livingAtlas={livingAtlas}
         notice={mapInitFailed ? MAPBOX_WEBGL_FALLBACK_MESSAGE : MAPBOX_FALLBACK_MESSAGE}
       />
     );
@@ -2296,13 +2338,13 @@ export function MapScreen({
       )}
 
       <div
-        className={`map-stage map-stage-has-discovery-hud${shellMode ? ' map-stage-world-shell map-stage-world-layers map-stage-living-atlas' : ''}${shellMode && livingStreetsSnapshot?.className ? ` ${livingStreetsSnapshot.className}` : ''}${shellMode && layerSnapshot.className ? ` ${layerSnapshot.className}` : ''}${shellMode && worldAnimationsSnapshot.className ? ` ${worldAnimationsSnapshot.className}` : ''}${shellMode && adaptiveHudSnapshot.mapClassName ? ` ${adaptiveHudSnapshot.mapClassName}` : ''}${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
+        className={`map-stage${shellMode ? '' : ' map-stage-has-discovery-hud'}${shellMode ? ' map-stage-world-shell map-stage-world-layers map-stage-living-atlas map-stage-atlas-mode' : ''}${shellMode && livingStreetsSnapshot?.className ? ` ${livingStreetsSnapshot.className}` : ''}${shellMode && layerSnapshot.className ? ` ${layerSnapshot.className}` : ''}${shellMode && worldAnimationsSnapshot.className ? ` ${worldAnimationsSnapshot.className}` : ''}${shellMode && adaptiveHudSnapshot.mapClassName ? ` ${adaptiveHudSnapshot.mapClassName}` : ''}${livingCluster ? ' map-stage-living-cluster' : ''}${selectedAdventure ? ' map-stage-adventure-active' : ''}${livingWorld.nightMode ? ' map-stage-night' : ''}${legendaryHuntSnapshot.atmosphere?.className ? ` ${legendaryHuntSnapshot.atmosphere.className}` : ''}${earthOverlayVisible ? ' map-stage-earth-mode' : ''}${livingEarthSnapshot.fullEarth ? ' map-stage-earth-mode-full' : ''}`}
         data-audio-zones={immersiveAudioSnapshot?.zones?.length || 0}
         style={shellMode ? layerSnapshot.style : undefined}
       >
         <ProgressiveLayer layerId={WORLD_LAYER_IDS.DISCOVERY} layers={shellMode ? layerSnapshot.layers : null}>
-          {!earthOverlayVisible && <LegendaryHuntMapHud snapshot={legendaryHuntSnapshot} />}
-          {!earthOverlayVisible && (
+          {!shellMode && !earthOverlayVisible && <LegendaryHuntMapHud snapshot={legendaryHuntSnapshot} />}
+          {!shellMode && !earthOverlayVisible && (
             <DiscoveryHud
               snapshot={worldDiscoverySnapshot}
               compact={Boolean(livingCluster || selectedAdventure)}
@@ -2316,13 +2358,13 @@ export function MapScreen({
           />
         )}
         <ProgressiveLayer layerId={WORLD_LAYER_IDS.EXPLORER} layers={shellMode ? layerSnapshot.layers : null}>
-          {!earthOverlayVisible && (
+          {!shellMode && !earthOverlayVisible && (
             <LivingWorldActivityFeed
               banners={activityBanners}
               paused={Boolean(livingCluster || selectedAdventure)}
             />
           )}
-          <LivingWorldNotifications snapshot={mapNotificationSnapshot} nav={nav} />
+          {!shellMode && <LivingWorldNotifications snapshot={mapNotificationSnapshot} nav={nav} />}
         </ProgressiveLayer>
 
         <QuestoryMap

@@ -24,6 +24,7 @@ export function WorldShell({
   userId = null,
   adminPreview = false,
   isSponsor = false,
+  atlasMode = true,
 }) {
   const [layerSnapshot, setLayerSnapshot] = useState(null);
   const [hudContext, setHudContext] = useState(null);
@@ -97,17 +98,19 @@ export function WorldShell({
   return (
     <div
       className={`world-shell world-shell--map-first world-shell--living-atlas world-shell--map-hidden-panels${
-        shellAnimationClass}${layerSnapshot ? ' world-shell--ready' : ' world-shell--loading'}${
-        welcomePulse && layerSnapshot ? ' world-shell--welcome-pulse' : ''
+        atlasMode ? ' world-atlas-mode' : ''
+      }${shellAnimationClass}${layerSnapshot ? ' world-shell--ready' : ' world-shell--loading'}${
+        welcomePulse && layerSnapshot && !atlasMode ? ' world-shell--welcome-pulse' : ''
       }${accessibilityClass ? ` ${accessibilityClass}` : ''}`}
       data-testid="world-shell"
+      data-atlas-mode={atlasMode ? 'true' : 'false'}
       data-world-offline={state?.worldExperience?.offlineMode ? 'true' : 'false'}
     >
       <header className="world-shell-header world-shell-header--minimal">
         <h1 className="world-shell-title">Questory World</h1>
       </header>
 
-      {welcomePulse && layerSnapshot && (
+      {welcomePulse && layerSnapshot && !atlasMode && (
         <div className="world-welcome-pulse" aria-live="polite">
           <span>Welcome to {state?.world?.cityName || 'Parsons'}</span>
         </div>
@@ -137,6 +140,7 @@ export function WorldShell({
           adventures={hudAdventures}
           layerSnapshot={layerSnapshot}
           nav={nav}
+          atlasMode={atlasMode}
         />
         <FloatingHud
           state={state}
@@ -145,6 +149,7 @@ export function WorldShell({
           setState={setState}
           layerSnapshot={layerSnapshot}
           hudContext={hudContext}
+          atlasMode={atlasMode}
         />
       </div>
 

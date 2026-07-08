@@ -12,14 +12,11 @@ test.describe('Living World (map-first)', () => {
     await expect(page.getByRole('navigation', { name: 'World navigation' })).toBeVisible();
   });
 
-  test('living city panel and earth card are present', async ({ page }) => {
+  test('living city chip and radial menu are present', async ({ page }) => {
     await gotoScreen(page, 'map');
 
-    await expect(page.locator('.living-city-panel')).toBeVisible({ timeout: 15_000 });
-    await expect(
-      page.locator('[data-layer-id="earth"] .floating-card-summary, [data-testid="floating-hud"]')
-        .first()
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('living-city-chip')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('world-radial-menu')).toBeVisible({ timeout: 15_000 });
   });
 
   test('floating dock navigates away from world and back', async ({ page }) => {
@@ -35,16 +32,17 @@ test.describe('Living World (map-first)', () => {
     await expect(page.getByTestId('world-shell')).toBeVisible({ timeout: 15_000 });
   });
 
-  test('expands a floating HUD card', async ({ page }) => {
+  test('expands a floating HUD card via radial layers', async ({ page }) => {
     await gotoScreen(page, 'map');
 
-    const deckToggle = page.getByTestId('floating-hud-deck-toggle');
-    await expect(deckToggle).toBeVisible({ timeout: 15_000 });
-    await deckToggle.click();
+    const radial = page.getByTestId('world-radial-menu');
+    await radial.getByRole('button', { name: 'Open world menu' }).click();
+    await radial.locator('.world-radial-item').nth(4).click();
+
     const card = page.locator('.floating-card-summary').first();
     await expect(card).toBeVisible({ timeout: 15_000 });
-    await card.click({ force: true });
-    await expect(page.locator('.floating-card--expanded')).toBeVisible();
+    await card.click();
+    await expect(page.locator('.floating-card--expanded')).toBeVisible({ timeout: 10_000 });
   });
 
   test('ambient director whisper can surface on the map', async ({ page }) => {

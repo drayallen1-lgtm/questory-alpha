@@ -1,12 +1,211 @@
 /* Questory V3 — Living Atlas immersion */
 
-.world-shell--living-atlas .world-map-frame {
-  height: calc(100dvh - 48px);
-  padding: 4px 4px 56px;
+/* ── Full-screen map (atlas mode) ── */
+
+.world-shell.world-atlas-mode {
+  display: block;
+  height: 100svh;
+  min-height: 100svh;
+  overflow: hidden;
 }
 
-.world-shell--living-atlas .world-map-frame .map-stage-world-shell {
-  min-height: min(95dvh, calc(100dvh - 56px));
+.world-atlas-mode .world-map-frame {
+  position: fixed;
+  inset: 0;
+  height: 100svh;
+  width: 100vw;
+  padding: 0;
+  flex: none;
+  z-index: 0;
+}
+
+.world-atlas-mode .world-map-frame .map-stage,
+.world-atlas-mode .world-map-frame .map-stage-atlas-mode {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  min-height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.world-atlas-mode .world-map-frame .map-shell-filter {
+  top: auto;
+  bottom: 132px;
+  left: 8px;
+  right: auto;
+  max-width: calc(100vw - 100px);
+  z-index: 12;
+}
+
+.world-atlas-mode .world-map-frame .map-shell-find-me {
+  top: 8px;
+  bottom: auto;
+  right: 8px;
+  z-index: 13;
+}
+
+.world-atlas-mode .world-map-frame .questory-map-wrap,
+.world-atlas-mode .world-map-frame .questory-map,
+.world-atlas-mode .world-map-frame .fallback-map {
+  height: 100% !important;
+  width: 100% !important;
+  min-height: 100% !important;
+}
+
+.world-atlas-mode .world-shell-hud-stack {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  right: auto;
+  width: min(calc(100vw - 80px), 280px);
+  gap: 4px;
+  z-index: 35;
+  pointer-events: none;
+}
+
+.world-atlas-mode .world-shell-hud-stack > * {
+  pointer-events: auto;
+}
+
+.world-atlas-mode .world-shell-skeleton {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.world-atlas-mode .world-welcome-pulse {
+  display: none;
+}
+
+.world-atlas-mode .floating-hud {
+  gap: 4px;
+  padding: 0;
+  max-width: 100%;
+}
+
+/* ── Single HUD owner: hide legacy overlays in atlas ── */
+
+.world-atlas-mode .adaptive-hud-strip,
+.world-atlas-mode .map-first-market-chip,
+.world-atlas-mode .floating-hud-deck-toggle,
+.world-atlas-mode .floating-notifications,
+.world-atlas-mode .smart-notification-stack,
+.world-atlas-mode .smart-notif-stack-wrap,
+.world-atlas-mode .legendary-map-hud,
+.world-atlas-mode .discovery-hud,
+.world-atlas-mode .living-world-activity-feed,
+.world-atlas-mode .living-world-notifications,
+.world-atlas-mode .marketplace-map-hud {
+  display: none !important;
+}
+
+.world-atlas-mode .floating-hud--deck-collapsed .floating-hud-grid {
+  display: none;
+}
+
+.world-atlas-mode .floating-hud-grid--atlas-open {
+  display: grid;
+  max-width: min(100vw - 24px, 360px);
+  animation: world-card-expand 0.28s ease;
+}
+
+/* ── Chip max-widths (no long oval bars) ── */
+
+.world-atlas-mode .living-city-compact-chip {
+  max-width: 220px;
+  width: auto;
+}
+
+.world-atlas-mode .micro-hud-chip {
+  max-width: 260px;
+  width: auto;
+}
+
+.world-atlas-mode .micro-hud-chip--expanded {
+  max-width: 280px;
+}
+
+.world-atlas-mode .floating-notification,
+.world-atlas-mode .long-pill {
+  max-width: 260px;
+  width: auto;
+}
+
+.world-atlas-mode .living-city-compact-copy strong,
+.world-atlas-mode .living-city-compact-copy span,
+.world-atlas-mode .micro-hud-chip-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  max-width: 180px;
+}
+
+.world-atlas-mode .ambient-director-whisper {
+  max-width: min(calc(100vw - 100px), 280px);
+}
+
+.world-atlas-mode .ambient-director-whisper-body {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Subtle overlays (do not dim the map) ── */
+
+.world-atlas-mode .map-stage-living-atlas.world-streets--fog::after {
+  opacity: 0.15;
+  animation: none;
+}
+
+.world-atlas-mode .floating-hud-dismiss-scrim {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.world-atlas-mode .map-stage-earth-mode::before,
+.world-atlas-mode .map-stage-night::after {
+  opacity: 0.2;
+}
+
+/* ── Fallback geography when Mapbox unavailable ── */
+
+.fallback-map--atlas {
+  background: radial-gradient(ellipse 80% 60% at 50% 45%, #1e293b 0%, #0f172a 55%, #020617 100%);
+}
+
+.fallback-geography-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fallback-geography-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: rgba(226, 232, 240, 0.75);
+  background: rgba(6, 10, 18, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  white-space: nowrap;
+}
+
+.fallback-geography-label--water {
+  color: #7dd3fc;
+}
+
+.fallback-map--atlas .fallback-map-grid {
+  opacity: 0.35;
+}
+
+.fallback-map--atlas .fallback-map-notice {
+  font-size: 0.68rem;
+  opacity: 0.65;
 }
 
 .world-shell--living-atlas .world-shell-header--minimal {
@@ -21,13 +220,6 @@
   border: 0;
   opacity: 1;
   pointer-events: none;
-}
-
-.world-shell--living-atlas .world-shell-hud-stack {
-  top: 6px;
-  left: 6px;
-  width: min(100% - 12px, 320px);
-  gap: 4px;
 }
 
 /* Geography labels */
@@ -233,14 +425,14 @@
 }
 
 .world-radial-trigger {
-  width: 48px;
-  height: 48px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   border: 1px solid rgba(94, 234, 212, 0.35);
   background: rgba(8, 12, 22, 0.9);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   display: grid;
   place-items: center;
   transition: transform 0.2s ease;
@@ -254,7 +446,7 @@
 .world-radial-bloom {
   position: absolute;
   right: 0;
-  bottom: 56px;
+  bottom: 60px;
   width: 200px;
   height: 200px;
   pointer-events: none;
@@ -264,17 +456,17 @@
   position: absolute;
   right: 50%;
   bottom: 50%;
-  transform: rotate(calc(var(--radial-i) * 60deg - 150deg)) translate(72px) rotate(calc(150deg - var(--radial-i) * 60deg));
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 8px;
-  border-radius: 12px;
+  transform: rotate(calc(var(--radial-i) * 60deg - 150deg)) translate(72px)
+    rotate(calc(150deg - var(--radial-i) * 60deg));
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
   border: 1px solid rgba(148, 163, 184, 0.22);
   background: rgba(8, 12, 22, 0.92);
   color: #e2e8f0;
-  font-size: 0.62rem;
   pointer-events: auto;
   cursor: pointer;
   animation: radialBloomIn 0.28s ease backwards;
@@ -282,15 +474,50 @@
 }
 
 .world-radial-item-icon {
-  font-size: 1rem;
+  font-size: 1.1rem;
   line-height: 1;
+}
+
+.world-radial-item-label {
+  display: none;
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.58rem;
+  white-space: nowrap;
+  color: #94a3b8;
+}
+
+.world-radial-item:hover .world-radial-item-label,
+.world-radial-item:focus-visible .world-radial-item-label {
+  display: block;
 }
 
 @keyframes radialBloomIn {
   from {
     opacity: 0;
-    transform: rotate(calc(var(--radial-i) * 60deg - 150deg)) translate(24px) rotate(calc(150deg - var(--radial-i) * 60deg));
+    transform: rotate(calc(var(--radial-i) * 60deg - 150deg)) translate(24px)
+      rotate(calc(150deg - var(--radial-i) * 60deg));
   }
+}
+
+/* Compass icon-only in atlas */
+.world-atlas-mode .map-first-compass-float {
+  position: fixed;
+  right: 12px;
+  bottom: 136px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  z-index: 39;
+}
+
+.world-atlas-mode .map-first-compass-float-copy {
+  display: none;
 }
 
 /* Living streets ambient */
@@ -363,5 +590,9 @@
   .world-radial-menu {
     right: 8px;
     bottom: 68px;
+  }
+
+  .world-atlas-mode .world-shell-hud-stack {
+    width: min(calc(100vw - 72px), 260px);
   }
 }

@@ -24,7 +24,21 @@ describe('worldCameraEngine', () => {
     expect(camera.zoom).toBeGreaterThanOrEqual(WORLD_CAMERA_ZOOM.STREET);
   });
 
-  it('restores remembered camera position', () => {
+  it('ignores remembered camera when zoomed too far out', () => {
+    const camera = resolveInitialCamera({
+      userLocation: { latitude: 37.34, longitude: -95.26 },
+      remembered: {
+        latitude: 37.34,
+        longitude: -95.26,
+        zoom: 11,
+        lastSavedAt: '2026-01-01T00:00:00.000Z',
+      },
+    });
+    expect(camera.source).toBe('player');
+    expect(camera.zoom).toBe(WORLD_CAMERA_ZOOM.STREET_BLOCKS);
+  });
+
+  it('restores remembered camera position at street zoom', () => {
     const remembered = {
       latitude: 37.34,
       longitude: -95.26,

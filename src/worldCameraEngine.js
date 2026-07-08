@@ -35,6 +35,9 @@ export const DEFAULT_WORLD_CAMERA = {
 
 export const FLY_DURATION_MS = 1400;
 
+/** Below this zoom on atlas open, reset to street-block view */
+export const MIN_ATLAS_OPEN_ZOOM = 13.5;
+
 /** Smooth ease-out — no snap */
 export function worldCameraEase(t) {
   const clamped = Math.max(0, Math.min(1, t));
@@ -85,7 +88,7 @@ export function resolveInitialCamera(options = {}) {
   } = options;
 
   const rememberedCam = normalizeWorldCamera(remembered);
-  if (remembered?.lastSavedAt && rememberedCam.zoom >= WORLD_CAMERA_ZOOM.NEIGHBORHOOD) {
+  if (remembered?.lastSavedAt && rememberedCam.zoom >= MIN_ATLAS_OPEN_ZOOM) {
     return wrapEngineSnapshot({
       ...rememberedCam,
       source: 'remembered',
