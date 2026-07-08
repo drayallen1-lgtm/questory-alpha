@@ -60,4 +60,31 @@ describe('marketplaceLayerEngine', () => {
     expect(snapshot.tab).toBe(MARKETPLACE_TAB_IDS.AUCTIONS);
     expect(snapshot.selectedVenue?.id).toBe('legendary-auction');
   });
+
+  it('exposes map coordinates on venue pins', () => {
+    const snapshot = getMarketplaceLayerSnapshot(buildTestState(), buildTestState().adventures, {
+      primaryOnly: true,
+    });
+    snapshot.venues.forEach((venue) => {
+      expect(typeof venue.latitude).toBe('number');
+      expect(typeof venue.longitude).toBe('number');
+    });
+  });
+
+  it('marks boosted event/season venues for shimmer', () => {
+    const marketplace = getMarketplaceLayerSnapshot(buildTestState(), buildTestState().adventures)
+      .marketplace;
+    const weekend = buildVenueCard(resolveMarketplaceVenue('weekend-market'), marketplace);
+    expect(weekend.boosted).toBe(true);
+    const downtown = buildVenueCard(resolveMarketplaceVenue('downtown-market'), marketplace);
+    expect(downtown.boosted).toBe(false);
+    expect(typeof downtown.hot).toBe('boolean');
+    expect(downtown.tagline).toBeTruthy();
+  });
+
+  it('flags hot auctions when bids are closing soon', () => {
+    const auctionMarketplace = { auctions: [{ id: 'x', endingSoon: true }] };
+    const auction = buildVenueCard(resolveMarketplaceVenue('legendary-auction'), auctionMarketplace);
+    expect(auction.hot).toBe(true);
+  });
 });

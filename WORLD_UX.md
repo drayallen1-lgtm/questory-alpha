@@ -10,13 +10,23 @@ Questory V2 treats the **map as the operating system**. Every feature — market
 4. **Transient overlays** — Notifications are one-line inline; Director whispers fade after ~3s.
 5. **Context-aware HUD** — Walking, driving, adventure, and guild war each surface one focus item.
 
+## Marketplace as a world layer
+
+Marketplace is a **map-native world object**, not a permanent HUD stack:
+
+- Venues (`🏪 Downtown Market`, `✨ Creator Bazaar`, `🏛 Legendary Auction`, `🛒 Traveling Merchant`) render as **map pins** at real coordinates — labels appear only when zoomed in or selected, with a subtle glow when hot and a shimmer when event/sponsor boosted.
+- Tapping a pin opens a compact **venue preview card** (tagline + live items + **Browse Market** / **Watch Venue**) that floats near the pin, closes on map-background click or Escape, and never covers the map.
+- The HUD shows at most a small **`🏪 Market nearby`** chip when activity is nearby — never a full marketplace card by default.
+- **Browse Market** deep-links into the Marketplace screen on the correct tab (`featured` / `creator` / `auctions` / `trending`) via `nav()` context.
+- The old full-width `MarketplaceMapHud` venue bar is retired in map-first mode.
+
 ## User journeys
 
 | Journey | Entry | Anchor |
 |---------|-------|--------|
 | Explore | World shell | Map + Explorer card |
 | Guild | Social → Guilds or HUD guild card | Territory layers |
-| Marketplace | Dock Market or HUD marketplace | Downtown venues |
+| Marketplace | Venue pin, `Market nearby` chip, or merchant pulse | Venue preview card |
 | Adventure | Director whisper or Explorer CTA | Play screen |
 | Earth | HUD Earth card or zoom out | Living Earth overlay |
 | Sponsor | Dock Sponsor | Campaign launch |

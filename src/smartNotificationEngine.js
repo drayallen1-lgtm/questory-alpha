@@ -43,6 +43,8 @@ export function normalizeSmartNotification(raw = {}) {
     minutesLeft: raw.minutesLeft ?? null,
     action: raw.action || null,
     kind: raw.kind || priority,
+    venueId: raw.venueId || null,
+    marketplaceTab: raw.marketplaceTab || null,
     createdAt: raw.createdAt ?? Date.now(),
     urgency: raw.urgency ?? PRIORITY_RANK[priority] ?? 3,
   };
@@ -111,6 +113,9 @@ function buildAuctionCriticalNotifications(marketplace) {
       icon: '🔨',
       minutesLeft: auction.minutesLeft,
       action: 'marketplace',
+      kind: 'market',
+      venueId: 'legendary-auction',
+      marketplaceTab: 'auctions',
       urgency: 85,
     })
   );
@@ -216,6 +221,8 @@ function buildBackgroundNotifications(marketplace, livingWorld, faction) {
         icon: entry.icon || '🏪',
         action: 'marketplace',
         kind: 'market',
+        venueId: 'downtown-market',
+        marketplaceTab: 'featured',
         urgency: 30,
       })
     );

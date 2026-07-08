@@ -85,11 +85,10 @@ const LivingEarthOverlay = lazy(() =>
 );
 import { getCreatorEconomySnapshot } from './creatorEconomyEngine';
 import { getMarketplaceSnapshot } from './marketplaceEngine';
-import { getMarketplaceLayerSnapshot } from './marketplaceLayerEngine';
+import { getMarketplaceLayerSnapshot, resolveMarketplaceVenue } from './marketplaceLayerEngine';
 import { MarketVenueCard } from './MarketVenueCard';
 import { getAiNpcSnapshot } from './aiNpcEngine';
 import { getDynamicStorySnapshot } from './dynamicStoryEngine';
-import { MarketplaceMapHud } from './MarketplaceUI';
 import { MarketVenueLayer } from './MarketVenueLayer';
 
 const ADVENTURE_SOURCE = MAP_SOURCE_IDS.ADVENTURES;
@@ -346,6 +345,7 @@ export function QuestoryMap({
   marketVenues = null,
   selectedMarketVenueId = null,
   onMarketVenueSelect = null,
+  marketVenueLabels = false,
   onMapZoomChange,
   onMapFlyReady,
   isAdmin = false,
@@ -1112,6 +1112,7 @@ export function QuestoryMap({
                 venues={marketVenues}
                 selectedVenueId={selectedMarketVenueId}
                 onVenueSelect={onMarketVenueSelect}
+                showLabels={marketVenueLabels}
               />
             )}
           </ProgressiveLayer>
@@ -1168,6 +1169,7 @@ export function MapScreen({
   const [spatialStats, setSpatialStats] = useState(null);
   const [selectedMarketVenueId, setSelectedMarketVenueId] = useState(null);
   const [venueCardEntering, setVenueCardEntering] = useState(false);
+  const [watchedVenueIds, setWatchedVenueIds] = useState(() => new Set());
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const { location } = usePlayerLocation();
   const visibility = state?.social?.visibility || VISIBILITY_MODES.TEAM;
@@ -1190,7 +1192,17 @@ export function MapScreen({
   useEffect(() => {
     if (!state?.marketplaceVenueId) return undefined;
     setSelectedMarketVenueId(state.marketplaceVenueId);
+    setSelectedMarker(null);
+    setLivingCluster(null);
     setVenueCardEntering(true);
+    const venue = resolveMarketplaceVenue(state.marketplaceVenueId, state);
+    if (venue?.latitude != null && earthFlyRef.current?.flyTo) {
+      earthFlyRef.current.flyTo({
+        latitude: venue.latitude,
+        longitude: venue.longitude,
+        zoom: Math.max(mapZoom, 13.5),
+      });
+    }
     const timer = window.setTimeout(() => setVenueCardEntering(false), 240);
     return () => window.clearTimeout(timer);
   }, [state?.marketplaceVenueId]);
@@ -1311,6 +1323,16 @@ export function MapScreen({
   const handleMarketVenueClose = useCallback(() => {
     setSelectedMarketVenueId(null);
     setVenueCardEntering(false);
+  }, []);
+
+  const handleMarketVenueWatch = useCallback((venue) => {
+    if (!venue?.id) return;
+    setWatchedVenueIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(venue.id)) next.delete(venue.id);
+      else next.add(venue.id);
+      return next;
+    });
   }, []);
 
   const handleMarketVenueBrowse = useCallback(
@@ -2190,6 +2212,7 @@ export function MapScreen({
           marketVenues={shellMode ? marketplaceLayerSnapshot.venues : null}
           selectedMarketVenueId={selectedMarketVenueId}
           onMarketVenueSelect={shellMode ? handleMarketVenueSelect : null}
+          marketVenueLabels={mapZoom >= 13}
           onMapZoomChange={setMapZoom}
           onMapFlyReady={(api) => {
             earthFlyRef.current = api;
@@ -2220,16 +2243,6 @@ export function MapScreen({
               showDiscoveryPanel={!livingCluster && !selectedAdventure}
             />
           </Suspense>
-        </ProgressiveLayer>
-
-        <ProgressiveLayer layerId={WORLD_LAYER_IDS.MARKETPLACE} layers={shellMode ? layerSnapshot.layers : null}>
-          {nav && !earthOverlayVisible && shellMode && (
-            <MarketplaceMapHud
-              snapshot={marketplaceLayerSnapshot}
-              nav={nav}
-              onVenueSelect={handleMarketVenueSelect}
-            />
-          )}
         </ProgressiveLayer>
 
         {showPinDebugLine && (
@@ -2280,8 +2293,10 @@ export function MapScreen({
           <MarketVenueCard
             venue={marketplaceLayerSnapshot.selectedVenue}
             entering={venueCardEntering}
+            watched={watchedVenueIds.has(marketplaceLayerSnapshot.selectedVenue.id)}
             onClose={handleMarketVenueClose}
             onBrowse={handleMarketVenueBrowse}
+            onWatch={handleMarketVenueWatch}
           />
         )}
       </div>

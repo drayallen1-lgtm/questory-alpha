@@ -138,6 +138,7 @@ export function FloatingHud({
         strip: adaptiveHudSnapshot.strip,
         cards: hudSnapshot.cards,
         livingWorld,
+        marketplace,
         deckOpen,
         expandedCardId,
       }),
@@ -146,6 +147,7 @@ export function FloatingHud({
       adaptiveHudSnapshot.strip,
       hudSnapshot.cards,
       livingWorld,
+      marketplace,
       deckOpen,
       expandedCardId,
     ]
@@ -179,7 +181,37 @@ export function FloatingHud({
       );
     }
     emitWorldAudio(WORLD_AUDIO_EVENTS.NOTIFICATION, { id: notification.id });
+
+    // Market notifications focus the venue on the map instead of leaving to a screen.
+    if (notification.kind === 'market' || notification.action === 'marketplace') {
+      const venueId =
+        notification.venueId ||
+        (notification.id?.startsWith('auction-') ? 'legendary-auction' : 'downtown-market');
+      nav('map', undefined, {
+        marketplaceVenueId: venueId,
+        marketplaceTab: notification.marketplaceTab || 'featured',
+        adminPreview: false,
+      });
+      return;
+    }
+
     nav(notification.action, undefined, { adminPreview: false });
+  }
+
+  function handleMarketChip() {
+    if (!nav) return;
+    const chip = mapFirstLayout.marketChip;
+    if (setState) {
+      setState((current) =>
+        trackWorldEvent(current, WORLD_ANALYTICS_EVENTS.MARKETPLACE_VISIT, { source: 'chip' })
+      );
+    }
+    emitWorldAudio(WORLD_AUDIO_EVENTS.MARKETPLACE);
+    nav('map', undefined, {
+      marketplaceVenueId: chip?.venueId || 'downtown-market',
+      marketplaceTab: chip?.tab || 'featured',
+      adminPreview: false,
+    });
   }
 
   useEffect(() => {
@@ -306,6 +338,25 @@ export function FloatingHud({
           onItemAction={handleStripAction}
           singleFocus
         />
+
+        {mapFirstLayout.marketChipVisible && (
+          <button
+            type="button"
+            className="map-first-market-chip"
+            data-testid="market-nearby-chip"
+            onClick={handleMarketChip}
+          >
+            <span className="map-first-market-chip-icon" aria-hidden>
+              {mapFirstLayout.marketChip.icon}
+            </span>
+            <span className="map-first-market-chip-label">{mapFirstLayout.marketChip.label}</span>
+            {mapFirstLayout.marketChip.count != null && (
+              <span className="map-first-market-chip-count" aria-hidden>
+                {mapFirstLayout.marketChip.count}
+              </span>
+            )}
+          </button>
+        )}
 
         {mapFirstLayout.compassVisible && (
           <button

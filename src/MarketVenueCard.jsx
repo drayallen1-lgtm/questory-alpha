@@ -1,11 +1,13 @@
 import React from 'react';
-import { ChevronRight, X } from 'lucide-react';
+import { ChevronRight, Eye, X } from 'lucide-react';
 
 export function MarketVenueCard({
   venue,
   entering = false,
+  watched = false,
   onClose,
   onBrowse,
+  onWatch,
 }) {
   if (!venue) return null;
 
@@ -38,6 +40,9 @@ export function MarketVenueCard({
         )}
       </div>
 
+      {venue.tagline && <p className="market-venue-card-tagline">{venue.tagline}</p>}
+
+      <p className="market-venue-card-live-label">Live now</p>
       <ul className="market-venue-card-items">
         {(venue.items || []).slice(0, 4).map((item) => (
           <li key={item.id}>
@@ -52,10 +57,21 @@ export function MarketVenueCard({
         ))}
       </ul>
 
-      <button type="button" className="market-venue-card-cta" onClick={() => onBrowse?.(venue)}>
-        {venue.ctaLabel || 'Browse Market'}
-        <ChevronRight size={16} aria-hidden />
-      </button>
+      <div className="market-venue-card-actions">
+        <button type="button" className="market-venue-card-cta" onClick={() => onBrowse?.(venue)}>
+          {venue.ctaLabel || 'Browse Market'}
+          <ChevronRight size={16} aria-hidden />
+        </button>
+        <button
+          type="button"
+          className={`market-venue-card-watch ghost${watched ? ' market-venue-card-watch--on' : ''}`}
+          aria-pressed={watched}
+          onClick={() => onWatch?.(venue)}
+        >
+          <Eye size={16} aria-hidden />
+          {watched ? 'Watching' : 'Watch Venue'}
+        </button>
+      </div>
     </div>
   );
 }

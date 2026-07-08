@@ -69,8 +69,28 @@ nav(screen, id, options) → deep-linked tabs
 | Open app | `screen: 'map'` → WorldShell |
 | Tap Earth card | `nav('world')` or zoom earth mode |
 | Tap guild card | `nav('social', { guildTab: 'wars' })` |
-| Tap marketplace venue | `marketplaceVenueId` on map |
+| Tap marketplace venue pin | opens venue preview card (`selectedMarketVenueId`) |
+| `Market nearby` chip / merchant pulse | `nav('map', { marketplaceVenueId, marketplaceTab })` → fly-to pin + card |
+| Browse Market (venue card) | `nav('marketplace', { marketplaceVenueId, marketplaceTab })` |
 | Director whisper | fly-to / play / social / legendary-hunt |
+
+## Marketplace world layer
+
+Marketplace is a **world layer, not a permanent HUD stack**:
+
+```
+marketplaceEngine (economy state)
+  ↓
+marketplaceLayerEngine (venue cards: tab, liveCount, hot, boosted, items)
+  ↓
+MarketVenueLayer (map pins) + MarketVenueCard (preview) + FloatingHud "Market nearby" chip
+  ↓
+nav('marketplace', { marketplaceVenueId, marketplaceTab })
+```
+
+- `mapFirstHudEngine.filterCardsForMapFirst` strips the marketplace deck card; `resolveMarketChip` surfaces the compact chip instead.
+- Venue selection state (`selectedMarketVenueId`) lives in `QuestoryMap`; setting `state.marketplaceVenueId` (chip / pulse / notification) flies the map to the pin and opens the card.
+- `marketplaceEngine.js` / `marketplaceLayerEngine.js` are extended, never replaced. No live payments.
 
 ---
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-function MarketVenuePin({ venue, map, selected, onSelect }) {
+function MarketVenuePin({ venue, map, selected, showLabels, onSelect }) {
   const [pos, setPos] = useState(null);
 
   useEffect(() => {
@@ -22,22 +22,34 @@ function MarketVenuePin({ venue, map, selected, onSelect }) {
 
   if (!pos) return null;
 
+  const labelVisible = showLabels || selected;
+  const className = [
+    'map-market-venue',
+    selected ? 'map-market-venue--selected' : '',
+    venue.hot ? 'map-market-venue--hot' : '',
+    venue.boosted ? 'map-market-venue--boosted' : '',
+    labelVisible ? '' : 'map-market-venue--compact',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <button
       type="button"
-      className={`map-market-venue${selected ? ' map-market-venue--selected' : ''}`}
+      className={className}
       style={{ left: pos.x, top: pos.y }}
       onClick={(event) => {
         event.stopPropagation();
         onSelect?.(venue.id);
       }}
       title={`${venue.label} · ${venue.liveCount || 0} live`}
+      aria-label={`${venue.label}, ${venue.liveCount || 0} live`}
       aria-pressed={selected}
     >
       <span className="map-market-venue-icon" aria-hidden>
         {venue.icon}
       </span>
-      <span className="map-market-venue-label">{venue.label}</span>
+      {labelVisible && <span className="map-market-venue-label">{venue.label}</span>}
       {venue.liveCount > 0 && (
         <span className="map-market-venue-count" aria-hidden>
           {venue.liveCount}
@@ -52,6 +64,7 @@ export function MarketVenueLayer({
   map,
   venues = [],
   selectedVenueId = null,
+  showLabels = false,
   onVenueSelect = null,
 }) {
   if (!map || !venues.length || !onVenueSelect) return null;
@@ -64,6 +77,7 @@ export function MarketVenueLayer({
           venue={venue}
           map={map}
           selected={venue.id === selectedVenueId}
+          showLabels={showLabels}
           onSelect={onVenueSelect}
         />
       ))}

@@ -136,6 +136,45 @@
   color: #94a3b8;
 }
 
+.map-first-market-chip {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, 0.32);
+  background: rgba(8, 12, 22, 0.82);
+  color: #fde68a;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.map-first-market-chip:hover,
+.map-first-market-chip:focus-visible {
+  border-color: rgba(252, 211, 77, 0.7);
+  box-shadow: 0 8px 24px rgba(251, 191, 36, 0.22);
+  outline: none;
+}
+
+.map-first-market-chip-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.map-first-market-chip-count {
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.18);
+  color: #fef3c7;
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
 .adaptive-hud-strip--single-focus {
   margin-bottom: 0;
 }

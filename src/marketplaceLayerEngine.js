@@ -103,6 +103,18 @@ function pickVenueItems(venue, marketplace = {}) {
   }
 }
 
+/** liveCount at/above this feels busy — pins glow. */
+export const VENUE_HOT_THRESHOLD = 6;
+
+const VENUE_TAGLINES = {
+  market: 'Local rewards, coupons, and player trades',
+  creator: 'Creator drops, bundles, and remix packs',
+  auction: 'Rare relics on the bidding floor',
+  merchant: 'Rotating stock passing through town',
+  event: 'Limited weekend market stalls',
+  season: 'Seasonal rewards and vendor exclusives',
+};
+
 export function buildVenueCard(venue, marketplace = {}) {
   if (!venue) return null;
 
@@ -112,13 +124,15 @@ export function buildVenueCard(venue, marketplace = {}) {
 
   let liveCount = listings.length;
   let status = 'Open now';
+  let auctionEndingSoon = false;
 
   if (venue.kind === 'creator') {
     liveCount = creatorStore.length;
     status = 'Creator drops live';
   } else if (venue.kind === 'auction') {
     liveCount = auctions.length;
-    status = auctions.some((a) => a.endingSoon) ? 'Bids closing soon' : 'Auction floor open';
+    auctionEndingSoon = auctions.some((a) => a.endingSoon);
+    status = auctionEndingSoon ? 'Bids closing soon' : 'Auction floor open';
   } else if (venue.kind === 'merchant') {
     liveCount = Math.max(3, Math.min(8, listings.length));
     status = 'Passing through downtown';
@@ -128,11 +142,21 @@ export function buildVenueCard(venue, marketplace = {}) {
     status = 'Season rewards available';
   }
 
+  const boosted =
+    venue.kind === 'event' ||
+    venue.kind === 'season' ||
+    Boolean(venue.sponsorBoosted) ||
+    Boolean(marketplace.sponsorBoostedVenues?.includes?.(venue.id));
+  const hot = auctionEndingSoon || liveCount >= VENUE_HOT_THRESHOLD;
+
   return {
     ...venue,
     tab: VENUE_KIND_TABS[venue.kind] || MARKETPLACE_TAB_IDS.FEATURED,
     liveCount,
     status,
+    tagline: VENUE_TAGLINES[venue.kind] || VENUE_TAGLINES.market,
+    hot,
+    boosted,
     items: pickVenueItems(venue, marketplace),
     ctaLabel: venue.kind === 'auction' ? 'Enter Auction' : 'Browse Market',
   };

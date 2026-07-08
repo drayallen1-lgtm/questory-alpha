@@ -47,21 +47,27 @@ test.describe('World experience polish', () => {
     }
   });
 
-  test('marketplace navigation from HUD card', async ({ page }) => {
-    await gotoScreen(page, 'map');
-    const layers = page.getByTestId('floating-hud-deck-toggle');
-    if (!(await layers.isVisible({ timeout: 15_000 }).catch(() => false))) {
+  test('marketplace is a map-native venue card, not a HUD stack', async ({ page }) => {
+    // Prime a selected venue so the world-object preview card opens without a live map.
+    await primeAppState(page, {
+      screen: 'map',
+      marketplaceVenueId: 'downtown-market',
+      marketplaceTab: 'featured',
+    });
+    await dismissWelcomeOnboarding(page);
+    await expect(page.getByTestId('world-shell')).toBeVisible({ timeout: 30_000 });
+
+    // No permanent horizontal market bar over the map.
+    await expect(page.locator('.marketplace-map-hud')).toHaveCount(0);
+
+    const venueCard = page.locator('.market-venue-card');
+    if (!(await venueCard.isVisible({ timeout: 15_000 }).catch(() => false))) {
       test.skip();
       return;
     }
-    await layers.click();
-    const marketCard = page.locator('[data-layer-id="marketplace"] .floating-card-summary').first();
-    if (!(await marketCard.isVisible({ timeout: 15_000 }).catch(() => false))) {
-      test.skip();
-      return;
-    }
-    await marketCard.click();
-    await page.getByRole('button', { name: 'View All' }).click();
+    await expect(venueCard.locator('.market-venue-card-items li').first()).toBeVisible();
+
+    await venueCard.getByRole('button', { name: /Browse Market/i }).click();
     await expect(page.getByRole('heading', { name: /Marketplace/i })).toBeVisible({
       timeout: 15_000,
     });

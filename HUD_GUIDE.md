@@ -6,11 +6,14 @@ The floating HUD (`FloatingHud` + `AdaptiveHudStrip` + `FloatingCard`) is the pr
 
 ```
 FloatingHud
-├── SmartNotificationStack   (when no card expanded)
-├── AdaptiveHudStrip           (mode chips: walking, driving, guild war, adventure)
-└── floating-hud-grid
-    └── FloatingCard × N       (explorer, guild, marketplace, earth, …)
+├── SmartNotificationStack   (inline one-line; market notifs focus the venue pin)
+├── AdaptiveHudStrip           (single focus chip: walking, driving, guild war, adventure)
+├── map-first-market-chip      (compact "🏪 Market nearby" when activity is near)
+└── floating-hud-grid          (collapsed behind "Layers" by default)
+    └── FloatingCard × N       (explorer, guild, earth, … — never marketplace)
 ```
+
+> **Marketplace is a world layer, not a permanent HUD stack.** It surfaces as map pins (`MarketVenueLayer`) + a venue preview card (`MarketVenueCard`) + the compact "Market nearby" chip. `filterCardsForMapFirst` removes the marketplace deck card in map-first mode.
 
 ## Adaptive modes
 

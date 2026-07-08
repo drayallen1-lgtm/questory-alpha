@@ -26,6 +26,37 @@ export function shouldShowExplorerActivity(livingWorld = {}) {
   return timeline.some((entry) => /joined|claimed|found|war|contested/i.test(entry.text || ''));
 }
 
+/**
+ * Marketplace is a world layer (map pins + venue card), not a permanent HUD stack.
+ * Surface a compact "Market nearby" chip instead of the big deck card.
+ */
+export function shouldShowMarketChip(options = {}) {
+  const { marketplace = {}, mode = HUD_MODE_IDS.WORLD, deckOpen = false } = options;
+  if (deckOpen) return false;
+  if (mode === HUD_MODE_IDS.DRIVING || mode === HUD_MODE_IDS.ADVENTURE) return false;
+  const liveCount =
+    (marketplace.auctions?.length || 0) +
+    (marketplace.listings?.length || 0) +
+    (marketplace.venues?.length || 0) +
+    (marketplace.activityFeed?.length || 0);
+  return liveCount > 0;
+}
+
+export function resolveMarketChip(options = {}) {
+  if (!shouldShowMarketChip(options)) return null;
+  const { marketplace = {} } = options;
+  const liveNow =
+    (marketplace.auctions?.length || 0) + (marketplace.listings?.length || 0);
+  return {
+    id: 'market',
+    icon: '🏪',
+    label: 'Market nearby',
+    count: liveNow || null,
+    venueId: 'downtown-market',
+    tab: 'featured',
+  };
+}
+
 export function filterCardsForMapFirst(cards = [], options = {}) {
   const { livingWorld = {}, mode = HUD_MODE_IDS.WORLD } = options;
   let filtered = [...cards];
@@ -33,6 +64,9 @@ export function filterCardsForMapFirst(cards = [], options = {}) {
   if (!shouldShowExplorerActivity(livingWorld)) {
     filtered = filtered.filter((card) => card.id !== 'explorer');
   }
+
+  // Marketplace lives on the map as pins + a compact chip, never a big HUD card.
+  filtered = filtered.filter((card) => card.id !== 'marketplace');
 
   if (mode === HUD_MODE_IDS.DRIVING) {
     filtered = filtered.filter((card) => ['earth', 'guild', 'liveHunt'].includes(card.id));
@@ -71,6 +105,7 @@ export function getMapFirstHudLayout(options = {}) {
     strip = [],
     cards = [],
     livingWorld = {},
+    marketplace = {},
     deckOpen = false,
     expandedCardId = null,
   } = options;
@@ -83,6 +118,7 @@ export function getMapFirstHudLayout(options = {}) {
   const compassFloat = resolveCompassFloat(strip, mode);
   const showCardDeck = deckOpen || Boolean(expandedCardId);
   const showDeckToggle = !showCardDeck && filteredCards.length > 0;
+  const marketChip = resolveMarketChip({ marketplace, mode, deckOpen });
 
   return wrapEngineSnapshot({
     mapFirst: true,
@@ -90,6 +126,8 @@ export function getMapFirstHudLayout(options = {}) {
     focusVisible: focusStrip.length > 0,
     compassFloat,
     compassVisible: Boolean(compassFloat) && !deckOpen,
+    marketChip,
+    marketChipVisible: Boolean(marketChip),
     filteredCards,
     showCardDeck,
     showDeckToggle,
