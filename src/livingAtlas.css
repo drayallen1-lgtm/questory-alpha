@@ -1,0 +1,367 @@
+/* Questory V3 — Living Atlas immersion */
+
+.world-shell--living-atlas .world-map-frame {
+  height: calc(100dvh - 48px);
+  padding: 4px 4px 56px;
+}
+
+.world-shell--living-atlas .world-map-frame .map-stage-world-shell {
+  min-height: min(95dvh, calc(100dvh - 56px));
+}
+
+.world-shell--living-atlas .world-shell-header--minimal {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 1;
+  pointer-events: none;
+}
+
+.world-shell--living-atlas .world-shell-hud-stack {
+  top: 6px;
+  left: 6px;
+  width: min(100% - 12px, 320px);
+  gap: 4px;
+}
+
+/* Geography labels */
+.geography-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 7;
+}
+
+.geography-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(226, 232, 240, 0.85);
+  background: rgba(6, 10, 18, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  white-space: nowrap;
+  transition: opacity 0.4s ease;
+}
+
+.geography-label--water {
+  color: #7dd3fc;
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.geography-label--park {
+  color: #86efac;
+}
+
+.geography-label--historic {
+  color: #fde68a;
+}
+
+/* Building activity pins */
+.world-building-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.world-building-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.world-building-pin-glow {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(94, 234, 212, 0.35);
+  box-shadow: 0 0 12px rgba(94, 234, 212, 0.45);
+}
+
+.world-building-pin--hot .world-building-pin-glow {
+  background: rgba(251, 191, 36, 0.5);
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.55);
+  animation: worldBuildingPulse 2.2s ease-in-out infinite;
+}
+
+.world-building-anim--flicker .world-building-pin-glow {
+  background: rgba(167, 139, 250, 0.45);
+  animation: worldBuildingFlicker 1.8s ease-in-out infinite;
+}
+
+.world-building-anim--lantern .world-building-pin-glow {
+  background: rgba(251, 191, 36, 0.4);
+  animation: worldBuildingLantern 3s ease-in-out infinite;
+}
+
+.world-building-anim--beacon .world-building-pin-glow {
+  background: rgba(248, 113, 113, 0.5);
+  animation: worldBuildingBeacon 1.5s ease-in-out infinite;
+}
+
+.world-building-anim--neon .world-building-pin-glow {
+  background: rgba(244, 114, 182, 0.45);
+  box-shadow: 0 0 14px rgba(244, 114, 182, 0.5);
+}
+
+.world-building-pin-label {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  font-size: 0.58rem;
+  color: rgba(203, 213, 225, 0.8);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@keyframes worldBuildingPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+}
+
+@keyframes worldBuildingFlicker {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  40% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes worldBuildingLantern {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes worldBuildingBeacon {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(248, 113, 113, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(248, 113, 113, 0.75);
+  }
+}
+
+/* Micro HUD chips */
+.micro-hud-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.micro-hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(8, 12, 22, 0.78);
+  color: #e2e8f0;
+  font-size: 0.68rem;
+  cursor: pointer;
+  max-width: 100%;
+  transition: max-width 0.2s ease, border-color 0.2s ease;
+}
+
+.micro-hud-chip--expanded {
+  border-radius: 12px;
+  max-width: 280px;
+  border-color: rgba(94, 234, 212, 0.35);
+}
+
+.micro-hud-chip-copy {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  min-width: 0;
+}
+
+.micro-hud-chip-copy strong {
+  font-size: 0.72rem;
+}
+
+.micro-hud-chip-copy small {
+  font-size: 0.64rem;
+  color: #94a3b8;
+  line-height: 1.3;
+}
+
+/* Radial world menu */
+.world-radial-menu {
+  position: fixed;
+  right: 12px;
+  bottom: 72px;
+  z-index: 40;
+}
+
+.world-radial-trigger {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(94, 234, 212, 0.35);
+  background: rgba(8, 12, 22, 0.9);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease;
+}
+
+.world-radial-menu--open .world-radial-trigger {
+  transform: scale(1.05);
+  border-color: rgba(94, 234, 212, 0.6);
+}
+
+.world-radial-bloom {
+  position: absolute;
+  right: 0;
+  bottom: 56px;
+  width: 200px;
+  height: 200px;
+  pointer-events: none;
+}
+
+.world-radial-item {
+  position: absolute;
+  right: 50%;
+  bottom: 50%;
+  transform: rotate(calc(var(--radial-i) * 60deg - 150deg)) translate(72px) rotate(calc(150deg - var(--radial-i) * 60deg));
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(8, 12, 22, 0.92);
+  color: #e2e8f0;
+  font-size: 0.62rem;
+  pointer-events: auto;
+  cursor: pointer;
+  animation: radialBloomIn 0.28s ease backwards;
+  animation-delay: calc(var(--radial-i) * 40ms);
+}
+
+.world-radial-item-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@keyframes radialBloomIn {
+  from {
+    opacity: 0;
+    transform: rotate(calc(var(--radial-i) * 60deg - 150deg)) translate(24px) rotate(calc(150deg - var(--radial-i) * 60deg));
+  }
+}
+
+/* Living streets ambient */
+.map-stage-living-atlas.world-streets--fog::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 30% 40%, rgba(148, 163, 184, 0.08), transparent 60%);
+  animation: fogRoll 8s ease-in-out infinite;
+  z-index: 3;
+}
+
+.map-stage-living-atlas.world-discovery-rolling .revealed-fill {
+  transition: fill-opacity 1.2s ease;
+}
+
+@keyframes fogRoll {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+/* Hide legacy map banners in living atlas mode */
+.world-shell--living-atlas .living-world-activity-feed,
+.world-shell--living-atlas .living-world-notifications {
+  display: none !important;
+}
+
+/* Ultra-compact city chip */
+.living-city-panel--atlas .living-city-compact-chip {
+  padding: 5px 8px;
+  font-size: 0.68rem;
+}
+
+.living-city-panel--atlas .living-city-compact-icon {
+  font-size: 0.85rem;
+}
+
+.living-city-panel--atlas .living-city-compact-copy strong {
+  font-size: 0.74rem;
+}
+
+.living-city-panel--atlas .living-city-compact-copy span {
+  font-size: 0.62rem;
+}
+
+/* Dock without World */
+.floating-dock--no-world {
+  width: min(100%, 340px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-building-pin--hot .world-building-pin-glow,
+  .world-building-anim--flicker .world-building-pin-glow,
+  .world-building-anim--lantern .world-building-pin-glow,
+  .world-building-anim--beacon .world-building-pin-glow {
+    animation: none;
+  }
+  .map-stage-living-atlas.world-streets--fog::after {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .world-radial-menu {
+    right: 8px;
+    bottom: 68px;
+  }
+}
