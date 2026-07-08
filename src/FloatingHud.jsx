@@ -13,6 +13,9 @@ import { SmartNotificationStack } from './SmartNotificationStack';
 import { getAdaptiveHudSnapshot } from './adaptiveHudEngine';
 import { AdaptiveHudStrip } from './AdaptiveHudStrip';
 import { getMapFirstHudLayout } from './mapFirstHudEngine';
+import { MicroHudStrip } from './MicroHudStrip';
+import { WorldRadialMenu } from './WorldRadialMenu';
+import { resolveMicroHudChips } from './microHudEngine';
 import {
   WORLD_ANALYTICS_EVENTS,
   WORLD_AUDIO_EVENTS,
@@ -33,6 +36,7 @@ export function FloatingHud({
   const [expandedCardId, setExpandedCardId] = useState(null);
   const [deckOpen, setDeckOpen] = useState(false);
   const [compassOpen, setCompassOpen] = useState(false);
+  const [radialOpen, setRadialOpen] = useState(false);
   const hudRef = useRef(null);
 
   const livingWorld = useMemo(
@@ -169,7 +173,21 @@ export function FloatingHud({
   );
 
   const showNotifications =
-    notificationSnapshot.visible && !expandedCardId && !deckOpen;
+    notificationSnapshot.visible && !expandedCardId && !deckOpen && !radialOpen;
+
+  const microHudSnapshot = useMemo(
+    () =>
+      resolveMicroHudChips({
+        legendaryHunt,
+        marketplace,
+        faction,
+        notifications: notificationSnapshot.prominent || [],
+        mode: adaptiveHudSnapshot.mode,
+      }),
+    [legendaryHunt, marketplace, faction, notificationSnapshot.prominent, adaptiveHudSnapshot.mode]
+  );
+
+  const useMicroHud = microHudSnapshot.visible && !deckOpen && !expandedCardId;
 
   function handleNotificationAction(notification) {
     if (!nav || !notification?.action) return;
@@ -196,6 +214,40 @@ export function FloatingHud({
     }
 
     nav(notification.action, undefined, { adminPreview: false });
+  }
+
+  function handleMicroChip(chip) {
+    if (!nav) return;
+    if (chip.action === 'map' && chip.venueId) {
+      nav('map', undefined, {
+        marketplaceVenueId: chip.venueId,
+        marketplaceTab: chip.marketplaceTab || 'featured',
+        adminPreview: false,
+      });
+      return;
+    }
+    nav(chip.action, undefined, chip.actionOptions || { adminPreview: false });
+  }
+
+  function handleRadialAction(item) {
+    if (!nav && item.action !== 'layers' && item.action !== 'compass') return;
+    if (item.action === 'layers') {
+      setDeckOpen(true);
+      return;
+    }
+    if (item.action === 'compass') {
+      setCompassOpen(true);
+      return;
+    }
+    if (item.action === 'map' && item.venueId) {
+      nav('map', undefined, {
+        marketplaceVenueId: item.venueId,
+        marketplaceTab: 'featured',
+        adminPreview: false,
+      });
+      return;
+    }
+    nav(item.action, undefined, item.options || { adminPreview: false });
   }
 
   function handleMarketChip() {
@@ -322,15 +374,19 @@ export function FloatingHud({
         data-testid="floating-hud"
         ref={hudRef}
       >
-        {showNotifications && (
-          <SmartNotificationStack
-            prominent={notificationSnapshot.prominent}
-            stacked={notificationSnapshot.stacked}
-            stackCount={notificationSnapshot.stackCount}
-            onAction={handleNotificationAction}
-            compact
-            inline
-          />
+        {useMicroHud ? (
+          <MicroHudStrip snapshot={microHudSnapshot} onChipAction={handleMicroChip} />
+        ) : (
+          showNotifications && (
+            <SmartNotificationStack
+              prominent={notificationSnapshot.prominent}
+              stacked={notificationSnapshot.stacked}
+              stackCount={notificationSnapshot.stackCount}
+              onAction={handleNotificationAction}
+              compact
+              inline
+            />
+          )
         )}
 
         <AdaptiveHudStrip
@@ -339,7 +395,7 @@ export function FloatingHud({
           singleFocus
         />
 
-        {mapFirstLayout.marketChipVisible && (
+        {mapFirstLayout.marketChipVisible && !useMicroHud && (
           <button
             type="button"
             className="map-first-market-chip"
@@ -358,29 +414,7 @@ export function FloatingHud({
           </button>
         )}
 
-        {mapFirstLayout.compassVisible && (
-          <button
-            type="button"
-            className={`map-first-compass-float${compassOpen ? ' map-first-compass-float--open' : ''}`}
-            aria-label="Compass"
-            aria-expanded={compassOpen}
-            onClick={() => setCompassOpen((open) => !open)}
-          >
-            <span className="map-first-compass-float-icon" aria-hidden>
-              {mapFirstLayout.compassFloat.icon}
-            </span>
-            {compassOpen && (
-              <span className="map-first-compass-float-copy">
-                <strong>{mapFirstLayout.compassFloat.label}</strong>
-                {mapFirstLayout.compassFloat.detail && (
-                  <small>{mapFirstLayout.compassFloat.detail}</small>
-                )}
-              </span>
-            )}
-          </button>
-        )}
-
-        {mapFirstLayout.showDeckToggle && (
+        {mapFirstLayout.showDeckToggle && !radialOpen && (
           <button
             type="button"
             className="floating-hud-deck-toggle"
@@ -418,6 +452,27 @@ export function FloatingHud({
           </div>
         )}
       </div>
+
+      <WorldRadialMenu open={radialOpen} onToggle={setRadialOpen} onAction={handleRadialAction} />
+
+      {compassOpen && mapFirstLayout.compassFloat && (
+        <button
+          type="button"
+          className="map-first-compass-float map-first-compass-float--open"
+          aria-label="Compass"
+          onClick={() => setCompassOpen(false)}
+        >
+          <span className="map-first-compass-float-icon" aria-hidden>
+            {mapFirstLayout.compassFloat.icon}
+          </span>
+          <span className="map-first-compass-float-copy">
+            <strong>{mapFirstLayout.compassFloat.label}</strong>
+            {mapFirstLayout.compassFloat.detail && (
+              <small>{mapFirstLayout.compassFloat.detail}</small>
+            )}
+          </span>
+        </button>
+      )}
     </>
   );
 }

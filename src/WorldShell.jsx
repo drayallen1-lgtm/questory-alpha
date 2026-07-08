@@ -96,7 +96,7 @@ export function WorldShell({
 
   return (
     <div
-      className={`world-shell world-shell--map-first world-shell--map-hidden-panels${
+      className={`world-shell world-shell--map-first world-shell--living-atlas world-shell--map-hidden-panels${
         shellAnimationClass}${layerSnapshot ? ' world-shell--ready' : ' world-shell--loading'}${
         welcomePulse && layerSnapshot ? ' world-shell--welcome-pulse' : ''
       }${accessibilityClass ? ` ${accessibilityClass}` : ''}`}
