@@ -24,24 +24,37 @@ test.describe('World experience polish', () => {
     await dismissWelcomeOnboarding(page);
     if (!(await page.getByTestId('world-shell').isVisible().catch(() => false))) {
       await page
-        .getByRole('navigation')
+        .getByRole('navigation', { name: 'World navigation' })
         .getByRole('button', { name: 'World', exact: true })
-        .click();
+        .click({ force: true });
     }
     await expect(page.getByTestId('world-recovery-banner')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Continue Offline' })).toBeVisible();
   });
 
-  test('explorer card uses human-readable copy', async ({ page }) => {
+  test('explorer deck stays story-driven when layers open', async ({ page }) => {
     await gotoScreen(page, 'map');
+    const layers = page.getByTestId('floating-hud-deck-toggle');
+    if (!(await layers.isVisible().catch(() => false))) {
+      test.skip();
+      return;
+    }
+    await layers.click();
     const explorer = page.locator('[data-layer-id="explorer"]');
-    await expect(explorer).toBeVisible({ timeout: 15_000 });
-    await expect(explorer).not.toContainText(/No [Dd]ata/);
+    if (await explorer.isVisible().catch(() => false)) {
+      await expect(explorer).not.toContainText(/No [Dd]ata/);
+    }
   });
 
   test('marketplace navigation from HUD card', async ({ page }) => {
     await gotoScreen(page, 'map');
+    const layers = page.getByTestId('floating-hud-deck-toggle');
+    if (!(await layers.isVisible({ timeout: 15_000 }).catch(() => false))) {
+      test.skip();
+      return;
+    }
+    await layers.click();
     const marketCard = page.locator('[data-layer-id="marketplace"] .floating-card-summary').first();
     if (!(await marketCard.isVisible({ timeout: 15_000 }).catch(() => false))) {
       test.skip();

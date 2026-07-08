@@ -38,6 +38,9 @@ test.describe('Living World (map-first)', () => {
   test('expands a floating HUD card', async ({ page }) => {
     await gotoScreen(page, 'map');
 
+    const deckToggle = page.getByTestId('floating-hud-deck-toggle');
+    await expect(deckToggle).toBeVisible({ timeout: 15_000 });
+    await deckToggle.click();
     const card = page.locator('.floating-card-summary').first();
     await expect(card).toBeVisible({ timeout: 15_000 });
     await card.click({ force: true });

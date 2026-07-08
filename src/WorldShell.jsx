@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapScreen } from './QuestoryMap';
 import { FloatingHud } from './FloatingHud';
 import { FloatingDock } from './FloatingDock';
@@ -13,6 +13,8 @@ import {
   trackWorldEvent,
 } from './worldExperienceEngine';
 
+import { MAP_FIRST_CONFIG } from './mapFirstHudEngine';
+
 export function WorldShell({
   adventures,
   nav,
@@ -26,7 +28,26 @@ export function WorldShell({
   const [layerSnapshot, setLayerSnapshot] = useState(null);
   const [hudContext, setHudContext] = useState(null);
   const [mapFlyApi, setMapFlyApi] = useState(null);
+  const [welcomePulse, setWelcomePulse] = useState(true);
   const mapOpenTracked = useRef(false);
+
+  const handleProgressiveLayersChange = useCallback((snapshot) => {
+    setLayerSnapshot((prev) => {
+      if (
+        prev &&
+        prev.zoom === snapshot.zoom &&
+        prev.streetLevel === snapshot.streetLevel &&
+        prev.regionalLevel === snapshot.regionalLevel &&
+        prev.earthOverlayVisible === snapshot.earthOverlayVisible &&
+        prev.fullEarth === snapshot.fullEarth &&
+        prev.animations?.activeCount === snapshot.animations?.activeCount &&
+        prev.animations?.className === snapshot.animations?.className
+      ) {
+        return prev;
+      }
+      return snapshot;
+    });
+  }, []);
 
   const hudAdventures = useMemo(() => adventures, [adventures]);
   const shellAnimationClass =
@@ -53,6 +74,12 @@ export function WorldShell({
     return () => window.clearTimeout(timer);
   }, [setState]);
 
+  useEffect(() => {
+    if (!layerSnapshot) return undefined;
+    const timer = window.setTimeout(() => setWelcomePulse(false), MAP_FIRST_CONFIG.WELCOME_PULSE_MS);
+    return () => window.clearTimeout(timer);
+  }, [layerSnapshot?.zoom]);
+
   function handleWorldRetry() {
     if (!setState) return;
     setState((current) => clearWorldError(current));
@@ -69,16 +96,22 @@ export function WorldShell({
 
   return (
     <div
-      className={`world-shell world-shell--map-hidden-panels${
+      className={`world-shell world-shell--map-first world-shell--map-hidden-panels${
         shellAnimationClass}${layerSnapshot ? ' world-shell--ready' : ' world-shell--loading'}${
-        accessibilityClass ? ` ${accessibilityClass}` : ''
-      }`}
+        welcomePulse && layerSnapshot ? ' world-shell--welcome-pulse' : ''
+      }${accessibilityClass ? ` ${accessibilityClass}` : ''}`}
       data-testid="world-shell"
       data-world-offline={state?.worldExperience?.offlineMode ? 'true' : 'false'}
     >
-      <header className="world-shell-header">
+      <header className="world-shell-header world-shell-header--minimal">
         <h1 className="world-shell-title">Questory World</h1>
       </header>
+
+      {welcomePulse && layerSnapshot && (
+        <div className="world-welcome-pulse" aria-live="polite">
+          <span>Welcome to {state?.world?.cityName || 'Parsons'}</span>
+        </div>
+      )}
 
       {recoveryMessage && (
         <WorldRecoveryBanner
@@ -124,7 +157,7 @@ export function WorldShell({
           isAdmin={isAdmin}
           userId={userId}
           shellMode
-          onProgressiveLayersChange={setLayerSnapshot}
+          onProgressiveLayersChange={handleProgressiveLayersChange}
           onHudContextChange={setHudContext}
           onMapFlyReady={setMapFlyApi}
         />

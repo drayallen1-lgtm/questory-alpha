@@ -9,6 +9,7 @@ export function LivingCityPanel({
 }) {
   const zoom = layerSnapshot?.zoom ?? 11;
   const now = Date.now();
+  const [expanded, setExpanded] = useState(false);
 
   const snapshot = useMemo(
     () =>
@@ -35,6 +36,8 @@ export function LivingCityPanel({
   if (!snapshot.visible) return null;
 
   const activePulse = snapshot.pulses[pulseIndex] || snapshot.topPulse;
+  const discoveryLabel = `${Math.round(snapshot.discoveryPct || 0)}%`;
+  const explorerLabel = `${snapshot.explorerCount || 0} nearby`;
 
   function handlePulseAction(pulse) {
     if (!nav || !pulse?.action) return;
@@ -52,16 +55,49 @@ export function LivingCityPanel({
     }
   }
 
+  if (!expanded) {
+    return (
+      <section className="living-city-panel living-city-panel--compact" aria-label={`${snapshot.cityName} is alive`}>
+        <button
+          type="button"
+          className="living-city-compact-chip"
+          onClick={() => setExpanded(true)}
+          aria-expanded="false"
+        >
+          <span className="living-city-compact-icon" aria-hidden>
+            🌎
+          </span>
+          <span className="living-city-compact-copy">
+            <strong>{snapshot.cityName}</strong>
+            <span>
+              {discoveryLabel} · {explorerLabel}
+            </span>
+          </span>
+        </button>
+      </section>
+    );
+  }
+
   return (
-    <section className="living-city-panel" aria-label={`${snapshot.cityName} is alive`}>
+    <section
+      className="living-city-panel living-city-panel--expanded"
+      aria-label={`${snapshot.cityName} is alive`}
+    >
       <div className="living-city-panel-head">
         <div>
           <h2 className="living-city-name">{snapshot.cityName}</h2>
-          <p className="living-city-tagline">{snapshot.tagline}</p>
+          <p className="living-city-tagline">
+            {discoveryLabel} discovered · {explorerLabel}
+          </p>
         </div>
-        <span className="living-city-alive-badge" aria-hidden>
-          LIVE
-        </span>
+        <button
+          type="button"
+          className="living-city-collapse"
+          aria-label="Collapse city panel"
+          onClick={() => setExpanded(false)}
+        >
+          ✕
+        </button>
       </div>
 
       <div className="living-city-pulse-feed">

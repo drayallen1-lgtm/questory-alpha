@@ -72,6 +72,42 @@
   line-height: 1.35;
 }
 
+.ambient-director-whisper--ghost {
+  max-width: min(88%, 280px);
+}
+
+.ambient-director-whisper--ghost .ambient-director-whisper-body {
+  padding: 8px 10px;
+  animation: ambient-director-ghost-in 0.4s ease, ambient-director-ghost-out 0.5s ease
+    var(--whisper-fade-delay, 2.8s) forwards;
+}
+
+.ambient-director-whisper--ghost .ambient-director-whisper-copy small {
+  display: none;
+}
+
+.ambient-director-whisper--ghost .ambient-director-whisper-count {
+  display: none;
+}
+
+@keyframes ambient-director-ghost-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ambient-director-ghost-out {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
 .ambient-director-whisper-dismiss {
   width: 28px;
   height: 28px;

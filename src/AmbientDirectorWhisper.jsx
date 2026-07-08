@@ -3,6 +3,7 @@ import {
   dismissAmbientWhisper,
   getAmbientWorldDirectorSnapshot,
 } from './ambientWorldDirectorEngine';
+import { MAP_FIRST_CONFIG } from './mapFirstHudEngine';
 import {
   WORLD_ANALYTICS_EVENTS,
   WORLD_AUDIO_EVENTS,
@@ -21,6 +22,8 @@ export function AmbientDirectorWhisper({
 }) {
   const now = Date.now();
   const [rotationTick, setRotationTick] = useState(0);
+  const [faded, setFaded] = useState(false);
+  const impressedWhisperIds = useRef(new Set());
 
   const snapshot = useMemo(
     () =>
@@ -34,6 +37,8 @@ export function AmbientDirectorWhisper({
     [state, adventures, layerSnapshot, hudContext, now, rotationTick]
   );
 
+  const whisperId = snapshot.activeWhisper?.id;
+
   useEffect(() => {
     if (!snapshot.visible || snapshot.whisperCount <= 1) return undefined;
     const timer = window.setInterval(() => {
@@ -42,22 +47,21 @@ export function AmbientDirectorWhisper({
     return () => window.clearInterval(timer);
   }, [snapshot.visible, snapshot.whisperCount, snapshot.rotationMs]);
 
-  const impressedWhisperIds = useRef(new Set());
-
   useEffect(() => {
-    const whisperId = snapshot.activeWhisper?.id;
     if (!whisperId || !snapshot.visible) return;
     if (impressedWhisperIds.current.has(whisperId)) return;
     impressedWhisperIds.current.add(whisperId);
-    if (setState) {
-      setState((current) =>
-        trackWorldEvent(current, WORLD_ANALYTICS_EVENTS.DIRECTOR_WHISPER, { whisperId })
-      );
-    }
+    setFaded(false);
     emitWorldAudio(WORLD_AUDIO_EVENTS.DIRECTOR_WHISPER, { whisperId });
-  }, [snapshot.activeWhisper?.id, snapshot.visible, setState]);
 
-  if (!snapshot.visible || !snapshot.activeWhisper) return null;
+    const fadeTimer = window.setTimeout(() => {
+      setFaded(true);
+    }, MAP_FIRST_CONFIG.WHISPER_FADE_MS);
+
+    return () => window.clearTimeout(fadeTimer);
+  }, [whisperId, snapshot.visible]);
+
+  if (!snapshot.visible || !snapshot.activeWhisper || faded) return null;
 
   const whisper = snapshot.activeWhisper;
 
@@ -107,21 +111,22 @@ export function AmbientDirectorWhisper({
 
   function handleDismiss(event) {
     event.stopPropagation();
+    setFaded(true);
     if (!setState) return;
     setState((current) => dismissAmbientWhisper(current, whisper.id));
   }
 
   return (
     <aside
-      className={`ambient-director-whisper ambient-director-whisper--${whisper.tone || 'guide'} ${snapshot.className}`}
+      className={`ambient-director-whisper ambient-director-whisper--ghost ambient-director-whisper--${whisper.tone || 'guide'} ${snapshot.className}`}
       aria-label="World Director whisper"
+      data-testid="ambient-director-whisper"
     >
       <button type="button" className="ambient-director-whisper-body" onClick={handleAction}>
         <span className="ambient-director-whisper-icon" aria-hidden>
-          {whisper.icon || '🎬'}
+          {whisper.icon || '👻'}
         </span>
         <span className="ambient-director-whisper-copy">
-          <small>{snapshot.label}</small>
           <strong>{whisper.text}</strong>
         </span>
       </button>
@@ -133,11 +138,6 @@ export function AmbientDirectorWhisper({
       >
         ✕
       </button>
-      {snapshot.whisperCount > 1 && (
-        <span className="ambient-director-whisper-count" aria-hidden>
-          {snapshot.whisperCount} cues
-        </span>
-      )}
     </aside>
   );
 }

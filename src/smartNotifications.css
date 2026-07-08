@@ -220,6 +220,64 @@
   font-size: 11px;
 }
 
+.smart-notif-stack-wrap--inline {
+  gap: 4px;
+}
+
+.smart-notif-inline {
+  display: flex;
+  align-items: stretch;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(8, 12, 22, 0.82);
+}
+
+.smart-notif-inline--critical {
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.smart-notif-inline-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.smart-notif-inline-copy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.smart-notif-inline-copy strong {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.smart-notif-inline-expand {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5eead4;
+}
+
 /* Map overlay placement */
 .living-world-notifications.smart-notif-stack-wrap {
   position: absolute;

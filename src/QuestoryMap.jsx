@@ -1220,7 +1220,10 @@ export function MapScreen({
     return filteredAdventures.filter((a) => visible.has(a.id));
   }, [filteredAdventures, state, worldNow]);
 
-  const adventureMarkers = buildAdventureMarkers(visibleAdventures, accessOptions);
+  const adventureMarkers = useMemo(
+    () => buildAdventureMarkers(visibleAdventures, accessOptions),
+    [visibleAdventures, accessOptions]
+  );
   const clueMarkers = focusedAdventure ? buildClueMarkers(focusedAdventure) : [];
 
   const livingWorld = useMemo(
@@ -1404,14 +1407,21 @@ export function MapScreen({
   );
 
   useEffect(() => {
-    if (worldDiscoverySnapshot.milestones?.length) {
-      milestonesSeenRef.current = [
-        ...milestonesSeenRef.current,
-        ...worldDiscoverySnapshot.milestones,
-      ].slice(-20);
-      setCeremonyDismissed(false);
-    }
-  }, [worldDiscoverySnapshot.milestones]);
+    const milestoneKey = (worldDiscoverySnapshot.milestones || [])
+      .map((m) => `${m.regionId}-${m.threshold}`)
+      .join('|');
+    if (!milestoneKey) return undefined;
+    milestonesSeenRef.current = [
+      ...milestonesSeenRef.current,
+      ...worldDiscoverySnapshot.milestones,
+    ].slice(-20);
+    setCeremonyDismissed(false);
+    return undefined;
+  }, [
+    worldDiscoverySnapshot.milestones
+      ?.map((m) => `${m.regionId}-${m.threshold}`)
+      .join('|'),
+  ]);
 
   const creatorEconomySnapshot = useMemo(
     () => getCreatorEconomySnapshot(state, adventures, { now: worldNow }),

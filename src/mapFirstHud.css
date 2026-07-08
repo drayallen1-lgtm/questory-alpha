@@ -1,0 +1,234 @@
+/* Questory V2 — Map-first HUD (map is the star) */
+
+.world-shell--map-first .world-map-frame {
+  height: calc(100dvh - 56px);
+  padding: 8px 6px 64px;
+}
+
+.world-shell--map-first .world-map-frame .map-stage-world-shell {
+  min-height: min(94dvh, calc(100dvh - 72px));
+  border-radius: 16px;
+}
+
+.world-shell-header--minimal {
+  opacity: 0;
+  pointer-events: none;
+  padding: 6px 12px 0;
+}
+
+.world-shell-header--minimal .world-shell-title {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+
+.world-shell--map-first .world-shell-hud-stack {
+  top: 8px;
+  left: 8px;
+  right: auto;
+  width: min(100% - 16px, 360px);
+  gap: 6px;
+  z-index: 36;
+}
+
+.world-welcome-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 30;
+  transform: translate(-50%, -50%);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(6, 10, 18, 0.72);
+  border: 1px solid rgba(94, 234, 212, 0.28);
+  color: #ccfbf1;
+  font-size: 0.82rem;
+  font-weight: 600;
+  pointer-events: none;
+  animation: world-welcome-pulse 3s ease forwards;
+}
+
+@keyframes world-welcome-pulse {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  15%,
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(1.02);
+  }
+}
+
+.floating-hud--map-first {
+  gap: 6px;
+  padding: 0;
+  max-width: 100%;
+}
+
+.floating-hud--deck-collapsed .floating-hud-grid {
+  display: none;
+}
+
+.floating-hud--deck-open .floating-hud-grid {
+  display: grid;
+  animation: world-card-expand 0.28s var(--world-ease-out, ease);
+}
+
+.floating-hud-deck-toggle {
+  align-self: flex-start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(8, 12, 22, 0.78);
+  color: #cbd5e1;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.map-first-compass-float {
+  position: fixed;
+  right: 12px;
+  bottom: 88px;
+  z-index: 38;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(8, 12, 22, 0.88);
+  color: #e2e8f0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.map-first-compass-float--open {
+  border-radius: 14px;
+  max-width: min(52vw, 220px);
+}
+
+.map-first-compass-float-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.map-first-compass-float-copy {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.map-first-compass-float-copy strong {
+  font-size: 0.78rem;
+}
+
+.map-first-compass-float-copy small {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.adaptive-hud-strip--single-focus {
+  margin-bottom: 0;
+}
+
+.adaptive-hud-strip--single-focus .adaptive-hud-chip {
+  width: 100%;
+  max-width: 100%;
+  cursor: pointer;
+}
+
+.living-city-panel--compact {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.living-city-compact-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(8, 12, 22, 0.82);
+  color: #e2e8f0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.living-city-compact-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.living-city-compact-copy strong {
+  font-size: 0.82rem;
+}
+
+.living-city-compact-copy span {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.living-city-collapse {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.72);
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.floating-dock--icon {
+  width: min(100%, 380px);
+  padding: 4px 6px;
+}
+
+.floating-dock--icon button {
+  padding: 8px 4px;
+  font-size: 0;
+}
+
+.floating-dock-icon {
+  display: block;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.floating-dock-label {
+  display: none;
+  font-size: 9px;
+  margin-top: 2px;
+}
+
+@media (min-width: 900px) {
+  .floating-dock--icon button {
+    font-size: 9px;
+  }
+
+  .floating-dock-label {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-welcome-pulse {
+    animation: none;
+    opacity: 0;
+  }
+}

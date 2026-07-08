@@ -213,9 +213,11 @@ export function buildAdaptiveHudStrip(mode, options = {}) {
   return [];
 }
 
-export function prioritizeHudCards(cards = [], mode = HUD_MODE_IDS.WORLD) {
+export function prioritizeHudCards(cards = [], mode = HUD_MODE_IDS.WORLD, options = {}) {
   const order = MODE_CARD_PRIORITY[mode] || MODE_CARD_PRIORITY[HUD_MODE_IDS.WORLD];
-  const limit = MODE_CARD_LIMIT[mode] ?? cards.length;
+  const limit = options.mapFirst
+    ? (options.deckLimit ?? MODE_CARD_LIMIT[mode] ?? cards.length)
+    : (MODE_CARD_LIMIT[mode] ?? cards.length);
   const ranked = [...cards].sort((a, b) => {
     const aIndex = order.indexOf(a.id);
     const bIndex = order.indexOf(b.id);
@@ -235,6 +237,7 @@ export function getAdaptiveHudSnapshot(options = {}) {
     livingWorld = {},
     worldDiscovery = {},
     cards = [],
+    mapFirst = true,
   } = options;
 
   const activeAdventure = resolveActiveAdventure(state, adventures, hudContext);
@@ -259,18 +262,19 @@ export function getAdaptiveHudSnapshot(options = {}) {
     adventures,
   });
 
-  const prioritizedCards = prioritizeHudCards(cards, mode);
-  const simplified = mode === HUD_MODE_IDS.DRIVING || mode === HUD_MODE_IDS.ADVENTURE;
+  const prioritizedCards = prioritizeHudCards(cards, mode, { mapFirst });
+  const simplified = mode === HUD_MODE_IDS.DRIVING || mode === HUD_MODE_IDS.ADVENTURE || mapFirst;
 
   return wrapEngineSnapshot({
     mode,
     label: HUD_MODE_LABELS[mode],
     strip,
-    stripVisible: strip.length > 0 && mode !== HUD_MODE_IDS.WORLD,
+    stripVisible: strip.length > 0 && (mapFirst ? mode !== HUD_MODE_IDS.WORLD : mode !== HUD_MODE_IDS.WORLD),
     cards: prioritizedCards,
     simplified,
+    mapFirst,
     mapMarkerScale: mode === HUD_MODE_IDS.DRIVING ? 1.18 : 1,
-    className: `floating-hud--${mode}`,
+    className: `floating-hud--${mode}${mapFirst ? ' floating-hud--map-first' : ''}`,
     mapClassName: mode === HUD_MODE_IDS.DRIVING ? 'map-stage-hud-driving' : '',
   });
 }

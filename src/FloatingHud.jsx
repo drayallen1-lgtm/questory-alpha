@@ -12,6 +12,7 @@ import { getSmartNotificationSnapshot } from './smartNotificationEngine';
 import { SmartNotificationStack } from './SmartNotificationStack';
 import { getAdaptiveHudSnapshot } from './adaptiveHudEngine';
 import { AdaptiveHudStrip } from './AdaptiveHudStrip';
+import { getMapFirstHudLayout } from './mapFirstHudEngine';
 import {
   WORLD_ANALYTICS_EVENTS,
   WORLD_AUDIO_EVENTS,
@@ -29,18 +30,19 @@ export function FloatingHud({
   hudContext = null,
 }) {
   const zoom = layerSnapshot?.zoom ?? 11;
-  const now = Date.now();
   const [expandedCardId, setExpandedCardId] = useState(null);
+  const [deckOpen, setDeckOpen] = useState(false);
+  const [compassOpen, setCompassOpen] = useState(false);
   const hudRef = useRef(null);
 
   const livingWorld = useMemo(
-    () => getLivingWorldSnapshot(adventures, { state, now }),
-    [adventures, state, now]
+    () => getLivingWorldSnapshot(adventures, { state }),
+    [adventures, state]
   );
 
   const worldDiscovery = useMemo(
-    () => getWorldDiscoverySnapshot({ zoom, state, adventures, now }),
-    [zoom, state, adventures, now]
+    () => getWorldDiscoverySnapshot({ zoom, state, adventures }),
+    [zoom, state, adventures]
   );
 
   const earth = useMemo(
@@ -49,17 +51,16 @@ export function FloatingHud({
         zoom,
         state,
         adventures,
-        now,
         worldDiscovery,
         earthOverlayVisible: layerSnapshot?.earthOverlayVisible,
         fullEarth: layerSnapshot?.fullEarth,
       }),
-    [zoom, state, adventures, now, worldDiscovery, layerSnapshot]
+    [zoom, state, adventures, worldDiscovery, layerSnapshot?.earthOverlayVisible, layerSnapshot?.fullEarth]
   );
 
   const faction = useMemo(
-    () => getFactionSnapshot(state, adventures, { now }),
-    [state, adventures, now]
+    () => getFactionSnapshot(state, adventures),
+    [state, adventures]
   );
 
   const earthExperience = useMemo(
@@ -70,19 +71,18 @@ export function FloatingHud({
         worldDiscovery,
         faction,
         livingEarth: earth,
-        now,
       }),
-    [state, adventures, worldDiscovery, faction, earth, now]
+    [state, adventures, worldDiscovery, faction, earth]
   );
 
   const marketplace = useMemo(
-    () => getMarketplaceSnapshot(state, adventures, { now }),
-    [state, adventures, now]
+    () => getMarketplaceSnapshot(state, adventures),
+    [state, adventures]
   );
 
   const legendaryHunt = useMemo(
-    () => getLegendaryHuntSnapshot(state, adventures, { now }),
-    [state, adventures, now]
+    () => getLegendaryHuntSnapshot(state, adventures),
+    [state, adventures]
   );
 
   const hudSnapshot = useMemo(
@@ -115,6 +115,7 @@ export function FloatingHud({
         livingWorld,
         worldDiscovery,
         cards: hudSnapshot.cards,
+        mapFirst: true,
       }),
     [
       state,
@@ -130,24 +131,43 @@ export function FloatingHud({
     ]
   );
 
+  const mapFirstLayout = useMemo(
+    () =>
+      getMapFirstHudLayout({
+        mode: adaptiveHudSnapshot.mode,
+        strip: adaptiveHudSnapshot.strip,
+        cards: hudSnapshot.cards,
+        livingWorld,
+        deckOpen,
+        expandedCardId,
+      }),
+    [
+      adaptiveHudSnapshot.mode,
+      adaptiveHudSnapshot.strip,
+      hudSnapshot.cards,
+      livingWorld,
+      deckOpen,
+      expandedCardId,
+    ]
+  );
+
   const displayCards = useMemo(() => {
     const hasGuild = Boolean(faction?.memberFactionId);
-    return enrichCardsWithEmptyStates(adaptiveHudSnapshot.cards, { hasGuild });
-  }, [adaptiveHudSnapshot.cards, faction?.memberFactionId]);
+    return enrichCardsWithEmptyStates(mapFirstLayout.filteredCards, { hasGuild });
+  }, [mapFirstLayout.filteredCards, faction?.memberFactionId]);
 
   const notificationSnapshot = useMemo(
     () =>
       getSmartNotificationSnapshot({
         state,
         adventures,
-        now,
         layerSnapshot,
       }),
-    [state, adventures, now, layerSnapshot]
+    [state, adventures, layerSnapshot]
   );
 
   const showNotifications =
-    notificationSnapshot.visible && !expandedCardId;
+    notificationSnapshot.visible && !expandedCardId && !deckOpen;
 
   function handleNotificationAction(notification) {
     if (!nav || !notification?.action) return;
@@ -171,7 +191,10 @@ export function FloatingHud({
     }
 
     function handleKeyDown(event) {
-      if (event.key === 'Escape') setExpandedCardId(null);
+      if (event.key === 'Escape') {
+        setExpandedCardId(null);
+        setDeckOpen(false);
+      }
     }
 
     document.addEventListener('pointerdown', handlePointerDown);
@@ -202,6 +225,7 @@ export function FloatingHud({
 
   function handleViewAll(card) {
     setExpandedCardId(null);
+    setDeckOpen(false);
     if (!nav || !card.viewAllScreen) return;
     if (setState) {
       setState((current) => {
@@ -233,7 +257,16 @@ export function FloatingHud({
       const adventureId = hudContext?.selectedAdventureId || state?.selectedAdventureId;
       if (adventureId) nav('play', adventureId);
     }
+    if (item.id === 'city' || item.id === 'scan') {
+      setDeckOpen(true);
+    }
   }
+
+  const focusSnapshot = {
+    ...adaptiveHudSnapshot,
+    strip: mapFirstLayout.focusStrip,
+    stripVisible: mapFirstLayout.focusVisible,
+  };
 
   return (
     <>
@@ -241,15 +274,18 @@ export function FloatingHud({
         <button
           type="button"
           className="floating-hud-dismiss-scrim"
-          aria-label="Collapse card"
-          onClick={() => setExpandedCardId(null)}
+          aria-label="Collapse HUD card"
+          onClick={() => {
+            setExpandedCardId(null);
+            setDeckOpen(false);
+          }}
         />
       )}
 
       <div
         className={`floating-hud ${adaptiveHudSnapshot.className}${
           adaptiveHudSnapshot.simplified ? ' floating-hud--simplified' : ''
-        }`}
+        }${mapFirstLayout.showCardDeck ? ' floating-hud--deck-open' : ' floating-hud--deck-collapsed'}`}
         aria-label="World HUD"
         data-testid="floating-hud"
         ref={hudRef}
@@ -260,34 +296,76 @@ export function FloatingHud({
             stacked={notificationSnapshot.stacked}
             stackCount={notificationSnapshot.stackCount}
             onAction={handleNotificationAction}
+            compact
+            inline
           />
         )}
 
-        <AdaptiveHudStrip snapshot={adaptiveHudSnapshot} onItemAction={handleStripAction} />
+        <AdaptiveHudStrip
+          snapshot={focusSnapshot}
+          onItemAction={handleStripAction}
+          singleFocus
+        />
 
-        <div
-          className={`floating-hud-grid${
-            expandedCardId ? ' floating-hud-grid--has-expanded' : ''
-          }`}
-        >
-          {displayCards.map((card) => (
-            <FloatingCard
-              key={card.id}
-              id={card.id}
-              icon={card.icon}
-              title={card.title}
-              metric={card.metric}
-              metricLabel={card.metricLabel}
-              items={card.items}
-              wide={card.wide}
-              expanded={expandedCardId === card.id}
-              layerHidden={false}
-              onToggle={handleToggle}
-              onViewAll={() => handleViewAll(card)}
-              onItemAction={handleCardItemAction}
-            />
-          ))}
-        </div>
+        {mapFirstLayout.compassVisible && (
+          <button
+            type="button"
+            className={`map-first-compass-float${compassOpen ? ' map-first-compass-float--open' : ''}`}
+            aria-label="Compass"
+            aria-expanded={compassOpen}
+            onClick={() => setCompassOpen((open) => !open)}
+          >
+            <span className="map-first-compass-float-icon" aria-hidden>
+              {mapFirstLayout.compassFloat.icon}
+            </span>
+            {compassOpen && (
+              <span className="map-first-compass-float-copy">
+                <strong>{mapFirstLayout.compassFloat.label}</strong>
+                {mapFirstLayout.compassFloat.detail && (
+                  <small>{mapFirstLayout.compassFloat.detail}</small>
+                )}
+              </span>
+            )}
+          </button>
+        )}
+
+        {mapFirstLayout.showDeckToggle && (
+          <button
+            type="button"
+            className="floating-hud-deck-toggle"
+            data-testid="floating-hud-deck-toggle"
+            onClick={() => setDeckOpen(true)}
+            aria-expanded={deckOpen}
+          >
+            Layers · {mapFirstLayout.deckCardCount}
+          </button>
+        )}
+
+        {mapFirstLayout.showCardDeck && (
+          <div
+            className={`floating-hud-grid${
+              expandedCardId ? ' floating-hud-grid--has-expanded' : ''
+            }`}
+          >
+            {displayCards.map((card) => (
+              <FloatingCard
+                key={card.id}
+                id={card.id}
+                icon={card.icon}
+                title={card.title}
+                metric={card.metric}
+                metricLabel={card.metricLabel}
+                items={card.items}
+                wide={card.wide}
+                expanded={expandedCardId === card.id}
+                layerHidden={false}
+                onToggle={handleToggle}
+                onViewAll={() => handleViewAll(card)}
+                onItemAction={handleCardItemAction}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

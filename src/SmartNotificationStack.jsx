@@ -8,9 +8,11 @@ export function SmartNotificationStack({
   onAction,
   onDismiss,
   compact = false,
+  inline = false,
   className = '',
 }) {
   const [stackOpen, setStackOpen] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
   const [dismissed, setDismissed] = useState(() => new Set());
 
   const visibleProminent = prominent.filter((n) => !dismissed.has(n.id));
@@ -27,47 +29,121 @@ export function SmartNotificationStack({
     onAction?.(notification);
   }
 
+  function toggleInline(notification) {
+    setExpandedId((current) => (current === notification.id ? null : notification.id));
+  }
+
   return (
     <div
       className={`smart-notif-stack-wrap${compact ? ' smart-notif-stack-wrap--compact' : ''}${
-        className ? ` ${className}` : ''
-      }`}
+        inline ? ' smart-notif-stack-wrap--inline' : ''
+      }${className ? ` ${className}` : ''}`}
       aria-live="polite"
     >
-      {visibleProminent.map((notification) => (
-        <div
-          key={notification.id}
-          className={`smart-notif smart-notif--${notification.priority}`}
-          role="status"
-        >
-          <button
-            type="button"
-            className="smart-notif-main"
-            onClick={() => handleAction(notification)}
+      {visibleProminent.map((notification) => {
+        const isExpanded = expandedId === notification.id;
+        if (inline && !isExpanded) {
+          return (
+            <div
+              key={notification.id}
+              className={`smart-notif-inline smart-notif-inline--${notification.priority}`}
+            >
+              <button
+                type="button"
+                className="smart-notif-inline-main"
+                onClick={() => toggleInline(notification)}
+                aria-expanded={isExpanded}
+              >
+                <span className="smart-notif-inline-dot" aria-hidden>
+                  {notification.priority === NOTIFICATION_PRIORITY.CRITICAL ? '🔴' : '🔔'}
+                </span>
+                <span className="smart-notif-inline-copy">
+                  {notification.title && <strong>{notification.title}</strong>}
+                  <span>{notification.text}</span>
+                </span>
+                <span className="smart-notif-inline-expand">Expand</span>
+              </button>
+              <button
+                type="button"
+                className="smart-notif-dismiss"
+                aria-label="Dismiss notification"
+                onClick={() => dismiss(notification.id)}
+              >
+                ×
+              </button>
+            </div>
+          );
+        }
+
+        if (inline && isExpanded) {
+          return (
+            <div
+              key={notification.id}
+              className={`smart-notif smart-notif--${notification.priority} smart-notif--expanded`}
+              role="status"
+            >
+              <button
+                type="button"
+                className="smart-notif-main"
+                onClick={() => handleAction(notification)}
+              >
+                <span className="smart-notif-icon" aria-hidden>
+                  {notification.icon}
+                </span>
+                <span className="smart-notif-copy">
+                  {notification.title && (
+                    <strong className="smart-notif-title">{notification.title}</strong>
+                  )}
+                  <span className="smart-notif-text">{notification.text}</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="smart-notif-dismiss"
+                aria-label="Collapse notification"
+                onClick={() => setExpandedId(null)}
+              >
+                ×
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <div
+            key={notification.id}
+            className={`smart-notif smart-notif--${notification.priority}`}
+            role="status"
           >
-            <span className="smart-notif-icon" aria-hidden>
-              {notification.icon}
-            </span>
-            <span className="smart-notif-copy">
-              {notification.title && (
-                <strong className="smart-notif-title">{notification.title}</strong>
+            <button
+              type="button"
+              className="smart-notif-main"
+              onClick={() => handleAction(notification)}
+            >
+              <span className="smart-notif-icon" aria-hidden>
+                {notification.icon}
+              </span>
+              <span className="smart-notif-copy">
+                {notification.title && (
+                  <strong className="smart-notif-title">{notification.title}</strong>
+                )}
+                <span className="smart-notif-text">{notification.text}</span>
+              </span>
+              {notification.priority === NOTIFICATION_PRIORITY.CRITICAL && (
+                <span className="smart-notif-priority-badge">Critical</span>
               )}
-              <span className="smart-notif-text">{notification.text}</span>
-            </span>
-            {notification.priority === NOTIFICATION_PRIORITY.CRITICAL && (
-              <span className="smart-notif-priority-badge">Critical</span>
-            )}
-          </button>
-          <button
-            type="button"
-            className="smart-notif-dismiss"
-            aria-label="Dismiss notification"
-            onClick={() => dismiss(notification.id)}
-          >
-            ×
-          </button>
-        </div>
-      ))}
+            </button>
+            <button
+              type="button"
+              className="smart-notif-dismiss"
+              aria-label="Dismiss notification"
+              onClick={() => dismiss(notification.id)}
+            >
+              ×
+            </button>
+          </div>
+        );
+      })}
 
       {visibleStacked.length > 0 && (
         <div className="smart-notif-background-group">
@@ -104,7 +180,7 @@ export function SmartNotificationStack({
         </div>
       )}
 
-      {!stackOpen && stackCount > 0 && visibleStacked.length > 0 && (
+      {!stackOpen && stackCount > 0 && visibleStacked.length > 0 && !inline && (
         <p className="smart-notif-stack-hint" aria-hidden>
           {stackCount} background update{stackCount === 1 ? '' : 's'} stacked
         </p>

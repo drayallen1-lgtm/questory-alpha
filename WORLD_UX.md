@@ -4,11 +4,11 @@ Questory V2 treats the **map as the operating system**. Every feature — market
 
 ## Principles
 
-1. **Map-first** — The world shell (`WorldShell`) is the default screen. Navigation returns to the map.
-2. **Contextual cards** — Floating HUD cards appear when relevant and collapse when not.
-3. **Story over status** — Empty states use narrative copy (`worldExperienceEngine.resolveEmptyState`), not "No data".
-4. **One design language** — Glass panels, elevation tokens, and 8px spacing live in `worldDesignTokens.css`.
-5. **Subtle Director** — Ambient whispers guide; they never block the map.
+1. **Map-first** — The map fills ~94% of the viewport. HUD overlays are minimal and anchored to corners.
+2. **One thing at a time** — Context focus chip shows a single mode-relevant cue (treasure, clue, war score, city).
+3. **Progressive disclosure** — Card deck hidden behind **Layers** until the player asks. City chip collapsed to one line.
+4. **Transient overlays** — Notifications are one-line inline; Director whispers fade after ~3s.
+5. **Context-aware HUD** — Walking, driving, adventure, and guild war each surface one focus item.
 
 ## User journeys
 

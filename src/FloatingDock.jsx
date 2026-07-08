@@ -1,5 +1,15 @@
 import React from 'react';
 
+const DOCK_ICONS = {
+  map: { icon: '🗺', label: 'World' },
+  feed: { icon: '🏠', label: 'Feed' },
+  vault: { icon: '🎒', label: 'Passport' },
+  social: { icon: '👥', label: 'Social' },
+  sponsor: { icon: '📣', label: 'Sponsor' },
+  create: { icon: '➕', label: 'Create' },
+  admin: { icon: '⚙', label: 'Admin' },
+};
+
 function isDockActive(screen, tabId, adminPreview) {
   if (screen === tabId) return true;
   if (tabId === 'map' && (screen === 'map' || screen === 'home' || screen === 'world-engine')) return true;
@@ -15,38 +25,31 @@ function isDockActive(screen, tabId, adminPreview) {
 }
 
 export function FloatingDock({ screen, nav, adminPreview, isSponsor }) {
-  const items = isSponsor
-    ? [
-        ['map', 'World'],
-        ['feed', 'Feed'],
-        ['vault', 'Passport'],
-        ['social', 'Social'],
-        ['sponsor', 'Sponsor'],
-        ['create', 'Create'],
-        ['admin', 'Admin'],
-      ]
-    : [
-        ['map', 'World'],
-        ['feed', 'Feed'],
-        ['vault', 'Passport'],
-        ['social', 'Social'],
-        ['create', 'Create'],
-        ['admin', 'Admin'],
-      ];
+  const itemIds = isSponsor
+    ? ['map', 'feed', 'vault', 'social', 'sponsor', 'create', 'admin']
+    : ['map', 'feed', 'vault', 'social', 'create', 'admin'];
 
   return (
     <div className="floating-dock-wrap" role="navigation" aria-label="World navigation">
-      <nav className="floating-dock">
-        {items.map(([id, label]) => (
-          <button
-            type="button"
-            className={isDockActive(screen, id, adminPreview) ? 'active' : ''}
-            onClick={() => nav(id, undefined, { adminPreview: false })}
-            key={id}
-          >
-            {label}
-          </button>
-        ))}
+      <nav className="floating-dock floating-dock--icon">
+        {itemIds.map((id) => {
+          const meta = DOCK_ICONS[id];
+          return (
+            <button
+              type="button"
+              className={isDockActive(screen, id, adminPreview) ? 'active' : ''}
+              onClick={() => nav(id, undefined, { adminPreview: false })}
+              key={id}
+              title={meta.label}
+              aria-label={meta.label}
+            >
+              <span className="floating-dock-icon" aria-hidden>
+                {meta.icon}
+              </span>
+              <span className="floating-dock-label">{meta.label}</span>
+            </button>
+          );
+        })}
       </nav>
     </div>
   );

@@ -311,5 +311,10 @@ export function getLivingCitySnapshot(options = {}) {
     directorRecommendation: recommendations[0] || null,
     regionId,
     zoom,
+    discoveryPct:
+      worldDiscovery.currentRegion?.completionPercent ??
+      worldDiscovery.overallPct ??
+      worldDiscovery.cityPct ??
+      0,
   });
 }
