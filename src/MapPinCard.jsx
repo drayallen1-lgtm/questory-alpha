@@ -112,7 +112,12 @@ export function MapPinCard({
       onMouseDown={stopCardEvent}
       onTouchStart={stopCardEvent}
     >
-      <button type="button" className="map-pin-card-close ghost" onClick={handleClose} aria-label="Close">
+      <button
+        type="button"
+        className="map-pin-card-close ghost"
+        onClick={handleClose}
+        aria-label="Close adventure card"
+      >
         <X size={16} />
       </button>
 

@@ -124,7 +124,10 @@ test.describe('Living Atlas map-first presentation', () => {
     }
 
     await marker.click();
-    await expect(page.locator('.questory-map-card').first()).toBeVisible({ timeout: 10_000 });
+    const card = page.locator('.questory-map-card').first();
+    await expect(card).toBeVisible({ timeout: 10_000 });
+    await page.waitForTimeout(250);
+    await expect(card).toBeVisible();
 
     await page.keyboard.press('Escape');
     await page.waitForTimeout(300);
@@ -143,6 +146,38 @@ test.describe('Living Atlas map-first presentation', () => {
     expect(String(topClass)).not.toMatch(/world-progressive-layer/);
 
     await marker.click();
-    await expect(page.locator('.questory-map-card').first()).toBeVisible({ timeout: 10_000 });
+    await expect(card).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('adventure card clears dock and uses compact close control', async ({ page }) => {
+    await gotoScreen(page, 'map');
+
+    const marker = page.locator('.fallback-marker.adventure, .questory-pin').first();
+    if (!(await marker.isVisible({ timeout: 10_000 }).catch(() => false))) {
+      test.skip();
+      return;
+    }
+
+    await marker.click();
+    const card = page.locator('.questory-map-card').first();
+    await expect(card).toBeVisible({ timeout: 10_000 });
+
+    const dock = page.getByRole('navigation', { name: 'World navigation' });
+    const cardBox = await card.boundingBox();
+    const dockBox = await dock.boundingBox();
+    expect(cardBox).toBeTruthy();
+    expect(dockBox).toBeTruthy();
+    if (cardBox && dockBox) {
+      expect(cardBox.y + cardBox.height).toBeLessThanOrEqual(dockBox.y + 4);
+    }
+
+    const closeBtn = card.getByRole('button', { name: 'Close adventure card' });
+    await expect(closeBtn).toBeVisible();
+    const closeBox = await closeBtn.boundingBox();
+    expect(closeBox?.width).toBeLessThanOrEqual(36);
+    expect(closeBox?.height).toBeLessThanOrEqual(36);
+
+    await closeBtn.click();
+    await expect(card).toHaveCount(0);
   });
 });

@@ -32,6 +32,7 @@ import {
   recordMapReveal,
   wireAdventurePinElement,
 } from './mapDiscovery';
+import { isMapInteractiveClickTarget, resolveAdventureMarkerPayload } from './mapInteractionGuard';
 import {
   buildClusterTooltipHtml,
   clusterVisualClasses,
@@ -239,7 +240,7 @@ function MapPinFallbackList({ adventureMarkers, onAdventureClick }) {
               key={marker.id}
               type="button"
               className={`fallback-marker adventure pin-${marker.pinAccess || 'playable'}`}
-              onClick={() => onAdventureClick?.(marker.adventure, marker)}
+              onClick={() => onAdventureClick?.(marker.adventure, marker, 'fallback')}
             >
               <span className="questory-pin-icon">{visual.icon}</span>
               <span>
@@ -305,7 +306,7 @@ function FallbackMap({
                 key={marker.id}
                 type="button"
                 className={`fallback-marker adventure pin-${marker.pinAccess || 'playable'}`}
-                onClick={() => onAdventureClick?.(marker.adventure, marker)}
+                onClick={() => onAdventureClick?.(marker.adventure, marker, 'fallback')}
               >
                 <span className="questory-pin-icon">{visual.icon}</span>
                 <span>
@@ -530,7 +531,7 @@ export function QuestoryMap({
           visual,
           selected: selected || soloActive,
           onSelect: (data) => {
-            if (data?.adventure) onAdventureClickRef.current?.(data.adventure, data);
+            if (data?.adventure) onAdventureClickRef.current?.(data.adventure, data, 'pin');
           },
           onHoverChange: (hoverId) => onPinHoverChangeRef.current?.(hoverId),
         });
@@ -925,23 +926,30 @@ export function QuestoryMap({
 
       map.on('click', (e) => {
         const target = e.originalEvent?.target;
-        if (
-          target?.closest?.(
-            '.questory-cluster, .questory-pin, .blossom-pin, .blossom-category, .blossom-overflow, .living-cluster-blossom, .map-pin-card, .questory-map-card, .cluster-adventure-picker'
-          )
-        ) {
-          return;
-        }
+        if (isMapInteractiveClickTarget(target)) return;
+
         try {
-          const hit = map.queryRenderedFeatures(e.point, { layers: [MAP_LAYER_IDS.CLUSTERS] });
-          if (hit.length > 0) return;
+          const unclusteredHit = map.queryRenderedFeatures(e.point, {
+            layers: [MAP_LAYER_IDS.UNCLUSTERED],
+          });
+          if (unclusteredHit.length > 0) {
+            const props = parseFeatureProps(unclusteredHit[0].properties);
+            const id = props.id ?? unclusteredHit[0].id;
+            const markerData = id != null ? markerLookupRef.current.get(id) : null;
+            if (markerData?.adventure) {
+              onAdventureClickRef.current?.(markerData.adventure, markerData, 'unclustered-layer');
+              return;
+            }
+          }
+          const clusterHit = map.queryRenderedFeatures(e.point, { layers: [MAP_LAYER_IDS.CLUSTERS] });
+          if (clusterHit.length > 0) return;
         } catch {
           /* ignore */
         }
         if (isDev) {
           console.debug('[QuestoryMap]', { mapBackgroundCollapsed: true });
         }
-        onMapBackgroundClickRef.current?.();
+        onMapBackgroundClickRef.current?.(e.originalEvent);
       });
 
       map.on('moveend', syncHtmlMarkers);
@@ -1989,7 +1997,8 @@ export function MapScreen({
     setVenueCardEntering(false);
   }
 
-  function handleMapBackgroundClick() {
+  function handleMapBackgroundClick(originalEvent) {
+    if (isMapInteractiveClickTarget(originalEvent?.target)) return;
     handleLivingClusterCollapse();
   }
 
@@ -2108,18 +2117,15 @@ export function MapScreen({
     );
     window.setTimeout(() => {
       playMapUiCue('cardOpen');
-      if (isDev) {
-        console.debug('[QuestoryMap]', {
-          discoveryBloomCardOpen: { adventureId: marker.id, title: marker.title },
-        });
-      }
-      setCardEntering(true);
-      handleAdventureClick(marker.adventure, {
-        ...marker,
-        fromCluster: true,
-        clusterId,
-      });
-      window.setTimeout(() => setCardEntering(false), 420);
+      openAdventureFromMap(
+        marker.adventure,
+        {
+          ...marker,
+          fromCluster: true,
+          clusterId,
+        },
+        'blossom'
+      );
     }, DISCOVERY_BLOOM_TIMING.CARD_OPEN);
   }
 
@@ -2171,18 +2177,15 @@ export function MapScreen({
     }
     window.setTimeout(() => {
       playMapUiCue('cardOpen');
-      if (isDev) {
-        console.debug('[QuestoryMap]', {
-          discoveryBloomCardOpen: { adventureId: marker.id, title: marker.title },
-        });
-      }
-      setCardEntering(true);
-      handleAdventureClick(marker.adventure, {
-        ...marker,
-        fromCluster: true,
-        clusterId,
-      });
-      window.setTimeout(() => setCardEntering(false), 420);
+      openAdventureFromMap(
+        marker.adventure,
+        {
+          ...marker,
+          fromCluster: true,
+          clusterId,
+        },
+        'overflow'
+      );
     }, DISCOVERY_BLOOM_TIMING.CARD_OPEN);
   }
 
@@ -2208,14 +2211,31 @@ export function MapScreen({
     return counts;
   }, [adventures, state, location, follows]);
 
-  function handleAdventureClick(adventure, marker) {
+  function openAdventureFromMap(adventure, marker, source = 'pin') {
+    const markerPayload = resolveAdventureMarkerPayload(adventure, marker);
+    if (!markerPayload) return;
+
     setSelectedMarketVenueId(null);
     setHoveredPinId(null);
-    setSelectedMarker(marker || { adventure, id: adventure.id });
     setFocusedAdventure(null);
+    setCardEntering(true);
+    setSelectedMarker(markerPayload);
+
     if (setState) {
       setState((s) => recordMapReveal(s, adventure));
     }
+
+    if (isDev) {
+      console.debug('[QuestoryMap]', {
+        adventurePinTapped: { id: adventure.id, source, openedCard: true },
+      });
+    }
+
+    window.setTimeout(() => setCardEntering(false), 420);
+  }
+
+  function handleAdventureClick(adventure, marker, source = 'pin') {
+    openAdventureFromMap(adventure, marker, source);
   }
 
   function handleCardClose() {

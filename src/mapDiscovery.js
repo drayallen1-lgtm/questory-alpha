@@ -761,16 +761,23 @@ export function wireAdventurePinElement(
   el.addEventListener('focus', showTooltip);
   el.addEventListener('blur', hideTooltip);
 
-  el.addEventListener('click', (e) => {
+  let lastActivateAt = 0;
+  function activatePin(e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
     e.stopPropagation();
     e.preventDefault();
+    const now = Date.now();
+    if (now - lastActivateAt < 280) return;
+    lastActivateAt = now;
     if (isDev) {
       console.debug('[QuestoryMap]', {
         pinClicked: { adventureId: markerData.id, title: markerData.title || title },
       });
     }
     onSelect?.(markerData);
-  });
+  }
+
+  el.addEventListener('pointerup', activatePin);
 
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {

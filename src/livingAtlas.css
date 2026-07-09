@@ -682,3 +682,58 @@
 .world-atlas-mode .floating-hud-dismiss-scrim {
   pointer-events: auto;
 }
+
+/* Adventure card safe area above floating dock */
+.world-atlas-mode {
+  --world-dock-height: 72px;
+}
+
+.world-atlas-mode .map-pin-card,
+.world-atlas-mode .questory-map-card {
+  bottom: calc(var(--world-dock-height) + env(safe-area-inset-bottom, 0px) + 16px);
+  max-height: min(58vh, calc(100svh - var(--world-dock-height) - env(safe-area-inset-bottom, 0px) - 120px));
+  width: min(440px, calc(100% - 24px));
+}
+
+.world-atlas-mode .map-pin-card-body {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.world-atlas-mode .map-pin-card-actions-sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+
+.world-atlas-mode .map-pin-card-close {
+  top: -12px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 12, 22, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  z-index: 5;
+}
+
+.world-atlas-mode .map-pin-card-hero-text {
+  padding-right: 28px;
+}
+
+@media (max-width: 640px) {
+  .world-atlas-mode .map-pin-card,
+  .world-atlas-mode .questory-map-card {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-height: min(52vh, calc(100svh - var(--world-dock-height) - env(safe-area-inset-bottom, 0px) - 100px));
+    transform: none;
+    border-radius: 16px 16px 0 0;
+  }
+}
