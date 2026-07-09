@@ -978,6 +978,16 @@ export function QuestoryMap({
       }
 
       setMapReady(true);
+
+      if (livingAtlas && isDev && typeof document !== 'undefined') {
+        const cx = Math.floor(window.innerWidth / 2);
+        const cy = Math.floor(window.innerHeight / 2);
+        const top = document.elementFromPoint(cx, cy);
+        console.debug('[LivingAtlas] elementFromPoint center:', {
+          tag: top?.tagName,
+          className: top?.className,
+        });
+      }
     });
 
     return () => {

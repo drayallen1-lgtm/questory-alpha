@@ -74,6 +74,14 @@ test.describe('Living Atlas map-first presentation', () => {
     const box = await findMe.boundingBox();
     expect(box?.width).toBeLessThanOrEqual(52);
     expect(box?.height).toBeLessThanOrEqual(52);
+
+    const zoomIn = page.locator('.mapboxgl-ctrl-zoom-in');
+    if (await zoomIn.isVisible().catch(() => false)) {
+      const zoomBox = await zoomIn.boundingBox();
+      if (box && zoomBox) {
+        expect(box.y).toBeGreaterThan(zoomBox.y + zoomBox.height - 4);
+      }
+    }
   });
 
   test('atlas initial camera uses street-level zoom', async ({ page }) => {
@@ -90,5 +98,51 @@ test.describe('Living Atlas map-first presentation', () => {
     if (zoom != null) {
       expect(zoom).toBeGreaterThanOrEqual(13.5);
     }
+  });
+
+  test('map center is not blocked by progressive overlay', async ({ page }) => {
+    await gotoScreen(page, 'map');
+
+    const topClass = await page.evaluate(() => {
+      const el = document.elementFromPoint(
+        Math.floor(window.innerWidth / 2),
+        Math.floor(window.innerHeight / 2)
+      );
+      return el?.className || el?.tagName || '';
+    });
+
+    expect(String(topClass)).not.toMatch(/world-progressive-layer/);
+  });
+
+  test('adventure marker opens card and map stays interactive after radial', async ({ page }) => {
+    await gotoScreen(page, 'map');
+
+    const marker = page.locator('.fallback-marker.adventure, .questory-pin').first();
+    if (!(await marker.isVisible({ timeout: 10_000 }).catch(() => false))) {
+      test.skip();
+      return;
+    }
+
+    await marker.click();
+    await expect(page.locator('.questory-map-card').first()).toBeVisible({ timeout: 10_000 });
+
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+
+    const radial = page.getByTestId('world-radial-menu');
+    await radial.getByRole('button', { name: 'Open world menu' }).click();
+    await radial.getByRole('button', { name: 'Close world menu' }).click();
+
+    const topClass = await page.evaluate(() => {
+      const el = document.elementFromPoint(
+        Math.floor(window.innerWidth / 2),
+        Math.floor(window.innerHeight / 2)
+      );
+      return el?.className || el?.tagName || '';
+    });
+    expect(String(topClass)).not.toMatch(/world-progressive-layer/);
+
+    await marker.click();
+    await expect(page.locator('.questory-map-card').first()).toBeVisible({ timeout: 10_000 });
   });
 });

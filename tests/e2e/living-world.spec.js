@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoScreen, primeAppState } from './helpers.js';
+import { gotoScreen, primeAppState, dismissWelcomeOnboarding } from './helpers.js';
 
 test.describe('Living World (map-first)', () => {
   test('lands on Questory World shell with map and floating HUD', async ({ page }) => {
@@ -51,7 +51,7 @@ test.describe('Living World (map-first)', () => {
       ambientDirector: { dismissedIds: [] },
       faction: { memberFactionId: 'parsons-explorers' },
     });
-    await page.reload({ waitUntil: 'load' });
+    await dismissWelcomeOnboarding(page);
     await expect(page.getByTestId('world-shell')).toBeVisible({ timeout: 30_000 });
 
     await expect(page.locator('.ambient-director-whisper')).toBeVisible({ timeout: 15_000 });

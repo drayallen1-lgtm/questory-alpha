@@ -66,8 +66,12 @@
 }
 
 /* Mapbox zoom controls stay top-right; radial stays bottom-right */
-.world-atlas-mode .mapboxgl-ctrl-top-right {
-  z-index: 37;
+.world-atlas-mode .mapboxgl-control-container,
+.world-atlas-mode .mapboxgl-ctrl-top-right,
+.world-atlas-mode .mapboxgl-ctrl-top-right .mapboxgl-ctrl,
+.world-atlas-mode .mapboxgl-ctrl button {
+  pointer-events: auto !important;
+  z-index: 999 !important;
 }
 
 .world-atlas-mode .world-map-frame .questory-map-wrap,
@@ -89,8 +93,15 @@
   pointer-events: none;
 }
 
-.world-atlas-mode .world-shell-hud-stack > * {
+.world-atlas-mode .world-shell-hud-stack .living-city-compact-chip,
+.world-atlas-mode .world-shell-hud-stack .micro-hud-chip,
+.world-atlas-mode .world-shell-hud-stack .floating-card,
+.world-atlas-mode .world-shell-hud-stack .floating-hud button {
   pointer-events: auto;
+}
+
+.world-atlas-mode .floating-hud {
+  pointer-events: none;
 }
 
 .world-atlas-mode .world-shell-skeleton {
@@ -620,4 +631,54 @@
   .world-atlas-mode .world-shell-hud-stack {
     width: min(calc(100vw - 72px), 260px);
   }
+}
+
+/* ── Map interaction: pass-through overlays, interactive pins only ── */
+
+.world-atlas-mode .world-progressive-layer,
+.world-atlas-mode .world-progressive-layer--visible,
+.world-atlas-mode .world-progressive-layer--visible > * {
+  pointer-events: none !important;
+}
+
+.world-atlas-mode .map-stage-atlas-mode {
+  pointer-events: none;
+}
+
+.world-atlas-mode .map-stage-atlas-mode .questory-map-wrap,
+.world-atlas-mode .mapboxgl-map,
+.world-atlas-mode .mapboxgl-canvas-container,
+.world-atlas-mode .mapboxgl-canvas {
+  pointer-events: auto !important;
+}
+
+.world-atlas-mode .geography-layer,
+.world-atlas-mode .world-building-layer,
+.world-atlas-mode .market-venue-layer,
+.world-atlas-mode .living-world-layer,
+.world-atlas-mode .territory-layer,
+.world-atlas-mode .map-stage-living-atlas.world-streets--fog::after {
+  pointer-events: none !important;
+}
+
+.world-atlas-mode .world-building-pin,
+.world-atlas-mode .map-market-venue,
+.world-atlas-mode .market-venue-card,
+.world-atlas-mode .questory-map-card,
+.world-atlas-mode .map-pin-card,
+.world-atlas-mode .faction-territory-chip,
+.world-atlas-mode .living-cluster-blossom > .blossom-pin,
+.world-atlas-mode .living-cluster-blossom > .blossom-category,
+.world-atlas-mode .living-cluster-blossom > .blossom-overflow,
+.world-atlas-mode .mapboxgl-marker,
+.world-atlas-mode .fallback-marker,
+.world-atlas-mode .cluster-adventure-picker {
+  pointer-events: auto !important;
+}
+
+.world-atlas-mode .ambient-director-whisper,
+.world-atlas-mode .map-shell-filter,
+.world-atlas-mode .map-find-me-btn--atlas,
+.world-atlas-mode .floating-hud-dismiss-scrim {
+  pointer-events: auto;
 }

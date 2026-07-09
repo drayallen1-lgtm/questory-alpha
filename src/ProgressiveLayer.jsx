@@ -1,4 +1,8 @@
-import React from 'react';
+import React, { Children } from 'react';
+
+function hasRenderableChildren(children) {
+  return Children.toArray(children).some((child) => child != null && child !== false);
+}
 
 /**
  * Wraps map/HUD children with progressive layer opacity from getProgressiveLayerSnapshot.
@@ -8,6 +12,7 @@ export function ProgressiveLayer({ layerId, layers, children, className = '' }) 
 
   const meta = layers[layerId];
   if (!meta || meta.opacity <= 0.04) return null;
+  if (!hasRenderableChildren(children)) return null;
 
   return (
     <div
