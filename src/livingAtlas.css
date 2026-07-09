@@ -38,11 +38,36 @@
   z-index: 12;
 }
 
-.world-atlas-mode .world-map-frame .map-shell-find-me {
-  top: 8px;
-  bottom: auto;
-  right: 8px;
-  z-index: 13;
+.world-atlas-mode .world-map-frame .map-shell-find-me,
+.world-atlas-mode .map-find-me-btn--atlas {
+  position: fixed;
+  right: 14px;
+  bottom: 138px;
+  top: auto;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(94, 234, 212, 0.35);
+  background: rgba(8, 12, 22, 0.92);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  display: grid;
+  place-items: center;
+  color: #5eead4;
+  z-index: 38;
+  white-space: nowrap;
+}
+
+.world-atlas-mode .map-find-me-btn--atlas svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Mapbox zoom controls stay top-right; radial stays bottom-right */
+.world-atlas-mode .mapboxgl-ctrl-top-right {
+  z-index: 37;
 }
 
 .world-atlas-mode .world-map-frame .questory-map-wrap,

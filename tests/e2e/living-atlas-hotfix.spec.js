@@ -59,4 +59,36 @@ test.describe('Living Atlas map-first presentation', () => {
     await expect(radial).toHaveClass(/world-radial-menu--open/);
     await expect(radial.locator('.world-radial-bloom')).toBeVisible();
   });
+
+  test('Find Me is a compact icon button in atlas mode', async ({ page, context }) => {
+    await context.grantPermissions(['geolocation']);
+    await context.setGeolocation({ latitude: 37.3392, longitude: -95.261 });
+    await gotoScreen(page, 'map');
+
+    const findMe = page.getByTestId('map-find-me-atlas');
+    await expect(findMe).toBeVisible({ timeout: 15_000 });
+    await expect(findMe).toHaveAttribute('aria-label', 'Find me');
+    await expect(findMe).toHaveClass(/map-find-me-btn--atlas/);
+    await expect(findMe).not.toContainText('Find Me');
+
+    const box = await findMe.boundingBox();
+    expect(box?.width).toBeLessThanOrEqual(52);
+    expect(box?.height).toBeLessThanOrEqual(52);
+  });
+
+  test('atlas initial camera uses street-level zoom', async ({ page }) => {
+    await gotoScreen(page, 'map');
+    await page.waitForTimeout(1500);
+
+    const zoom = await page.evaluate(() => {
+      const raw = localStorage.getItem('questoryAlpha');
+      if (!raw) return null;
+      const state = JSON.parse(raw);
+      return state.worldCamera?.zoom ?? null;
+    });
+
+    if (zoom != null) {
+      expect(zoom).toBeGreaterThanOrEqual(13.5);
+    }
+  });
 });

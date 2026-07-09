@@ -39,7 +39,7 @@ import {
   flyMapTo,
   summarizeClusterMarkers,
 } from './mapSpatial';
-import { createMapCameraController } from './mapCamera';
+import { createMapCameraController, ATLAS_CAMERA_MOVE_REASONS } from './mapCamera';
 import { ClusterAdventurePicker, MapFilterBar, MapPinCard } from './MapPinCard';
 import { LivingClusterBlossomOverlay } from './LivingClusterBlossom';
 import { LivingWorldLayer } from './LivingWorldLayer';
@@ -94,7 +94,6 @@ import { GeographyLayer } from './GeographyLayer';
 import { BuildingActivityLayer } from './BuildingActivityLayer';
 import {
   buildCameraRememberPatch,
-  buildFlyToOptions,
   MIN_ATLAS_OPEN_ZOOM,
   resolveInitialCamera,
   WORLD_CAMERA_ZOOM,
@@ -446,6 +445,7 @@ export function QuestoryMap({
   if (!cameraRef.current) {
     cameraRef.current = createMapCameraController(() => mapRef.current);
   }
+  cameraRef.current.setLivingAtlas?.(livingAtlas);
   requestCameraMoveRef.current = cameraRef.current.requestCameraMove;
 
   const markerLookup = useMemo(() => {
@@ -827,7 +827,7 @@ export function QuestoryMap({
     const initialCenter = [camera.longitude, camera.latitude];
     const initialZoom = camera.zoom ?? WORLD_CAMERA_ZOOM.STREET_BLOCKS;
 
-    if (userLocation?.latitude != null) {
+    if (userLocation?.latitude != null && !livingAtlas) {
       cameraRef.current.state.initialUserCentered = true;
     }
 
@@ -965,21 +965,16 @@ export function QuestoryMap({
       syncHtmlMarkers();
       onMapZoomChangeRef.current?.(map.getZoom());
 
-      if (livingAtlas && !atlasZoomCorrectedRef.current && map.getZoom() < MIN_ATLAS_OPEN_ZOOM) {
+      if (livingAtlas) {
+        if (!atlasZoomCorrectedRef.current && map.getZoom() < MIN_ATLAS_OPEN_ZOOM) {
+          const center = map.getCenter();
+          map.jumpTo({
+            center: [center.lng, center.lat],
+            zoom: WORLD_CAMERA_ZOOM.STREET_BLOCKS,
+          });
+        }
         atlasZoomCorrectedRef.current = true;
-        const center = map.getCenter();
-        map.flyTo(
-          buildFlyToOptions(
-            {
-              latitude: center.lat,
-              longitude: center.lng,
-              zoom: WORLD_CAMERA_ZOOM.STREET_BLOCKS,
-            },
-            { durationMs: 1400 }
-          )
-        );
-      } else if (livingAtlas) {
-        atlasZoomCorrectedRef.current = true;
+        cameraRef.current?.markInitialAtlasCameraApplied?.();
       }
 
       setMapReady(true);
@@ -1044,18 +1039,18 @@ export function QuestoryMap({
   useEffect(() => {
     const map = mapRef.current;
     const cam = cameraRef.current;
-    if (!map || mini || !mapReadyRef.current || !cam) return;
+    if (!map || mini || !mapReadyRef.current || !cam || livingAtlas) return;
     const loc = userLocationRef.current;
     if (loc?.latitude == null || cam.state.initialUserCentered) return;
     cam.state.initialUserCentered = true;
-    requestCameraMoveRef.current?.('initialUser', (m) => {
+    requestCameraMoveRef.current?.(ATLAS_CAMERA_MOVE_REASONS.INITIAL_USER, (m) => {
       flyMapTo(m, {
         center: [loc.longitude, loc.latitude],
         zoom: 13,
         duration: 900,
       });
     });
-  }, [userLocation, mini]);
+  }, [userLocation, mini, livingAtlas]);
 
   const lastFindMeSignalRef = useRef(0);
 
@@ -1065,32 +1060,35 @@ export function QuestoryMap({
     lastFindMeSignalRef.current = findMeSignal;
     const loc = userLocationRef.current;
     if (loc?.latitude == null) return;
-    requestCameraMoveRef.current?.('findMe', (m) => {
+    requestCameraMoveRef.current?.(ATLAS_CAMERA_MOVE_REASONS.FIND_ME, (m) => {
       flyMapTo(m, {
         center: [loc.longitude, loc.latitude],
-        zoom: 14,
+        zoom: livingAtlas ? WORLD_CAMERA_ZOOM.STREET_BLOCKS : 14,
         duration: 900,
       });
     });
-  }, [findMeSignal, mini]);
+  }, [findMeSignal, mini, livingAtlas]);
 
   useEffect(() => {
     if (mini || !mapReady || !onMapFlyReady) return undefined;
     onMapFlyReady({
-      flyTo: ({ latitude, longitude, zoom = 10 }) => {
+      flyTo: ({ latitude, longitude, zoom, reason = ATLAS_CAMERA_MOVE_REASONS.EARTH } = {}) => {
         const map = mapRef.current;
         if (!map || latitude == null || longitude == null) return;
-        requestCameraMoveRef.current?.('earthFly', (m) => {
+        const targetZoom =
+          zoom ??
+          (livingAtlas ? WORLD_CAMERA_ZOOM.STREET_BLOCKS : 10);
+        requestCameraMoveRef.current?.(reason, (m) => {
           flyMapTo(m, {
             center: [longitude, latitude],
-            zoom,
+            zoom: targetZoom,
             duration: 1400,
           });
         });
       },
     });
     return () => onMapFlyReady(null);
-  }, [mapReady, mini, onMapFlyReady]);
+  }, [mapReady, mini, onMapFlyReady, livingAtlas]);
 
   useEffect(() => {
     if (mini || !mapRef.current) return;
@@ -1284,7 +1282,8 @@ export function MapScreen({
       earthFlyRef.current.flyTo({
         latitude: venue.latitude,
         longitude: venue.longitude,
-        zoom: Math.max(mapZoom, 13.5),
+        zoom: Math.max(mapZoom, MIN_ATLAS_OPEN_ZOOM),
+        reason: ATLAS_CAMERA_MOVE_REASONS.VENUE,
       });
     }
     const timer = window.setTimeout(() => setVenueCardEntering(false), 240);
@@ -1481,12 +1480,17 @@ export function MapScreen({
   }, []);
 
   const handleReturnToMap = useCallback(
-    ({ zoom = 13 } = {}) => {
+    ({ zoom = shellMode ? WORLD_CAMERA_ZOOM.STREET_BLOCKS : 13 } = {}) => {
       const latitude = location?.latitude ?? 37.3392;
       const longitude = location?.longitude ?? -95.261;
-      earthFlyRef.current?.flyTo?.({ latitude, longitude, zoom });
+      earthFlyRef.current?.flyTo?.({
+        latitude,
+        longitude,
+        zoom,
+        reason: ATLAS_CAMERA_MOVE_REASONS.FIND_ME,
+      });
     },
-    [location]
+    [location, shellMode]
   );
 
   useEffect(() => {
@@ -2295,13 +2299,15 @@ export function MapScreen({
       {shellMode && location?.latitude != null && (
         <button
           type="button"
-          className="ghost map-find-me-btn map-shell-find-me"
+          className="map-find-me-btn map-shell-find-me map-find-me-btn--atlas"
+          aria-label="Find me"
+          data-testid="map-find-me-atlas"
           onClick={() => {
-            handleReturnToMap({ zoom: 14 });
+            handleReturnToMap({ zoom: WORLD_CAMERA_ZOOM.STREET_BLOCKS });
             setFindMeSignal((n) => n + 1);
           }}
         >
-          <LocateFixed size={16} /> Find Me
+          <LocateFixed size={20} aria-hidden />
         </button>
       )}
 

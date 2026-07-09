@@ -101,7 +101,7 @@ export function AmbientDirectorWhisper({
       return;
     }
     if (whisper.flyTarget && onFlyTo) {
-      onFlyTo(whisper.flyTarget);
+      onFlyTo({ ...whisper.flyTarget, reason: 'whisper' });
       return;
     }
     if (whisper.action === 'map') {
